@@ -88,7 +88,7 @@ export function PositionsPanel() {
                       <td className="num px-4 py-3">{price(p.entry)}</td>
                       <td className="num px-4 py-3">{mark ? price(mark) : ""}</td>
                       <td className={`num px-4 py-3 ${pnl !== undefined && pnl >= 0 ? "text-flood" : "text-ebb"}`}>{pnl !== undefined ? signedMoney(pnl) : ""}</td>
-                      <td className="num px-4 py-3 text-ink-2">{liq ? price(liq) : "—"}</td>
+                      <td className="num px-4 py-3 text-ink-2">{liq ? price(liq) : "Out of reach"}</td>
                       <td className="px-4 py-3 text-right">
                         <button type="button" disabled={busy} onClick={() => void close(p.marketId, p.sizeRaw).catch(() => {})} className="btn btn-secondary btn-sm">
                           Close

@@ -48,7 +48,7 @@ export function MarketsBoard({ compact = false }: { compact?: boolean }) {
                 <td className="py-3 pr-4 text-right num">{leverage(m.initialMarginBps)}</td>
                 {!compact && <td className="py-3 pr-4 text-right num text-ink-2">{(m.maintenanceMarginBps / 100).toFixed(m.maintenanceMarginBps % 100 ? 1 : 0)}%</td>}
                 {!compact && <td className="py-3 pr-4 text-right num text-ink-2">{moneyCompact(m.maxOpenInterestUsd)}</td>}
-                <td className="py-3 pr-4 text-right num text-ink-2">{v && v > 0 ? moneyCompact(v) : <span className="text-ink-3">—</span>}</td>
+                <td className="py-3 pr-4 text-right num text-ink-2">{v && v > 0 ? moneyCompact(v) : <span className="text-[13px] text-ink-3">Awaiting first fill</span>}</td>
                 <td className="py-3 text-right">
                   <Link href={`/terminal/trade?m=${m.symbol}`} className="btn btn-ghost btn-sm">
                     Trade

@@ -12,6 +12,7 @@ async function noPageErrors(page: Page) {
 async function checkCopyRules(page: Page) {
   const text = await page.locator("body").innerText();
   expect(text).not.toMatch(/\$0\.00(?!\d)/);
+  expect(text).not.toMatch(/^\s*[—-]\s*$/m);
   expect(text).not.toMatch(DEPLOYER);
 }
 

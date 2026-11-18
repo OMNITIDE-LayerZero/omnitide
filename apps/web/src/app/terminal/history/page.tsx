@@ -88,7 +88,7 @@ export default function History() {
                   <td className="num px-4 py-3">{Math.abs(size).toPrecision(5)}</td>
                   <td className="num px-4 py-3">{price(wad(t.price))}</td>
                   <td className="num px-4 py-3">{money(wad(t.notionalUsd))}</td>
-                  <td className={`num px-4 py-3 ${pnl > 0 ? "text-flood" : pnl < 0 ? "text-ebb" : "text-ink-3"}`}>{pnl !== 0 ? signedMoney(pnl) : "—"}</td>
+                  <td className={`num px-4 py-3 ${pnl > 0 ? "text-flood" : pnl < 0 ? "text-ebb" : "text-ink-3"}`}>{pnl !== 0 ? signedMoney(pnl) : "Opened"}</td>
                   <td className="num px-4 py-3 text-ink-2">{money(units6(t.fee))}</td>
                   <td className="px-4 py-3 text-ink-3">{ago(t.timestamp)}</td>
                   <td className="px-4 py-3">
@@ -127,7 +127,7 @@ export default function History() {
 
       {tab === "orders" &&
         (orders && orders.length > 0 ? (
-          <Table head={["Market", "Type", "Size", "Trigger", "Status", "Fill", "Placed"]}>
+          <Table head={["Market", "Type", "Size", "Trigger", "Result", "Placed"]}>
             {orders.map((o) => {
               const size = wad(o.sizeDelta);
               return (
@@ -138,8 +138,7 @@ export default function History() {
                   </td>
                   <td className="num px-4 py-3">{Math.abs(size).toPrecision(5)}</td>
                   <td className="num px-4 py-3">{price(wad(o.triggerPrice))}</td>
-                  <td className="px-4 py-3 capitalize">{o.status}</td>
-                  <td className="num px-4 py-3">{o.fillPrice ? price(wad(o.fillPrice)) : "—"}</td>
+                  <td className="num px-4 py-3">{o.fillPrice ? `Filled at ${price(wad(o.fillPrice))}` : o.status === "open" ? "Resting" : <span className="capitalize text-ink-3">{o.status}</span>}</td>
                   <td className="px-4 py-3 text-ink-3">{ago(o.placedAt)}</td>
                 </tr>
               );
