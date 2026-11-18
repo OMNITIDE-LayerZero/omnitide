@@ -1,0 +1,69 @@
+{
+  "robinhoodTestnet": {
+    "chainId": 46630,
+    "eid": 40451,
+    "OmnitideUSD": {
+      "proxy": "0xC5D221304786a7b158584aD243CC920cC7C04021",
+      "implementation": "0xA291Be5C0230E1bEa5148F0ab0629ded8bCC611E",
+      "deployTx": "0x897c07c2b09f7bfde6937eb3ec239a664e5d8734757f6dbb24f3f693b65206a8",
+      "block": 154985618
+    },
+    "OmnitideOracle": {
+      "proxy": "0xcbB0153032a3d8cA2432681b00bC9c46bb5c7f5A",
+      "implementation": "0xBdDDc594CB390E80Aca42341FdEf357999B7729F",
+      "deployTx": "0xb12dcb7b5a8e5a967a5afa5430f96aac8f4ed8d807c9c5c6a9d88c36c4f8fd48",
+      "block": 154985669
+    },
+    "OmnitideClearinghouse": {
+      "proxy": "0x31fcb7B2DaC407ECC2AB51c1764204Bd3a882F1e",
+      "implementation": "0x1662f373276f5313a0daD67cE7C6857695C3Bf99",
+      "deployTx": "0x4bdeeb24632469a43c8e10f66e09108cc82571be9baf226f5c1ea30754f31707",
+      "block": 154985732
+    },
+    "wired": "sepolia,monadTestnet,arcTestnet,fuji"
+  },
+  "sepolia": {
+    "chainId": 11155111,
+    "eid": 40161,
+    "OmnitideUSD": {
+      "proxy": "0x36e7D5b03a86F228601840EE05Cc86eCAE6e6266",
+      "implementation": "0x9a9d0F696FF6bD4f0fC8BC0B710cC4D085b2B292",
+      "deployTx": "0x46232a233d9643d27fca1a477436cfc43cab004a82a88398b1ac6fd7a09dd3d6",
+      "block": 12161600
+    },
+    "wired": "robinhoodTestnet,monadTestnet,arcTestnet,fuji"
+  },
+  "arcTestnet": {
+    "chainId": 5042002,
+    "eid": 40434,
+    "OmnitideUSD": {
+      "proxy": "0x36e7D5b03a86F228601840EE05Cc86eCAE6e6266",
+      "implementation": "0x9a9d0F696FF6bD4f0fC8BC0B710cC4D085b2B292",
+      "deployTx": "0x4253a57cbb5914c94d7c0713a307632379a75876007dfed830169538c9734baf",
+      "block": 72852853
+    },
+    "wired": "robinhoodTestnet,sepolia,monadTestnet,fuji"
+  },
+  "fuji": {
+    "chainId": 43113,
+    "eid": 40106,
+    "OmnitideUSD": {
+      "proxy": "0x36e7D5b03a86F228601840EE05Cc86eCAE6e6266",
+      "implementation": "0x9a9d0F696FF6bD4f0fC8BC0B710cC4D085b2B292",
+      "deployTx": "0x4121195fceaeac91f629a7d7316ca13c7b37fd11d8484894491610d46535d2ee",
+      "block": 61283107
+    },
+    "wired": "robinhoodTestnet,sepolia,monadTestnet,arcTestnet"
+  },
+  "monadTestnet": {
+    "chainId": 10143,
+    "eid": 40442,
+    "OmnitideUSD": {
+      "proxy": "0x1d8c1b17a222a3f912dB2b80d0dD3749a4F45e15",
+      "implementation": "0x36e7D5b03a86F228601840EE05Cc86eCAE6e6266",
+      "deployTx": "0x47c44ab140e4ac6fe91b85ff81b6fd0e702f9b460e6f6557cde8d11fb7de42a8",
+      "block": 80767403
+    },
+    "wired": "robinhoodTestnet,sepolia,arcTestnet,fuji"
+  }
+}

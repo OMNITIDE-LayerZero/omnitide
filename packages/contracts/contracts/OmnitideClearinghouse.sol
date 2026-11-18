@@ -139,6 +139,7 @@ contract OmnitideClearinghouse is
     error TriggerNotMet(uint256 price, uint256 trigger);
     error ZeroAmount();
     error PausedIncrease();
+    error ZeroAddress();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -155,6 +156,7 @@ contract OmnitideClearinghouse is
     ) external initializer {
         __Ownable_init(owner_);
         __Pausable_init();
+        if (guardian_ == address(0)) revert ZeroAddress();
         token = token_;
         oracle = oracle_;
         endpoint = IOAppEndpoint(address(token_)).endpoint();
@@ -189,6 +191,7 @@ contract OmnitideClearinghouse is
 
     function setParams(uint16 feeBps_, uint256 depositCap_, address guardian_) external onlyOwner {
         require(feeBps_ <= 100, "fee");
+        if (guardian_ == address(0)) revert ZeroAddress();
         feeBps = feeBps_;
         depositCap = depositCap_;
         guardian = guardian_;
@@ -405,7 +408,7 @@ contract OmnitideClearinghouse is
             if (paused()) revert PausedIncrease();
             if (!m.active) revert MarketInactive(marketId);
         }
-        uint256 fee = _abs(sizeDelta) * price / 1e18 * feeBps / 10_000 / TO_WAD;
+        uint256 fee = _abs(sizeDelta) * price * feeBps / 1e18 / 10_000 / TO_WAD;
         _applyFill(account, marketId, sizeDelta, price, fee);
         if (increases) {
             if (_openMarkets[account].length > MAX_POSITIONS) revert TooManyPositions();

@@ -17,14 +17,15 @@ const BTC = feed("BTC-USD");
 const ETH = feed("ETH-USD");
 
 async function deploy() {
-  const [owner, alice, bob, keeper, guardian] = await ethers.getSigners();
+  type S = Awaited<ReturnType<typeof ethers.getSigners>>[number];
+  const [owner, alice, bob, keeper, guardian] = (await ethers.getSigners()) as [S, S, S, S, S];
   const Endpoint = await ethers.getContractFactory("EndpointV2Mock");
   const hubEp = await Endpoint.deploy(HUB);
   const spokeEp = await Endpoint.deploy(SPOKE);
 
   const USD = await ethers.getContractFactory("OmnitideUSD");
   const opts = { kind: "uups" as const, initializer: "initialize" };
-  const usdOpts = { ...opts, unsafeAllow: OFT_UNSAFE_ALLOW };
+  const usdOpts = { ...opts, unsafeAllow: [...OFT_UNSAFE_ALLOW] };
   const hubUsd = await up.deployProxy(USD, [owner.address, guardian.address, true], { ...usdOpts, constructorArgs: [await hubEp.getAddress()] });
   const spokeUsd = await up.deployProxy(USD, [owner.address, guardian.address, true], { ...usdOpts, constructorArgs: [await spokeEp.getAddress()] });
 
@@ -85,6 +86,11 @@ describe("OmnitideUSD", () => {
     await hubUsd.setFaucetEnabled(false);
     await networkHelpers.time.increase(86_400);
     await expect(hubUsd.connect(alice).drip()).to.be.revertedWithCustomError(hubUsd, "FaucetDisabled");
+    await expect(hubUsd.faucetMint(alice.address, 1)).to.be.revertedWithCustomError(hubUsd, "FaucetDisabled");
+    await hubUsd.setFaucetEnabled(true);
+    await expect(hubUsd.connect(alice).faucetMint(alice.address, 1)).to.be.revertedWithCustomError(hubUsd, "OwnableUnauthorizedAccount");
+    await hubUsd.faucetMint(alice.address, usd(5));
+    await expect(hubUsd.setGuardian(ethers.ZeroAddress)).to.be.revertedWithCustomError(hubUsd, "ZeroAddress");
   });
 
   it("uses 6 decimals and blocks re-initialisation", async () => {

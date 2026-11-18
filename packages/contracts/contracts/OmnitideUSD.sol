@@ -28,6 +28,7 @@ contract OmnitideUSD is OFTUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     event RateLimitSet(uint32 indexed dstEid, uint128 limit, uint32 window);
 
     error NotGuardian();
+    error ZeroAddress();
     error FaucetDisabled();
     error DripCooldown(uint256 availableAt);
     error RateLimitExceeded(uint32 dstEid, uint256 available);
@@ -38,9 +39,10 @@ contract OmnitideUSD is OFTUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     }
 
     function initialize(address owner_, address guardian_, bool faucetEnabled_) external initializer {
-        __OFT_init("OMNITIDE Dollar", "tdUSD", owner_);
         __Ownable_init(owner_);
+        __OFT_init("OMNITIDE Dollar", "tdUSD", owner_);
         __Pausable_init();
+        if (guardian_ == address(0)) revert ZeroAddress();
         guardian = guardian_;
         faucetEnabled = faucetEnabled_;
         emit GuardianSet(guardian_);
@@ -60,7 +62,14 @@ contract OmnitideUSD is OFTUpgradeable, PausableUpgradeable, UUPSUpgradeable {
         emit Dripped(msg.sender, DRIP_AMOUNT);
     }
 
+    /// @notice Testnet treasury mint (seeds the Tide Pool); disabled together with the faucet.
+    function faucetMint(address to, uint256 amount) external onlyOwner {
+        if (!faucetEnabled) revert FaucetDisabled();
+        _mint(to, amount);
+    }
+
     function setGuardian(address guardian_) external onlyOwner {
+        if (guardian_ == address(0)) revert ZeroAddress();
         guardian = guardian_;
         emit GuardianSet(guardian_);
     }

@@ -37,3 +37,5 @@ AGENTS.md
 .idea/
 playwright-report/
 test-results/
+packages/contracts/deployments/fork.json
+packages/contracts/abi/
