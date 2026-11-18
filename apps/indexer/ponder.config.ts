@@ -15,7 +15,7 @@ export default createConfig({
     sepolia: { id: CHAINS.sepolia.chainId, rpc: rpc("sepolia"), maxRequestsPerSecond: 8 },
     monadTestnet: { id: CHAINS.monadTestnet.chainId, rpc: rpc("monadTestnet"), maxRequestsPerSecond: 8, ethGetLogsBlockRange: 100 },
     arcTestnet: { id: CHAINS.arcTestnet.chainId, rpc: rpc("arcTestnet"), maxRequestsPerSecond: 8 },
-    fuji: { id: CHAINS.fuji.chainId, rpc: rpc("fuji"), maxRequestsPerSecond: 4, ethGetLogsBlockRange: 90 }, // public Fuji RPC caps eth_getLogs at 100 blocks
+    fuji: { id: CHAINS.fuji.chainId, rpc: rpc("fuji"), maxRequestsPerSecond: 8 },
   },
   contracts: {
     OmnitideUSD: {

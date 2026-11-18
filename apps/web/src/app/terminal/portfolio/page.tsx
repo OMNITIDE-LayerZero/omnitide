@@ -10,6 +10,8 @@ import { CollateralPanel } from "@/components/terminal/collateral";
 import { PositionsPanel } from "@/components/terminal/positions";
 import { QuickFund } from "@/components/terminal/quick-fund";
 import { Connect } from "@/components/connect";
+import { InflowRoutes } from "@/components/terminal/routes";
+import { Pulse } from "@/components/landing/pulse";
 
 export default function Portfolio() {
   const { isConnected } = useAccount();
@@ -70,9 +72,16 @@ export default function Portfolio() {
             </p>
           )}
         </div>
-        <div className="rounded-2xl border border-line bg-card">
-          <PositionsPanel />
-        </div>
+        {funded ? (
+          <div className="rounded-2xl border border-line bg-card">
+            <PositionsPanel />
+          </div>
+        ) : (
+          <>
+            <Pulse />
+            <InflowRoutes />
+          </>
+        )}
       </section>
       <aside className="flex flex-col gap-3">
         <CollateralPanel />

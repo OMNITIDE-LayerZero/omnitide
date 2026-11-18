@@ -69,7 +69,7 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
     chainId: 43113,
     eid: 40106,
     endpoint: "0x6edce65403992e310a62460808c4b910d972f10f",
-    rpc: process.env.RPC_FUJI ?? "https://api.avax-test.network/ext/bc/C/rpc",
+    rpc: process.env.RPC_FUJI ?? "https://avalanche-fuji-c-chain-rpc.publicnode.com",
     explorer: "https://testnet.snowtrace.io",
     etherscanApi: "https://api.routescan.io/v2/network/testnet/evm/43113/etherscan/api",
     nativeSymbol: "AVAX",

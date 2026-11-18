@@ -11,7 +11,8 @@ export function price(p: number): string {
 }
 
 export const money = (v: number) => usd2.format(v);
-export const moneyCompact = (v: number) => compact.format(v);
+// under $1K the compact form drops cents ($255.5), so fall back to the full format
+export const moneyCompact = (v: number) => (Math.abs(v) < 1000 ? money(v) : compact.format(v));
 
 export function pct(v: number, digits = 2): string {
   return `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(digits)}%`;
