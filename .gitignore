@@ -40,3 +40,6 @@ test-results/
 packages/contracts/deployments/fork.json
 packages/contracts/abi/
 packages/db/src/generated/
+test-results/
+playwright-report/
+.shot.mjs
