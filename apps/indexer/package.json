@@ -1,0 +1,22 @@
+{
+  "name": "@omnitide/indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@omnitide/contracts": "workspace:*",
+    "hono": "^4.13.19",
+    "ponder": "0.18.9",
+    "viem": "2.58.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "ponder dev --port 4392",
+    "start": "ponder start",
+    "codegen": "ponder codegen",
+    "typecheck": "ponder codegen && tsc --noEmit"
+  }
+}
