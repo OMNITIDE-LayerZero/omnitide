@@ -22,7 +22,7 @@ export default defineConfig({
   },
   networks: {
     ...Object.fromEntries(
-      Object.entries(CHAINS).map(([key, c]) => [key, { type: "http", chainType: "generic", url: c.rpc, accounts, chainId: c.chainId }]),
+      Object.entries(CHAINS).map(([key, c]) => [key, { type: "http", chainType: "generic", url: process.env[`RPC_${c.chainId}`] ?? c.rpc, accounts, chainId: c.chainId }]),
     ),
     // dry-run targets: simulate deploys against live chain state before spending gas
     ...Object.fromEntries(

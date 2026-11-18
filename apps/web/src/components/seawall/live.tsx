@@ -4,6 +4,7 @@ import type { ChainKey } from "@omnitide/contracts/chains";
 import { useSeaWall } from "@/lib/hooks";
 import { SHORT } from "@/lib/chains";
 import { money, units6 } from "@/lib/format";
+import { LayerZeroMessages } from "./messages";
 
 function Bar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
@@ -111,6 +112,7 @@ export function SeaWallLive() {
           </table>
         </div>
       </section>
+      <LayerZeroMessages />
     </div>
   );
 }
