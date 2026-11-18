@@ -1,0 +1,90 @@
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
+import { Hero } from "@/components/landing/hero";
+import { RouteMap } from "@/components/landing/route-map";
+import { Features } from "@/components/landing/features";
+import { MarketsBoard } from "@/components/landing/markets-board";
+import { Pulse } from "@/components/landing/pulse";
+import { SeaWallBand } from "@/components/landing/sea-wall-band";
+import { ContractsTable } from "@/components/landing/contracts-table";
+
+function SectionHead({ tag, title, aside }: { tag: string; title: React.ReactNode; aside?: string }) {
+  return (
+    <div className="grid gap-6 md:grid-cols-[1fr_320px] md:items-end">
+      <div>
+        <p className="tag text-ink-3">{tag}</p>
+        <h2 className="display mt-4 text-[clamp(44px,6vw,80px)] text-ink">{title}</h2>
+      </div>
+      {aside && <p className="text-[14px] leading-[22px] text-ink-2">{aside}</p>}
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <>
+      <SiteHeader />
+      <main>
+        <Hero />
+
+        <section className="engrave bg-navy py-24 text-white sm:py-32">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
+            <div className="grid gap-6 md:grid-cols-[1fr_360px] md:items-end">
+              <div>
+                <p className="tag text-white/60">Topology · hub and spoke</p>
+                <h2 className="display mt-4 text-[clamp(44px,6vw,80px)]">
+                  One book.
+                  <br />
+                  Every chain.
+                </h2>
+              </div>
+              <p className="text-[14px] leading-[22px] text-white/70">
+                Every deposit becomes margin in the same book on Robinhood Chain. No wrapped IOU per network, no split balances, no hunting for the chain your collateral got stuck on.
+              </p>
+            </div>
+            <div className="mt-16">
+              <RouteMap />
+            </div>
+          </div>
+        </section>
+
+        <section className="py-24 sm:py-32">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
+            <SectionHead tag="Shoreline · V1" title={<>Built for the<br />cross-chain trader</>} aside="Six pieces working as one: collateral that travels, a single margin account, orders that wait for you and a pool that is always on the other side." />
+            <div className="mt-16">
+              <Features />
+            </div>
+          </div>
+        </section>
+
+        <section id="markets" className="scroll-mt-16 bg-sky/60 py-24 sm:py-32">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
+            <SectionHead tag="12 markets · crypto and US stocks" title={<>Bitcoin to<br />Nvidia, one margin</>} aside="Crypto majors at up to 10× and US stocks at up to 5×, priced live from Coinbase and Nasdaq and settled in tdUSD." />
+            <div className="mt-12 rounded-2xl border border-line bg-card p-4 sm:p-6">
+              <MarketsBoard />
+            </div>
+            <div className="mt-6">
+              <Pulse />
+            </div>
+          </div>
+        </section>
+
+        <section className="engrave bg-accent py-24 sm:py-32" style={{ backgroundColor: "#1f3dff" }}>
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
+            <SeaWallBand />
+          </div>
+        </section>
+
+        <section id="contracts" className="scroll-mt-16 py-24 sm:py-32">
+          <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
+            <SectionHead tag="Upgradeable proxies · source verified" title={<>The contracts<br />behind the tide</>} aside="Every OMNITIDE contract sits behind a UUPS proxy with its source published on the chain's explorer. These are the addresses the terminal talks to." />
+            <div className="mt-12">
+              <ContractsTable />
+            </div>
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
+    </>
+  );
+}

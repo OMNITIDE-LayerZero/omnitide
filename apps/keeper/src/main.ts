@@ -10,6 +10,7 @@ import { quoteFor, type Quote } from "./prices.js";
 import { recordQuote } from "./candles.js";
 import { oracleDomain, signReport } from "./reports.js";
 import { createExecutor } from "./executor.js";
+import { backfill } from "./backfill.js";
 
 const env = loadEnv();
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
@@ -84,6 +85,7 @@ const executor = createExecutor({
 });
 let executorState: Record<string, unknown> = {};
 
+void backfill(db, MARKETS, log);
 every(3_000, "crypto", () => pollPrices("crypto"));
 every(10_000, "stocks", () => pollPrices("stock"));
 if (env.EXECUTE === "1") every(5_000, "executor", async () => (executorState = await executor.tick()));

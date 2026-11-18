@@ -1,0 +1,259 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Ink on paper by day, the night watch by dark. One accent: ultramarine. */
+:root {
+  --bg: #f4f6fa;
+  --bg-deep: #eceff5;
+  --card: #ffffff;
+  --raised: #e9edf4;
+  --sky: #e3e9ff;
+  --text: #0e1430;
+  --text-2: #475069;
+  --text-3: #687089;
+  --line: rgb(14 20 48 / 0.09);
+  --line-strong: rgb(14 20 48 / 0.16);
+  --accent: #1f3dff;
+  --accent-ink: #1b34d6;
+  --on-accent: #ffffff;
+  --navy: #070c48;
+  --navy-2: #0c1466;
+  --flood: #15803d;
+  --ebb: #c42b2b;
+  --warn: #a16207;
+  --shadow-sm: 0 1px 2px rgb(14 20 48 / 0.05);
+  --shadow-md: 0 8px 24px rgb(14 20 48 / 0.07);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0b0d14;
+  --bg-deep: #07080d;
+  --card: #11141c;
+  --raised: #1a1e28;
+  --sky: #10163a;
+  --text: #eef0f5;
+  --text-2: #a3a9b8;
+  --text-3: #7d8598;
+  --line: rgb(238 240 245 / 0.08);
+  --line-strong: rgb(238 240 245 / 0.14);
+  --accent: #5671ff;
+  --accent-ink: #8296ff;
+  --on-accent: #ffffff;
+  --navy: #070b33;
+  --navy-2: #0b1146;
+  --flood: #4cc38a;
+  --ebb: #e5484d;
+  --warn: #e2a336;
+  --shadow-sm: none;
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-deep: var(--bg-deep);
+  --color-card: var(--card);
+  --color-raised: var(--raised);
+  --color-sky: var(--sky);
+  --color-ink: var(--text);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-on-accent: var(--on-accent);
+  --color-navy: var(--navy);
+  --color-navy-2: var(--navy-2);
+  --color-flood: var(--flood);
+  --color-ebb: var(--ebb);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-barlow), var(--font-geist), sans-serif;
+  --ease-tide: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 22px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@layer components {
+/* Condensed brand display: uppercase, light, only at large sizes. */
+.display {
+  font-family: var(--font-display);
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.98;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Fine engraving texture for navy and ultramarine bands, drawn in code. */
+.engrave {
+  background-image: repeating-linear-gradient(115deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 6px);
+}
+
+/* Tide-table tag, the reference's mono labels in sentence case. */
+.tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 150ms var(--ease-tide), color 150ms var(--ease-tide), border-color 150ms var(--ease-tide), transform 120ms var(--ease-tide);
+  user-select: none;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+.btn-primary:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--accent) 88%, black);
+}
+.btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line-strong);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--raised);
+}
+.btn-ghost {
+  color: var(--text-2);
+}
+.btn-ghost:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--raised);
+}
+.btn-lg {
+  height: 48px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+.btn-sm {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-3);
+}
+
+.field {
+  height: 40px;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  padding: 0 12px;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 150ms var(--ease-tide);
+}
+.field:hover {
+  border-color: color-mix(in oklab, var(--text) 28%, transparent);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+}
+
+.rise {
+  animation: rise 420ms var(--ease-tide) both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Changed numbers flash their direction once, then settle. */
+.tick-up {
+  animation: tickUp 900ms var(--ease-tide);
+}
+.tick-down {
+  animation: tickDown 900ms var(--ease-tide);
+}
+@keyframes tickUp {
+  from {
+    color: var(--flood);
+  }
+}
+@keyframes tickDown {
+  from {
+    color: var(--ebb);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

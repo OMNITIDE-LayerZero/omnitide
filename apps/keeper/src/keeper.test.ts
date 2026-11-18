@@ -5,6 +5,7 @@ import { cleanNumber } from "./prices.js";
 import { bucketStart } from "./candles.js";
 import { oracleDomain, REPORT_TYPES, signReport } from "./reports.js";
 import { orderTriggered } from "./executor.js";
+import { aggregate, nasdaqPointToUtc } from "./backfill.js";
 
 describe("keeper", () => {
   it("parses venue number formats", () => {
@@ -44,5 +45,15 @@ describe("keeper", () => {
     expect(orderTriggered(2, -1n, P, 101n)).toBe(true); // take-profit sell above
     expect(orderTriggered(1, -1n, P, 99n)).toBe(true); // stop sell below
     expect(orderTriggered(1, -1n, P, 101n)).toBe(false);
+  });
+
+  it("converts Nasdaq wall-clock points and aggregates bars", () => {
+    // "4:00 AM ET" on 2026-11-18 (EST, UTC-5) is 09:00 UTC
+    expect(new Date(nasdaqPointToUtc(Date.UTC(2026, 10, 18, 4, 0))).toISOString()).toBe("2026-11-18T09:00:00.000Z");
+    // July is EDT, UTC-4
+    expect(new Date(nasdaqPointToUtc(Date.UTC(2026, 6, 1, 9, 30))).toISOString()).toBe("2026-07-01T13:30:00.000Z");
+    const t0 = Date.UTC(2026, 10, 18, 14, 0);
+    const bars = [1, 3, 2].map((p, i) => ({ start: t0 + i * 60_000, open: p, high: p, low: p, close: p }));
+    expect(aggregate(bars, 900)).toEqual([{ start: t0, open: 1, high: 3, low: 1, close: 2 }]);
   });
 });
