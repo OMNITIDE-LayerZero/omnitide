@@ -46,6 +46,7 @@
     "./chains": "./chains.ts",
     "./markets": "./markets.ts",
     "./lz-options": "./lz-options.ts",
-    "./deployments/*": "./deployments/*"
+    "./deployments/*": "./deployments/*",
+    "./deployments": "./deployments/index.ts"
   }
 }

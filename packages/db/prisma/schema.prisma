@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// OHLC candles built by the keeper from live venue prices (USD, 1e-8 precision as Decimal).
+model Candle {
+  feed     String
+  interval Int      @db.SmallInt // seconds: 60, 900, 3600
+  start    DateTime @db.Timestamptz(3)
+  open     Decimal  @db.Decimal(24, 8)
+  high     Decimal  @db.Decimal(24, 8)
+  low      Decimal  @db.Decimal(24, 8)
+  close    Decimal  @db.Decimal(24, 8)
+  ticks    Int      @default(1)
+
+  @@id([feed, interval, start])
+  @@index([feed, interval, start(sort: Desc)])
+}
+
+/// Latest price per feed plus its venue, for the markets board and health checks.
+model PriceLatest {
+  feed      String   @id
+  price     Decimal  @db.Decimal(24, 8)
+  source    String
+  observed  DateTime @db.Timestamptz(3)
+  change24h Decimal? @db.Decimal(12, 6)
+}
+
+/// Liveness of background services (keeper loops), read by /api/health.
+model Heartbeat {
+  service String   @id
+  beatAt  DateTime @db.Timestamptz(3)
+  detail  Json?
+}
