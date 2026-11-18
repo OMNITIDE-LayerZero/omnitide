@@ -1,0 +1,14 @@
+diff --git a/package.json b/package.json
+index 093e940e7f67a3744ca1fcabf3695428408530c3..6ed44e8631387dc588cc0f02a6231747ec71dfa2 100644
+--- a/package.json
++++ b/package.json
+@@ -22,7 +22,8 @@
+     "./artifacts/*.json": {
+       "require": "./artifacts/*.json",
+       "imports": "./artifacts/*.json"
+-    }
++    },
++    "./contracts/*": "./contracts/*"
+   },
+   "files": [
+     "artifacts/Fee.sol/Fee.json",

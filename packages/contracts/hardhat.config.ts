@@ -1,0 +1,32 @@
+import { configVariable, defineConfig } from "hardhat/config";
+import hardhatEthers from "@nomicfoundation/hardhat-ethers";
+import hardhatEthersChaiMatchers from "@nomicfoundation/hardhat-ethers-chai-matchers";
+import hardhatMocha from "@nomicfoundation/hardhat-mocha";
+import hardhatNetworkHelpers from "@nomicfoundation/hardhat-network-helpers";
+import hardhatVerify from "@nomicfoundation/hardhat-verify";
+import hardhatUpgrades from "@openzeppelin/hardhat-upgrades";
+import { CHAINS } from "./chains.js";
+
+const accounts = [configVariable("DEPLOYER_PRIVATE_KEY")];
+
+export default defineConfig({
+  plugins: [hardhatEthers, hardhatEthersChaiMatchers, hardhatMocha, hardhatNetworkHelpers, hardhatVerify, hardhatUpgrades],
+  solidity: {
+    version: "0.8.28",
+    npmFilesToBuild: ["@layerzerolabs/test-devtools-evm-hardhat/contracts/mocks/EndpointV2Mock.sol"],
+    settings: {
+      optimizer: { enabled: true, runs: 200 },
+      evmVersion: "cancun",
+    },
+  },
+  networks: Object.fromEntries(
+    Object.entries(CHAINS).map(([key, c]) => [key, { type: "http", chainType: "generic", url: c.rpc, accounts, chainId: c.chainId }]),
+  ),
+  chainDescriptors: Object.fromEntries(
+    Object.values(CHAINS).map((c) => [
+      c.chainId,
+      { name: c.name, blockExplorers: c.blockscout ? { blockscout: { name: c.name, url: c.explorer, apiUrl: c.blockscout } } : {} },
+    ]),
+  ),
+  verify: { etherscan: { enabled: false } },
+});

@@ -1,0 +1,14 @@
+diff --git a/package.json b/package.json
+index 047c24de75d84f8c81b6ed9877709c12523b4ade..6f182cb3807bed9c0eafde53aa0d8b95d0141344 100644
+--- a/package.json
++++ b/package.json
+@@ -20,7 +20,8 @@
+     "./artifacts/*.json": {
+       "require": "./artifacts/*.json",
+       "imports": "./artifacts/*.json"
+-    }
++    },
++    "./contracts/*": "./contracts/*"
+   },
+   "files": [
+     "artifacts/**/*",

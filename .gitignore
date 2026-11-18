@@ -1,0 +1,39 @@
+# deps & builds
+node_modules/
+.next/
+out/
+dist/
+build/
+.turbo/
+coverage/
+*.tsbuildinfo
+.ponder/
+generated/
+
+# contracts
+packages/contracts/artifacts/
+packages/contracts/cache/
+packages/contracts/types/
+packages/contracts/.openzeppelin/unknown-*.json
+
+# env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.private*
+*.secret*
+
+# docs & assistant files (kept out of the repo)
+docs/
+CLAUDE.md
+.claude/
+AGENTS.md
+
+# os / editor
+.DS_Store
+.vscode/
+.idea/
+playwright-report/
+test-results/
