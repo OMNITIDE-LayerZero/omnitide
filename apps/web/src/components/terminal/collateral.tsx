@@ -16,7 +16,7 @@ import { Connect } from "../connect";
 
 type Tab = "inflow" | "ebb" | "faucet";
 
-function sendParam(dst: ChainKey, to: Address, amount: bigint, compose: Address | null) {
+export function sendParam(dst: ChainKey, to: Address, amount: bigint, compose: Address | null) {
   return {
     dstEid: CHAINS[dst].eid,
     to: pad(to, { size: 32 }),
@@ -29,7 +29,7 @@ function sendParam(dst: ChainKey, to: Address, amount: bigint, compose: Address 
 }
 
 /** LayerZero fee for an OFT send from `from`, read live from the token contract. */
-function useQuote(from: ChainKey | undefined, dst: ChainKey | undefined, to: Address | undefined, amount: bigint, compose: Address | null) {
+export function useQuote(from: ChainKey | undefined, dst: ChainKey | undefined, to: Address | undefined, amount: bigint, compose: Address | null) {
   const client = usePublicClient({ chainId: from ? CHAINS[from].chainId : undefined });
   return useQuery({
     queryKey: ["quote", from, dst, to, amount.toString(), compose],
@@ -42,7 +42,7 @@ function useQuote(from: ChainKey | undefined, dst: ChainKey | undefined, to: Add
   });
 }
 
-const amountUnits = (v: string) => {
+export const amountUnits = (v: string) => {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? parseUnits(n.toFixed(6), 6) : 0n;
 };

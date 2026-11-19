@@ -16,11 +16,23 @@
     },
     "OmnitideClearinghouse": {
       "proxy": "0x31fcb7B2DaC407ECC2AB51c1764204Bd3a882F1e",
-      "implementation": "0x1662f373276f5313a0daD67cE7C6857695C3Bf99",
+      "implementation": "0x69F8dD983896AafcD6D478a404e12b0D2a2ef837",
       "deployTx": "0x4bdeeb24632469a43c8e10f66e09108cc82571be9baf226f5c1ea30754f31707",
       "block": 154985732
     },
-    "wired": "hyperEvmTestnet,arbitrumSepolia,sepolia"
+    "wired": "hyperEvmTestnet,arbitrumSepolia,sepolia",
+    "OmnitideHarbor": {
+      "proxy": "0x651870e2F6472244958C92E66F6AB5881a3D3932",
+      "implementation": "0x005a647DAd4A4257684ac558F3E47a15559bcC13",
+      "deployTx": "0xf945fe371f87f9602c5af8fe2ccdef8eb0747a1c2cd7d837f7a14769818f2a0f",
+      "block": 155614668
+    },
+    "OmnitideHarborShareAdapter": {
+      "proxy": "0xfbD6C48Cc65f4CCB87636259DF2bf8B3018b17A3",
+      "implementation": "0xF9F801EA7ac160aA0e76572cAbf71e9f3800A85b",
+      "deployTx": "0xc2b0b7d31710e8b449141419d201a4b94ff65747622433a6e96ad99001fb7300",
+      "block": 155614711
+    }
   },
   "sepolia": {
     "chainId": 11155111,
@@ -75,7 +87,19 @@
       "deployTx": "0xf38cb7c81073e6d2230e67d9526a1f92a2bfc737cc827883d13397ef050c26f7",
       "block": 330834028
     },
-    "wired": "robinhoodTestnet,hyperEvmTestnet,sepolia"
+    "wired": "robinhoodTestnet,hyperEvmTestnet,sepolia",
+    "OmnitideHarborShare": {
+      "proxy": "0xad5a1449b3d181bA0F8aB7bF03e3CD86B6Fc1A22",
+      "implementation": "0xB38706716FB5ac3A08A7570819eafFd22d8801F7",
+      "deployTx": "0xc1c6dac26a383ae68b0d078d3dca76272c251da75fdb480d28942782f6a21860",
+      "block": 330852671
+    },
+    "OmnitideTideReader": {
+      "proxy": "0x84716d9338b8dA1Be20caa4904391bBf0670C73C",
+      "implementation": "0x7a9263bA0757760E1753255959dBFb20400bc30B",
+      "deployTx": "0x07bf24fadf37e8e406d9f5a636b4ed339778dc27fe401b7eebb08dba319078b3",
+      "block": 330852707
+    }
   },
   "hyperEvmTestnet": {
     "chainId": 998,

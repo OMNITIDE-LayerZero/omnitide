@@ -39,3 +39,37 @@ model Heartbeat {
   beatAt  DateTime @db.Timestamptz(3)
   detail  Json?
 }
+
+/// Account equity every few minutes, taken by the keeper for the History equity curve and PnL reports (tdUSD).
+model AccountSnapshot {
+  account     String // lowercase 0x address
+  at          DateTime @db.Timestamptz(3)
+  equity      Decimal  @db.Decimal(24, 6)
+  collateral  Decimal  @db.Decimal(24, 6)
+  upnl        Decimal  @db.Decimal(24, 6)
+  notional    Decimal  @db.Decimal(24, 6)
+  maintenance Decimal  @db.Decimal(24, 6)
+
+  @@id([account, at])
+}
+
+/// Harbor vault size and share supply over time; share price = totalAssets / totalSupply.
+model HarborSnapshot {
+  at          DateTime @id @db.Timestamptz(3)
+  totalAssets Decimal  @db.Decimal(24, 6)
+  totalSupply Decimal  @db.Decimal(24, 6)
+}
+
+/// Riptide Alerts: one subscription per account and channel, signed by the account owner.
+model AlertSubscription {
+  id         String    @id @default(cuid())
+  account    String // lowercase 0x address
+  channel    String // push | telegram | email
+  target     Json // push subscription, { email }, or { code, chatId }
+  threshold  Float // alert when the tide gauge level falls below this (0..1)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  lastSentAt DateTime? @db.Timestamptz(3)
+  lastLevel  Float?
+
+  @@unique([account, channel])
+}

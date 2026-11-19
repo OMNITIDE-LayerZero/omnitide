@@ -1,6 +1,6 @@
 import { upstream } from "@/lib/server/upstream";
 
-const PATHS = new Set(["stats", "trades", "positions", "orders", "flows", "bridge", "leaderboard"]);
+const PATHS = new Set(["stats", "trades", "positions", "orders", "flows", "bridge", "leaderboard", "harbor", "tide", "book"]);
 const PARAMS = new Set(["account", "limit"]);
 
 export async function GET(req: Request, ctx: { params: Promise<{ path: string[] }> }) {

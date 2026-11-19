@@ -86,6 +86,73 @@ if (chain.hub) {
   }
 }
 
+// ───────── V2 Current: Harbor OVault on the hub, its share OFT and the lzRead Tide reader on Arbitrum ─────────
+const lzOpts = { kind: "uups" as const, constructorArgs: [chain.endpoint], unsafeAllow: [...OFT_UNSAFE_ALLOW] };
+
+if (chain.hub) {
+  const chAddr = dep.OmnitideClearinghouse!.proxy;
+  const CH = await ethers.getContractFactory("OmnitideClearinghouse");
+  if (dep.OmnitideClearinghouse!.implementation !== (await up.erc1967.getImplementationAddress(chAddr)) || !(await hasHarborHooks(chAddr))) {
+    await up.upgradeProxy(chAddr, CH, { kind: "uups" });
+    dep.OmnitideClearinghouse!.implementation = await up.erc1967.getImplementationAddress(chAddr);
+    saveDeployments(all);
+    console.log("OmnitideClearinghouse upgraded →", dep.OmnitideClearinghouse!.implementation);
+  }
+  if (!dep.OmnitideHarbor) {
+    const harbor = await up.deployProxy(await ethers.getContractFactory("OmnitideHarbor"), [DEPLOYER, DEPLOYER, chAddr], { kind: "uups" });
+    await harbor.waitForDeployment();
+    dep.OmnitideHarbor = await record(harbor);
+    saveDeployments(all);
+    console.log("OmnitideHarbor", dep.OmnitideHarbor.proxy);
+  }
+  if (!dep.OmnitideHarborShareAdapter) {
+    const adapter = await up.deployProxy(await ethers.getContractFactory("OmnitideHarborShareAdapter"), [DEPLOYER], {
+      ...lzOpts,
+      constructorArgs: [dep.OmnitideHarbor.proxy, chain.endpoint],
+    });
+    await adapter.waitForDeployment();
+    dep.OmnitideHarborShareAdapter = await record(adapter);
+    saveDeployments(all);
+    console.log("OmnitideHarborShareAdapter", dep.OmnitideHarborShareAdapter.proxy);
+  }
+  const harbor = await ethers.getContractAt("OmnitideHarbor", dep.OmnitideHarbor.proxy);
+  if ((await harbor.shareOFT()) !== dep.OmnitideHarborShareAdapter.proxy) await (await harbor.setShareOFT(dep.OmnitideHarborShareAdapter.proxy)).wait();
+
+  // hand the Tide Pool to Harbor: the deployer withdraws the seed and deposits it back as Harbor's first LP
+  const ch = await ethers.getContractAt("OmnitideClearinghouse", chAddr);
+  if ((await ch.harbor()) === ethers.ZeroAddress) {
+    const pool = await ch.poolBalance();
+    if (pool > 0n) await (await ch.defundPool(pool, DEPLOYER)).wait();
+    await (await ch.setHarbor(dep.OmnitideHarbor.proxy)).wait();
+    if (pool > 0n) {
+      const usd = await ethers.getContractAt("OmnitideUSD", dep.OmnitideUSD!.proxy);
+      await (await usd.approve(dep.OmnitideHarbor.proxy, pool)).wait();
+      await (await harbor.deposit(pool, DEPLOYER)).wait();
+    }
+    console.log(`Tide Pool (${ethers.formatUnits(pool, 6)} tdUSD) now owned by Harbor`);
+  }
+} else {
+  if (chain.harborShares && !dep.OmnitideHarborShare) {
+    const share = await up.deployProxy(await ethers.getContractFactory("OmnitideHarborShare"), [DEPLOYER], lzOpts);
+    await share.waitForDeployment();
+    dep.OmnitideHarborShare = await record(share);
+    saveDeployments(all);
+    console.log("OmnitideHarborShare", dep.OmnitideHarborShare.proxy);
+  }
+  if (chain.lzRead && !dep.OmnitideTideReader) {
+    const targets = chain.lzRead.map((k) => ({ eid: CHAINS[k].eid, token: all[k]!.OmnitideUSD!.proxy }));
+    const reader = await up.deployProxy(await ethers.getContractFactory("OmnitideTideReader"), [DEPLOYER, targets], lzOpts);
+    await reader.waitForDeployment();
+    dep.OmnitideTideReader = await record(reader);
+    saveDeployments(all);
+    console.log("OmnitideTideReader", dep.OmnitideTideReader.proxy, "reads", chain.lzRead.join(", "));
+  }
+}
+
+async function hasHarborHooks(addr: string) {
+  return ethers.provider.call({ to: addr, data: ethers.id("harbor()").slice(0, 10) }).then(() => true, () => false);
+}
+
 const spent = startBalance - (await ethers.provider.getBalance(signer.address));
 const nonce = await ethers.provider.getTransactionCount(signer.address);
 console.log(`spent ${ethers.formatEther(spent)} ${chain.nativeSymbol} · nonce ${nonce}`);

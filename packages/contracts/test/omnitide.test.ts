@@ -292,3 +292,193 @@ describe("Upgrades", () => {
     await expect(oracleImpl.initialize(ctx.alice.address, ctx.alice.address, 1)).to.be.revertedWithCustomError(oracleImpl, "InvalidInitialization");
   });
 });
+
+async function harborFixture() {
+  const ctx = await deploy();
+  const { owner, guardian, ch, hubEp, spokeEp, hubUsd } = ctx;
+  const opts = { kind: "uups" as const, initializer: "initialize" };
+  const harbor = await up.deployProxy(await ethers.getContractFactory("OmnitideHarbor"), [owner.address, guardian.address, await ch.getAddress()], opts);
+  const lz = { ...opts, unsafeAllow: [...OFT_UNSAFE_ALLOW] };
+  const adapter = await up.deployProxy(await ethers.getContractFactory("OmnitideHarborShareAdapter"), [owner.address], { ...lz, constructorArgs: [await harbor.getAddress(), await hubEp.getAddress()] });
+  const spokeShare = await up.deployProxy(await ethers.getContractFactory("OmnitideHarborShare"), [owner.address], { ...lz, constructorArgs: [await spokeEp.getAddress()] });
+
+  await hubEp.setDestLzEndpoint(await spokeShare.getAddress(), await spokeEp.getAddress());
+  await spokeEp.setDestLzEndpoint(await adapter.getAddress(), await hubEp.getAddress());
+  await adapter.setPeer(SPOKE, ethers.zeroPadValue(await spokeShare.getAddress(), 32));
+  await spokeShare.setPeer(HUB, ethers.zeroPadValue(await adapter.getAddress(), 32));
+  for (const [oft, dst] of [[adapter, SPOKE], [spokeShare, HUB]] as const) {
+    await oft.setEnforcedOptions([
+      { eid: dst, msgType: MSG_SEND, options: lzReceiveOption(80_000n) },
+      { eid: dst, msgType: MSG_SEND_AND_CALL, options: lzReceiveOption(80_000n) },
+    ]);
+  }
+  await harbor.setShareOFT(await adapter.getAddress());
+
+  // hand the seeded Tide Pool to Harbor: defund, then deposit as its first LP
+  const seed = usd(1_000);
+  await ch.defundPool(seed, owner.address);
+  await ch.setHarbor(await harbor.getAddress());
+  await hubUsd.approve(await harbor.getAddress(), seed);
+  await harbor.deposit(seed, owner.address);
+
+  const endpoint = await networkHelpers.impersonateAccount(await hubEp.getAddress()).then(() => ethers.getSigner(hubEp.target as string));
+  await networkHelpers.setBalance(await hubEp.getAddress(), 10n * E18);
+  return { ...ctx, harbor, adapter, spokeShare, endpoint };
+}
+
+const composed = (nonce: number, src: number, amount: bigint, from: string, inner: string) =>
+  ethers.solidityPacked(["uint64", "uint32", "uint256", "bytes32", "bytes"], [nonce, src, amount, ethers.zeroPadValue(from, 32), inner]);
+const harborMsg = (receiver: string, dstEid: number, minOut: bigint) =>
+  ethers.AbiCoder.defaultAbiCoder().encode(["address", "uint32", "uint256"], [receiver, dstEid, minOut]);
+
+describe("OmnitideHarbor (OVault)", () => {
+  it("takes over the Tide Pool 1:1 and closes owner defunding", async () => {
+    const { harbor, ch, owner, alice } = await networkHelpers.loadFixture(harborFixture);
+    expect(await harbor.totalAssets()).to.equal(usd(1_000));
+    expect(await harbor.balanceOf(owner.address)).to.equal(usd(1_000));
+    expect(await harbor.decimals()).to.equal(6);
+    await expect(ch.defundPool(1, owner.address)).to.be.revertedWithCustomError(ch, "HarborActive");
+    await expect(ch.connect(alice).drawPool(1, alice.address)).to.be.revertedWithCustomError(ch, "NotHarbor");
+    await expect(ch.connect(alice).setHarbor(alice.address)).to.be.revertedWithCustomError(ch, "OwnableUnauthorizedAccount");
+  });
+
+  it("earns trading fees for depositors and pays them out on redeem", async () => {
+    const ctx = await networkHelpers.loadFixture(harborFixture);
+    const { harbor, ch, hubUsd, alice, bob } = ctx;
+    await hubUsd.connect(bob).drip();
+    await hubUsd.connect(bob).approve(await harbor.getAddress(), usd(500));
+    await harbor.connect(bob).deposit(usd(500), bob.address);
+    expect(await harbor.balanceOf(bob.address)).to.equal(usd(500));
+
+    await depositLocal(ctx, alice, usd(1_000));
+    const size = E18 / 10n;
+    await ch.connect(alice).trade(0, size, 60_100n * E18, [await report(ctx, BTC, 60_000n * E18)]);
+    await ch.connect(alice).trade(0, -size, 0, [await report(ctx, BTC, 60_000n * E18)]);
+    // 12 tdUSD of fees went to the pool: 1,500 → 1,512
+    expect(await harbor.totalAssets()).to.equal(usd(1_512));
+    const out = await harbor.previewRedeem(usd(500));
+    expect(out).to.be.greaterThan(usd(503));
+    const before = await hubUsd.balanceOf(bob.address);
+    await harbor.connect(bob).redeem(usd(500), bob.address, bob.address);
+    expect((await hubUsd.balanceOf(bob.address)) - before).to.equal(out);
+  });
+
+  it("pause stops deposits but never redemptions", async () => {
+    const { harbor, hubUsd, guardian, owner } = await networkHelpers.loadFixture(harborFixture);
+    await harbor.connect(guardian).pause();
+    expect(await harbor.maxDeposit(owner.address)).to.equal(0);
+    await hubUsd.approve(await harbor.getAddress(), 1);
+    await expect(harbor.deposit(1, owner.address)).to.be.revertedWithCustomError(harbor, "ERC4626ExceededMaxDeposit");
+    await harbor.redeem(usd(10), owner.address, owner.address);
+  });
+
+  it("deposits tdUSD from a spoke and ships the shares back to that spoke", async () => {
+    const { harbor, adapter, spokeShare, hubUsd, spokeUsd, endpoint, alice } = await networkHelpers.loadFixture(harborFixture);
+    await spokeUsd.connect(alice).drip();
+    const inner = harborMsg(alice.address, SPOKE, usd(200));
+    const p = { dstEid: HUB, to: ethers.zeroPadValue(await harbor.getAddress(), 32), amountLD: usd(200), minAmountLD: usd(200), extraOptions: "0x", composeMsg: inner, oftCmd: "0x" };
+    const q = await spokeUsd.quoteSend(p, false);
+    await spokeUsd.connect(alice).send(p, { nativeFee: q.nativeFee, lzTokenFee: 0n }, alice.address, { value: q.nativeFee });
+    expect(await hubUsd.balanceOf(await harbor.getAddress())).to.equal(usd(200));
+
+    const back = await adapter.quoteSend({ dstEid: SPOKE, to: ethers.zeroPadValue(alice.address, 32), amountLD: usd(200), minAmountLD: usd(200), extraOptions: "0x", composeMsg: "0x", oftCmd: "0x" }, false);
+    await expect(harbor.lzCompose(await hubUsd.getAddress(), ethers.id("g"), composed(1, SPOKE, usd(200), alice.address, inner), alice.address, "0x"))
+      .to.be.revertedWithCustomError(harbor, "NotEndpoint");
+    await expect(harbor.connect(endpoint).lzCompose(await hubUsd.getAddress(), ethers.id("g"), composed(1, SPOKE, usd(200), alice.address, inner), alice.address, "0x", { value: back.nativeFee }))
+      .to.emit(harbor, "Composed").withArgs(ethers.id("g"), SPOKE, alice.address, SPOKE, true, usd(200), usd(200), true);
+    expect(await spokeShare.balanceOf(alice.address)).to.equal(usd(200));
+    expect(await harbor.balanceOf(await adapter.getAddress())).to.equal(usd(200));
+    expect(await harbor.totalAssets()).to.equal(usd(1_200));
+  });
+
+  it("hands the deposit back on the hub when the return leg is unpaid or slips", async () => {
+    const { harbor, hubUsd, spokeUsd, endpoint, alice } = await networkHelpers.loadFixture(harborFixture);
+    await spokeUsd.connect(alice).drip();
+    const inner = harborMsg(alice.address, SPOKE, usd(200));
+    const p = { dstEid: HUB, to: ethers.zeroPadValue(await harbor.getAddress(), 32), amountLD: usd(200), minAmountLD: usd(200), extraOptions: "0x", composeMsg: inner, oftCmd: "0x" };
+    const q = await spokeUsd.quoteSend(p, false);
+    await spokeUsd.connect(alice).send(p, { nativeFee: q.nativeFee, lzTokenFee: 0n }, alice.address, { value: q.nativeFee });
+    await expect(harbor.connect(endpoint).lzCompose(await hubUsd.getAddress(), ethers.id("g"), composed(1, SPOKE, usd(200), alice.address, inner), alice.address, "0x"))
+      .to.emit(harbor, "Composed").withArgs(ethers.id("g"), SPOKE, alice.address, HUB, true, usd(200), 0, false);
+    expect(await hubUsd.balanceOf(alice.address)).to.equal(usd(200));
+    expect(await harbor.totalAssets()).to.equal(usd(1_000));
+    await expect(harbor.connect(endpoint).lzCompose(alice.address, ethers.id("g"), composed(1, SPOKE, 1n, alice.address, inner), alice.address, "0x"))
+      .to.be.revertedWithCustomError(harbor, "UnknownSource");
+  });
+
+  it("redeems shares arriving from a spoke and sends tdUSD to the chosen chain", async () => {
+    const { harbor, adapter, spokeShare, hubUsd, spokeUsd, endpoint, owner, alice } = await networkHelpers.loadFixture(harborFixture);
+    // owner moves 300 shares to alice on the spoke
+    await harbor.approve(await adapter.getAddress(), usd(300));
+    const out = { dstEid: SPOKE, to: ethers.zeroPadValue(alice.address, 32), amountLD: usd(300), minAmountLD: usd(300), extraOptions: "0x", composeMsg: "0x", oftCmd: "0x" };
+    const qo = await adapter.quoteSend(out, false);
+    await adapter.send(out, { nativeFee: qo.nativeFee, lzTokenFee: 0n }, owner.address, { value: qo.nativeFee });
+    expect(await spokeShare.balanceOf(alice.address)).to.equal(usd(300));
+
+    const inner = harborMsg(alice.address, SPOKE, usd(300));
+    const home = { dstEid: HUB, to: ethers.zeroPadValue(await harbor.getAddress(), 32), amountLD: usd(300), minAmountLD: usd(300), extraOptions: "0x", composeMsg: inner, oftCmd: "0x" };
+    const qh = await spokeShare.quoteSend(home, false);
+    await spokeShare.connect(alice).send(home, { nativeFee: qh.nativeFee, lzTokenFee: 0n }, alice.address, { value: qh.nativeFee });
+    expect(await harbor.balanceOf(await harbor.getAddress())).to.equal(usd(300));
+
+    const fee = await hubUsd.quoteSend({ ...out, amountLD: usd(300), minAmountLD: usd(300) }, false);
+    await expect(harbor.connect(endpoint).lzCompose(await adapter.getAddress(), ethers.id("r"), composed(2, SPOKE, usd(300), alice.address, inner), alice.address, "0x", { value: fee.nativeFee }))
+      .to.emit(harbor, "Composed").withArgs(ethers.id("r"), SPOKE, alice.address, SPOKE, false, usd(300), usd(300), true);
+    expect(await spokeUsd.balanceOf(alice.address)).to.equal(usd(300));
+    expect(await harbor.totalSupply()).to.equal(usd(700));
+    expect(await harbor.totalAssets()).to.equal(usd(700));
+  });
+
+  it("upgrades in place and locks its implementation", async () => {
+    const { harbor, alice } = await networkHelpers.loadFixture(harborFixture);
+    const impl = await up.erc1967.getImplementationAddress(await harbor.getAddress());
+    const h = await ethers.getContractAt("OmnitideHarbor", impl);
+    await expect(h.initialize(alice.address, alice.address, alice.address)).to.be.revertedWithCustomError(h, "InvalidInitialization");
+    await expect(harbor.connect(alice).upgradeToAndCall(impl, "0x")).to.be.revertedWithCustomError(harbor, "OwnableUnauthorizedAccount");
+  });
+});
+
+describe("OmnitideTideReader (lzRead)", () => {
+  const READ_CHANNEL = 4294967295;
+  async function readerFixture() {
+    const ctx = await deploy();
+    const targets = [
+      { eid: SPOKE, token: await ctx.spokeUsd.getAddress() },
+      { eid: HUB, token: await ctx.hubUsd.getAddress() },
+    ];
+    const reader = await up.deployProxy(await ethers.getContractFactory("OmnitideTideReader"), [ctx.owner.address, targets], {
+      kind: "uups",
+      initializer: "initialize",
+      constructorArgs: [await ctx.hubEp.getAddress()],
+      unsafeAllow: [...OFT_UNSAFE_ALLOW],
+    });
+    const endpoint = await networkHelpers.impersonateAccount(await ctx.hubEp.getAddress()).then(() => ethers.getSigner(ctx.hubEp.target as string));
+    await networkHelpers.setBalance(await ctx.hubEp.getAddress(), E18);
+    return { ...ctx, reader, endpoint, targets };
+  }
+
+  it("encodes one totalSupply request per target", async () => {
+    const { reader, targets } = await networkHelpers.loadFixture(readerFixture);
+    const cmd = await reader.command(1_700_000_000);
+    // header: version 1, label 1, 2 requests; then per request 1+2+2+2 bytes + 35 + 4 calldata
+    expect(cmd.slice(0, 14)).to.equal("0x000100010002");
+    expect((cmd.length - 2) / 2).to.equal(6 + 2 * (7 + 39));
+    expect(cmd.toLowerCase()).to.contain(targets[0]!.token.slice(2).toLowerCase());
+    expect(await reader.peers(READ_CHANNEL)).to.equal(ethers.zeroPadValue(await reader.getAddress(), 32));
+  });
+
+  it("stores DVN-verified supplies from the read channel only", async () => {
+    const { reader, endpoint, alice } = await networkHelpers.loadFixture(readerFixture);
+    const self = ethers.zeroPadValue(await reader.getAddress(), 32);
+    const payload = ethers.solidityPacked(["uint256", "uint256"], [usd(900), usd(250_000)]);
+    await expect(reader.connect(endpoint).lzReceive({ srcEid: READ_CHANNEL, sender: self, nonce: 1 }, ethers.id("q"), payload, alice.address, "0x"))
+      .to.emit(reader, "TideRead");
+    expect((await reader.readings(SPOKE)).supply).to.equal(usd(900));
+    expect((await reader.readings(HUB)).supply).to.equal(usd(250_000));
+    await expect(reader.connect(endpoint).lzReceive({ srcEid: READ_CHANNEL, sender: self, nonce: 2 }, ethers.id("q2"), "0x01", alice.address, "0x"))
+      .to.be.revertedWithCustomError(reader, "BadResponse");
+    await expect(reader.connect(endpoint).lzReceive({ srcEid: SPOKE, sender: self, nonce: 1 }, ethers.id("q3"), payload, alice.address, "0x"))
+      .to.be.revertedWithCustomError(reader, "NoPeer");
+    await expect(reader.connect(alice).setTargets([])).to.be.revertedWithCustomError(reader, "OwnableUnauthorizedAccount");
+  });
+});

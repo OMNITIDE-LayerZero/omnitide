@@ -7,6 +7,10 @@ const ROLE: Record<string, string> = {
   OmnitideClearinghouse: "Cross-margin book, orders, liquidations, Inflow via lzCompose",
   OmnitideOracle: "Verifies EIP-712 signed price reports, 120 s max age",
   OmnitideUSD: "tdUSD omnichain collateral (LayerZero OFT)",
+  OmnitideHarbor: "Harbor OVault (ERC-4626) that owns the Tide Pool; composes cross-chain deposits and redemptions",
+  OmnitideHarborShareAdapter: "Locks htdUSD on the hub so Harbor shares travel as an OFT",
+  OmnitideHarborShare: "htdUSD on spokes, minted and burned by LayerZero",
+  OmnitideTideReader: "LayerZero lzRead of tdUSD supply across chains for the Tide Chart",
 };
 
 const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`;

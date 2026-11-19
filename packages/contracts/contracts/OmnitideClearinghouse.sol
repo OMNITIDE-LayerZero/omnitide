@@ -93,6 +93,8 @@ contract OmnitideClearinghouse is
     mapping(uint256 => Order) public orders;
     mapping(address => uint256) public openOrderCount;
 
+    address public harbor; // Harbor vault: owns the Tide Pool once set
+
     event Deposited(address indexed account, uint256 amount, uint32 srcEid, bytes32 guid);
     event Withdrawn(address indexed account, uint256 amount, uint32 dstEid, address receiver, bytes32 guid);
     event Traded(
@@ -120,6 +122,7 @@ contract OmnitideClearinghouse is
     event PoolFunded(address indexed from, int256 amount);
     event MarketSet(uint8 indexed id, bytes32 feed, uint16 initialMarginBps, uint16 maintenanceMarginBps, uint256 maxOpenInterestUsd, bool active);
     event ParamsSet(uint16 feeBps, uint256 depositCap, address guardian);
+    event HarborSet(address harbor);
 
     error NotGuardian();
     error NotEndpoint();
@@ -140,6 +143,8 @@ contract OmnitideClearinghouse is
     error ZeroAmount();
     error PausedIncrease();
     error ZeroAddress();
+    error NotHarbor();
+    error HarborActive();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -205,8 +210,26 @@ contract OmnitideClearinghouse is
         emit PoolFunded(msg.sender, amount.toInt256());
     }
 
-    /// @notice Owner withdraws pool liquidity that is not owed to anyone.
+    /// @notice Owner withdraws pool liquidity that is not owed to anyone; closed for good once Harbor owns the pool.
     function defundPool(uint256 amount, address to) external onlyOwner {
+        if (harbor != address(0)) revert HarborActive();
+        _drawPool(amount, to);
+    }
+
+    /// @notice Hands the Tide Pool to the Harbor vault, which then is the only account able to draw from it.
+    function setHarbor(address harbor_) external onlyOwner {
+        if (harbor_ == address(0)) revert ZeroAddress();
+        harbor = harbor_;
+        emit HarborSet(harbor_);
+    }
+
+    /// @notice Harbor redemptions are paid out of the Tide Pool.
+    function drawPool(uint256 amount, address to) external {
+        if (msg.sender != harbor) revert NotHarbor();
+        _drawPool(amount, to);
+    }
+
+    function _drawPool(uint256 amount, address to) private {
         require(poolBalance >= amount.toInt256(), "pool");
         poolBalance -= amount.toInt256();
         token.safeTransfer(to, amount);

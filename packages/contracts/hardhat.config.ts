@@ -43,6 +43,8 @@ export default defineConfig({
       c.chainId,
       {
         name: c.name,
+        // forks of chains Hardhat doesn't know need a hardfork to execute on the fork block
+        hardforkHistory: { cancun: { blockNumber: 0 } },
         blockExplorers: {
           ...(c.blockscout ? { blockscout: { name: c.name, url: c.explorer, apiUrl: c.blockscout } } : {}),
           ...(c.etherscanApi ? { etherscan: { name: c.name, url: c.explorer, apiUrl: c.etherscanApi } } : {}),

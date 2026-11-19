@@ -1,6 +1,6 @@
 import { and, eq } from "ponder";
 import { ponder } from "ponder:registry";
-import { bridge, flow, liquidation, market, order, position, stats, trade, trader } from "ponder:schema";
+import { bridge, flow, harborFlow, liquidation, market, order, position, stats, tideRead, trade, trader } from "ponder:schema";
 
 const HUB_EID = 40451;
 const abs = (x: bigint) => (x < 0n ? -x : x);
@@ -144,4 +144,45 @@ ponder.on("OmnitideClearinghouse:Liquidated", async ({ event, context }) => {
     tx: event.transaction.hash,
   });
   await bump(context.db, (s) => ({ liquidations: s.liquidations + 1 }));
+});
+
+// Harbor: local ERC-4626 deposits/redeems here; cross-chain ones are logged once, from Composed.
+ponder.on("OmnitideHarbor:Deposit", async ({ event, context }) => {
+  const a = event.args;
+  if (a.sender.toLowerCase() === event.log.address.toLowerCase()) return;
+  await context.db.insert(harborFlow).values({ id: event.id, account: a.owner, kind: "deposit", assets: a.assets, shares: a.shares, srcEid: HUB_EID, dstEid: HUB_EID, delivered: true, timestamp: Number(event.block.timestamp), tx: event.transaction.hash });
+});
+
+ponder.on("OmnitideHarbor:Withdraw", async ({ event, context }) => {
+  const a = event.args;
+  if (a.owner.toLowerCase() === event.log.address.toLowerCase()) return;
+  await context.db.insert(harborFlow).values({ id: event.id, account: a.owner, kind: "redeem", assets: a.assets, shares: a.shares, srcEid: HUB_EID, dstEid: HUB_EID, delivered: true, timestamp: Number(event.block.timestamp), tx: event.transaction.hash });
+});
+
+ponder.on("OmnitideHarbor:Composed", async ({ event, context }) => {
+  const a = event.args;
+  await context.db.insert(harborFlow).values({
+    id: event.id,
+    account: a.receiver,
+    kind: a.deposit ? "deposit" : "redeem",
+    assets: a.deposit ? a.amountIn : a.amountOut,
+    shares: a.deposit ? a.amountOut : a.amountIn,
+    srcEid: a.srcEid,
+    dstEid: a.dstEid,
+    delivered: a.delivered,
+    timestamp: Number(event.block.timestamp),
+    tx: event.transaction.hash,
+  });
+});
+
+ponder.on("OmnitideTideReader:TideRequested", async ({ event, context }) => {
+  const a = event.args;
+  const req = { requestedBy: a.by, fee: a.fee, readAt: Number(a.readAt), requestTx: event.transaction.hash };
+  await context.db.insert(tideRead).values({ guid: a.guid, ...req }).onConflictDoUpdate(req);
+});
+
+ponder.on("OmnitideTideReader:TideRead", async ({ event, context }) => {
+  const a = event.args;
+  const got = { readAt: Number(a.readAt), eids: [...a.eids], supplies: [...a.supplies], receivedAt: Number(event.block.timestamp), receivedTx: event.transaction.hash };
+  await context.db.insert(tideRead).values({ guid: a.guid, ...got }).onConflictDoUpdate(got);
 });

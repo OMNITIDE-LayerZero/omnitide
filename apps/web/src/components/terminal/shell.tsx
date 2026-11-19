@@ -9,6 +9,7 @@ import { ThemeToggle } from "../theme";
 import { Connect } from "../connect";
 import { Toasts } from "../toasts";
 import { TideGauge } from "../tide-gauge";
+import { Lifeline } from "./lifeline";
 import { useHubAccount } from "@/lib/account";
 import { usePriceMap } from "@/lib/hooks";
 import { accountHealth } from "@/lib/margin";
@@ -17,6 +18,9 @@ import { money } from "@/lib/format";
 export const VIEWS = [
   { slug: "trade", label: "Trade" },
   { slug: "portfolio", label: "Portfolio" },
+  { slug: "risk", label: "Risk" },
+  { slug: "harbor", label: "Harbor" },
+  { slug: "tide", label: "Tide Chart" },
   { slug: "history", label: "History" },
   { slug: "markets", label: "Markets" },
   { slug: "watchlist", label: "Watchlist" },
@@ -67,8 +71,9 @@ function ViewTabs({ className }: { className: string }) {
 
 export function TerminalShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const path = usePathname();
 
-  // 1–5 jump between views, like a desk terminal
+  // number keys jump between views, like a desk terminal
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
@@ -93,7 +98,15 @@ export function TerminalShell({ children }: { children: React.ReactNode }) {
         </div>
         <ViewTabs className="flex border-t border-line px-2 py-1 lg:hidden" />
       </header>
-      <main className="mx-auto w-full max-w-[1680px] flex-1 p-3 sm:p-4">{children}</main>
+      <main className="mx-auto w-full max-w-[1680px] flex-1 p-3 sm:p-4">
+        {/* portfolio shows its own, always-on Lifeline */}
+        {!path?.startsWith("/terminal/portfolio") && (
+          <div className="mb-3 empty:hidden">
+            <Lifeline />
+          </div>
+        )}
+        {children}
+      </main>
       <Toasts />
     </div>
   );

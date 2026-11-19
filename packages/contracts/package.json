@@ -47,6 +47,8 @@
     "./markets": "./markets.ts",
     "./lz-options": "./lz-options.ts",
     "./deployments/*": "./deployments/*",
-    "./deployments": "./deployments/index.ts"
+    "./deployments": "./deployments/index.ts",
+    "./margin": "./margin.ts",
+    "./riptide": "./riptide.ts"
   }
 }

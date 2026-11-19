@@ -14,6 +14,10 @@ export interface ChainDeployment {
   OmnitideUSD?: ProxyRecord;
   OmnitideOracle?: ProxyRecord;
   OmnitideClearinghouse?: ProxyRecord;
+  OmnitideHarbor?: ProxyRecord;
+  OmnitideHarborShareAdapter?: ProxyRecord;
+  OmnitideHarborShare?: ProxyRecord;
+  OmnitideTideReader?: ProxyRecord;
   wired?: string;
 }
 

@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import { useAccount } from "wagmi";
-import { ExternalLink } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Download, ExternalLink } from "lucide-react";
 import { MARKETS } from "@omnitide/contracts/markets";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { useIndexer } from "@/lib/hooks";
 import { CHAIN_COUNT, SHORT, explorerTx } from "@/lib/chains";
 import { ago, money, price, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { LineChart } from "@/components/terminal/line-chart";
+import { csv, download, pnlReport } from "@/lib/report";
 
 interface Trade { id: string; account: string; marketId: number; sizeDelta: string; price: string; realizedPnl: string; fee: string; notionalUsd: string; viaOrder: boolean; timestamp: number; tx: string }
 interface Flow { id: string; kind: string; amount: string; eid: number; guid: string | null; timestamp: number; tx: string }
@@ -48,11 +51,19 @@ function Table({ head, children }: { head: string[]; children: React.ReactNode }
 export default function History() {
   const { address } = useAccount();
   const acct = address?.toLowerCase();
-  const [tab, setTab] = useState<"trades" | "transfers" | "orders">("trades");
+  const [tab, setTab] = useState<"trades" | "transfers" | "orders" | "equity">("trades");
   const { data: trades } = useIndexer<Trade[]>("trades", acct);
   const { data: flows } = useIndexer<Flow[]>("flows", acct, !!acct);
   const { data: orders } = useIndexer<Order[]>("orders", acct, !!acct);
-  const tabs = acct ? (["trades", "transfers", "orders"] as const) : (["trades"] as const);
+  const tabs = acct ? (["trades", "transfers", "orders", "equity"] as const) : (["trades"] as const);
+  const { data: snaps } = useQuery({
+    queryKey: ["snapshots", acct],
+    enabled: !!acct,
+    refetchInterval: 120_000,
+    queryFn: async () => (await (await fetch(`/api/snapshots?account=${acct}&days=90`)).json()) as { points: { time: number; equity: number; collateral: number; upnl: number; notional: number }[] },
+  });
+  const report = acct && trades ? pnlReport(trades, flows ?? []) : null;
+  const stamp = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="rounded-2xl border border-line bg-card">
@@ -126,6 +137,47 @@ export default function History() {
         ) : (
           <p className="px-5 py-10 text-[14px] text-ink-2">Inflows and ebbs show up here with their LayerZero message, so you can follow each one across chains.</p>
         ))}
+
+      {tab === "equity" && (
+        <div className="p-5">
+          {report && (
+            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
+              {[
+                { label: "Realized PnL", value: signedMoney(report.realized), tone: report.realized >= 0 ? "text-flood" : "text-ebb" },
+                { label: "Fees paid", value: money(report.fees) },
+                { label: "Net after fees", value: signedMoney(report.realized - report.fees), tone: report.realized - report.fees >= 0 ? "text-flood" : "text-ebb" },
+                { label: "Fills", value: String(report.fills) },
+              ].map((f) => (
+                <div key={f.label} className="bg-card p-4">
+                  <dt className="text-[13px] text-ink-3">{f.label}</dt>
+                  <dd className={`num mt-1 text-[22px] leading-8 font-medium ${f.tone ?? ""}`}>{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[20px] font-medium">Equity curve</h2>
+            <span className="tag text-ink-3">keeper snapshot every 10 minutes · last 90 days</span>
+          </div>
+          {snaps && snaps.points.length >= 2 ? (
+            <LineChart points={snaps.points.map((p) => ({ time: p.time, value: p.equity }))} className="mt-3 h-64" />
+          ) : (
+            <p className="mt-3 text-[14px] leading-[22px] text-ink-2">The keeper photographs your equity every ten minutes while the account holds collateral. Two snapshots in, the curve starts drawing here.</p>
+          )}
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button type="button" className="btn btn-secondary btn-sm" disabled={!trades?.length} onClick={() => download(`omnitide-trades-${stamp}.csv`, csv(["time", "market", "side", "size", "price_usd", "notional_usd", "realized_pnl", "fee", "via_order", "tx"], (trades ?? []).map((t) => [new Date(t.timestamp * 1000).toISOString(), MARKETS[t.marketId]!.symbol, wad(t.sizeDelta) > 0 ? "buy" : "sell", Math.abs(wad(t.sizeDelta)), wad(t.price), wad(t.notionalUsd), units6(t.realizedPnl), units6(t.fee), t.viaOrder, t.tx])))}>
+              <Download size={14} strokeWidth={1.5} /> Trades CSV
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" disabled={!flows?.length} onClick={() => download(`omnitide-transfers-${stamp}.csv`, csv(["time", "type", "amount", "chain", "tx", "layerzero_guid"], (flows ?? []).map((f) => [new Date(f.timestamp * 1000).toISOString(), f.kind, units6(f.amount), chainByEid(f.eid) ?? f.eid, f.tx, f.guid ?? ""])))}>
+              <Download size={14} strokeWidth={1.5} /> Transfers CSV
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" disabled={!snaps?.points.length} onClick={() => download(`omnitide-equity-${stamp}.csv`, csv(["time", "equity", "collateral", "unrealized_pnl", "notional"], (snaps?.points ?? []).map((p) => [new Date(p.time * 1000).toISOString(), p.equity, p.collateral, p.upnl, p.notional])))}>
+              <Download size={14} strokeWidth={1.5} /> Equity snapshots CSV
+            </button>
+          </div>
+          <p className="tag mt-3 text-ink-3">Every row links back to a transaction hash, so a reviewer can check it on the explorer.</p>
+        </div>
+      )}
 
       {tab === "orders" &&
         (orders && orders.length > 0 ? (

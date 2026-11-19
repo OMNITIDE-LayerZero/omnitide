@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext", "types": ["node", "mocha"], "outDir": "dist" },
+  "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext", "types": ["node", "mocha"], "outDir": "dist", "rootDir": "." },
   "include": ["*.ts", "scripts/**/*.ts", "test/**/*.ts", "types/**/*.ts"]
 }

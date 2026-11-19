@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { recoverTypedDataAddress } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import webpush from "web-push";
+import { riptideMessage } from "@omnitide/contracts/riptide";
+import { createCurrent } from "./current.js";
+import { loadEnv } from "./env.js";
 import { cleanNumber } from "./prices.js";
 import { bucketStart } from "./candles.js";
 import { oracleDomain, REPORT_TYPES, signReport } from "./reports.js";
@@ -55,5 +59,41 @@ describe("keeper", () => {
     const t0 = Date.UTC(2026, 10, 18, 14, 0);
     const bars = [1, 3, 2].map((p, i) => ({ start: t0 + i * 60_000, open: p, high: p, low: p, close: p }));
     expect(aggregate(bars, 900)).toEqual([{ start: t0, open: 1, high: 3, low: 1, close: 2 }]);
+  });
+});
+
+describe("Riptide Alerts subscriptions", () => {
+  const signer = privateKeyToAccount(generatePrivateKey());
+  const upserts: unknown[] = [];
+  const db = { alertSubscription: { upsert: async (x: unknown) => upserts.push(x), deleteMany: async () => ({}) } };
+  const vapid = webpush.generateVAPIDKeys();
+  const current = createCurrent({
+    env: loadEnv({ DATABASE_URL: "postgresql://x@localhost/x", KEEPER_PRIVATE_KEY: `0x${"1".repeat(64)}`, HUB_RPC_URL: "http://localhost", VAPID_PUBLIC_KEY: vapid.publicKey, VAPID_PRIVATE_KEY: vapid.privateKey }),
+    db: db as never,
+    hub: {} as never,
+    clearinghouse: "0x0000000000000000000000000000000000000001",
+    harbor: "0x0000000000000000000000000000000000000002",
+    prices: () => ({}),
+    log: () => {},
+  });
+  const base = { action: "subscribe" as const, account: signer.address, channel: "push" as const, threshold: 0.3, deliverTo: "this browser" };
+  const target = { endpoint: "https://push.example/abc", keys: { p256dh: "k", auth: "a" } };
+
+  it("stores a subscription signed by the account owner", async () => {
+    const req = { ...base, issuedAt: new Date().toISOString() };
+    const r = await current.handleRequest({ ...req, target, signature: await signer.signMessage({ message: riptideMessage(req) }) });
+    expect(r.status).toBe(200);
+    expect(upserts).toHaveLength(1);
+  });
+
+  it("rejects stale, foreign and channel-mismatched requests", async () => {
+    const stale = { ...base, issuedAt: new Date(Date.now() - 11 * 60_000).toISOString() };
+    expect((await current.handleRequest({ ...stale, target, signature: await signer.signMessage({ message: riptideMessage(stale) }) })).status).toBe(400);
+    const other = privateKeyToAccount(generatePrivateKey());
+    const req = { ...base, issuedAt: new Date().toISOString() };
+    expect((await current.handleRequest({ ...req, target, signature: await other.signMessage({ message: riptideMessage(req) }) })).status).toBe(401);
+    expect((await current.handleRequest({ ...req, target: { email: "a@b.co" }, signature: await signer.signMessage({ message: riptideMessage(req) }) })).status).toBe(400);
+    const email = { ...req, channel: "email" as const };
+    expect((await current.handleRequest({ ...email, target: { email: "a@b.co" }, signature: await signer.signMessage({ message: riptideMessage(email) }) })).status).toBe(400); // email channel off
   });
 });

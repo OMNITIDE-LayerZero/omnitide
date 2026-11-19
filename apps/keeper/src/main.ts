@@ -11,13 +11,15 @@ import { recordQuote } from "./candles.js";
 import { oracleDomain, signReport } from "./reports.js";
 import { createExecutor } from "./executor.js";
 import { backfill } from "./backfill.js";
+import { createCurrent } from "./current.js";
 
 const env = loadEnv();
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
 const db = createDb(env.DATABASE_URL);
 const account = privateKeyToAccount(env.KEEPER_PRIVATE_KEY as `0x${string}`);
 const hub = DEPLOYMENTS[env.OMNITIDE_ENV as "testnet"].robinhoodTestnet;
-if (!hub?.OmnitideOracle || !hub.OmnitideClearinghouse) throw new Error("hub contracts are not deployed");
+if (!hub?.OmnitideOracle || !hub.OmnitideClearinghouse || !hub.OmnitideHarbor) throw new Error("hub contracts are not deployed");
+const reader = DEPLOYMENTS[env.OMNITIDE_ENV as "testnet"].arbitrumSepolia?.OmnitideTideReader;
 const hubChain = defineChain({
   id: CHAINS.robinhoodTestnet.chainId,
   name: CHAINS.robinhoodTestnet.name,
@@ -86,15 +88,34 @@ const executor = createExecutor({
 });
 let executorState: Record<string, unknown> = {};
 
+const arbChain = defineChain({ id: CHAINS.arbitrumSepolia.chainId, name: CHAINS.arbitrumSepolia.name, nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [env.ARB_RPC_URL] } } });
+const current = createCurrent({
+  env,
+  db,
+  hub: pub,
+  clearinghouse: hub.OmnitideClearinghouse.proxy as Address,
+  harbor: hub.OmnitideHarbor.proxy as Address,
+  arb: reader
+    ? { pub: createPublicClient({ chain: arbChain, transport: http(env.ARB_RPC_URL) }), wallet: createWalletClient({ chain: arbChain, transport: http(env.ARB_RPC_URL), account }), reader: reader.proxy as Address }
+    : undefined,
+  prices: () => Object.fromEntries(MARKETS.flatMap((m) => (fresh(m.feed) ? [[m.feed, Number(fresh(m.feed)!.price)]] : []))),
+  log,
+});
+let currentState: Record<string, unknown> = {};
+
 void backfill(db, MARKETS, log);
 every(3_000, "crypto", () => pollPrices("crypto"));
 every(10_000, "stocks", () => pollPrices("stock"));
 if (env.EXECUTE === "1") every(5_000, "executor", async () => (executorState = await executor.tick()));
+every(10 * 60_000, "snapshots", async () => Object.assign(currentState, await current.snapshot()));
+every(60_000, "riptide", async () => Object.assign(currentState, await current.riptide()));
+every(20_000, "telegram", () => current.telegramLink());
+if (env.EXECUTE === "1" && env.TIDE_READ_HOURS > 0) every(env.TIDE_READ_HOURS * 3_600_000, "lzRead", async () => Object.assign(currentState, await current.tideRead()));
 every(15_000, "heartbeat", () =>
   db.heartbeat.upsert({
     where: { service: "keeper" },
-    create: { service: "keeper", beatAt: new Date(), detail: { fresh: [...latest.keys()].filter((f) => fresh(f)).length, ...executorState } },
-    update: { beatAt: new Date(), detail: { fresh: [...latest.keys()].filter((f) => fresh(f)).length, ...executorState } },
+    create: { service: "keeper", beatAt: new Date(), detail: { fresh: [...latest.keys()].filter((f) => fresh(f)).length, ...executorState, ...currentState } },
+    update: { beatAt: new Date(), detail: { fresh: [...latest.keys()].filter((f) => fresh(f)).length, ...executorState, ...currentState } },
   }),
 );
 
@@ -116,6 +137,24 @@ createServer(async (req, res) => {
   }
   if (url.pathname === "/prices") {
     return json(res, 200, { prices: MARKETS.flatMap((m) => (fresh(m.feed) ? [fresh(m.feed)] : [])) });
+  }
+  if (url.pathname === "/alerts" && req.method === "GET") {
+    const account = url.searchParams.get("account") ?? "";
+    if (!/^0x[0-9a-fA-F]{40}$/.test(account)) return json(res, 400, { error: "account required" });
+    return json(res, 200, { channels: current.channels, vapidPublicKey: env.VAPID_PUBLIC_KEY ?? null, telegramBot: env.TELEGRAM_BOT_USERNAME ?? null, subscriptions: await current.listFor(account) });
+  }
+  if (url.pathname === "/alerts" && req.method === "POST") {
+    let raw = "";
+    for await (const chunk of req) {
+      raw += chunk;
+      if (raw.length > 8_192) return json(res, 413, { error: "too large" });
+    }
+    try {
+      const r = await current.handleRequest(JSON.parse(raw));
+      return json(res, r.status, r.body);
+    } catch {
+      return json(res, 400, { error: "invalid alert request" });
+    }
   }
   if (url.pathname === "/health") {
     const live = MARKETS.filter((m) => fresh(m.feed)).length;

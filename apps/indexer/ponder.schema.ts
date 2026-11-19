@@ -123,3 +123,33 @@ export const stats = onchainTable("stats", (t) => ({
   drips: t.integer().notNull(),
   liquidations: t.integer().notNull(),
 }));
+
+// V2 Current: Harbor vault flows (local and OVault compose) and lzRead Tide readings.
+export const harborFlow = onchainTable(
+  "harbor_flow",
+  (t) => ({
+    id: t.text().primaryKey(),
+    account: t.hex().notNull(),
+    kind: t.text().notNull(), // deposit | redeem
+    assets: t.bigint().notNull(),
+    shares: t.bigint().notNull(),
+    srcEid: t.integer().notNull(),
+    dstEid: t.integer().notNull(),
+    delivered: t.boolean().notNull(),
+    timestamp: t.integer().notNull(),
+    tx: t.hex().notNull(),
+  }),
+  (t) => ({ byAccount: index().on(t.account, t.timestamp), byTime: index().on(t.timestamp) }),
+);
+
+export const tideRead = onchainTable("tide_read", (t) => ({
+  guid: t.hex().primaryKey(),
+  requestedBy: t.hex(),
+  fee: t.bigint(),
+  readAt: t.integer().notNull(),
+  requestTx: t.hex(),
+  eids: t.integer().array(),
+  supplies: t.bigint().array(),
+  receivedAt: t.integer(),
+  receivedTx: t.hex(),
+}));

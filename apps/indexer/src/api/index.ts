@@ -51,6 +51,30 @@ app.get("/bridge", async (c) => {
   return c.json(json(rows));
 });
 
+app.get("/harbor", async (c) => {
+  const account = addr(c.req.query("account"));
+  const q = db.select().from(schema.harborFlow);
+  const rows = await (account ? q.where(eq(schema.harborFlow.account, account)) : q).orderBy(desc(schema.harborFlow.timestamp)).limit(limit(c.req.query("limit")));
+  return c.json(json(rows));
+});
+
+app.get("/tide", async (c) => {
+  const rows = await db.select().from(schema.tideRead).orderBy(desc(schema.tideRead.readAt)).limit(limit(c.req.query("limit")));
+  return c.json(json(rows));
+});
+
+// every open position in the book, for book-wide stress tests and concentration
+app.get("/book", async (c) => {
+  const rows = await db.select().from(schema.position).where(ne(schema.position.size, 0n)).limit(2000);
+  return c.json(json(rows));
+});
+
+// accounts that ever funded the book, for keeper snapshots and alerts
+app.get("/accounts", async (c) => {
+  const rows = await db.selectDistinct({ account: schema.flow.account }).from(schema.flow).limit(2000);
+  return c.json(rows.map((r) => r.account));
+});
+
 app.get("/leaderboard", async (c) => {
   const rows = await db.select().from(schema.trader).orderBy(desc(schema.trader.realizedPnl)).limit(limit(c.req.query("limit")));
   return c.json(json(rows));

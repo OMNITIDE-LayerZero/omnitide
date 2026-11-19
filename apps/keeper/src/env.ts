@@ -9,6 +9,18 @@ const Env = z.object({
   PORT: z.coerce.number().int().default(4303),
   // set to 0 to run price + report service only (e.g. local dev without gas)
   EXECUTE: z.enum(["0", "1"]).default("1"),
+  // V2 Current
+  INDEXER_URL: z.string().url().default("http://127.0.0.1:4302"),
+  SITE_URL: z.string().url().default("https://omnitide-testnet.vercel.app"),
+  ARB_RPC_URL: z.string().url().default("https://sepolia-rollup.arbitrum.io/rpc"),
+  TIDE_READ_HOURS: z.coerce.number().min(0).default(12), // 0 turns scheduled lzRead off
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default("mailto:alerts@omnitide.app"),
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_BOT_USERNAME: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  ALERT_EMAIL_FROM: z.string().optional(),
 });
 
 export type Env = z.infer<typeof Env>;

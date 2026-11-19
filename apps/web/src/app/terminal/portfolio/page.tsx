@@ -12,6 +12,7 @@ import { QuickFund } from "@/components/terminal/quick-fund";
 import { Connect } from "@/components/connect";
 import { InflowRoutes } from "@/components/terminal/routes";
 import { Pulse } from "@/components/landing/pulse";
+import { Lifeline } from "@/components/terminal/lifeline";
 
 export default function Portfolio() {
   const { isConnected } = useAccount();
@@ -72,6 +73,7 @@ export default function Portfolio() {
             </p>
           )}
         </div>
+        {funded && <Lifeline always />}
         {funded ? (
           <div className="rounded-2xl border border-line bg-card">
             <PositionsPanel />

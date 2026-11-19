@@ -4,7 +4,7 @@ import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { MARKETS } from "@omnitide/contracts/markets";
 
 import { omnitideClearinghouseAbi, omnitideOracleAbi } from "@omnitide/contracts/abi";
-export { omnitideClearinghouseAbi, omnitideUSDAbi, omnitideOracleAbi } from "@omnitide/contracts/abi";
+export { omnitideClearinghouseAbi, omnitideUSDAbi, omnitideOracleAbi, omnitideHarborAbi, omnitideHarborShareAbi, omnitideTideReaderAbi } from "@omnitide/contracts/abi";
 
 /** Clearinghouse ABI plus the oracle's errors, so reverts from price checks decode by name. */
 export const CH_ABI = [...omnitideClearinghouseAbi, ...omnitideOracleAbi.filter((x) => x.type === "error")] as const;
@@ -16,10 +16,16 @@ const D = DEPLOYMENTS.testnet;
 export const usdAddress = (k: ChainKey) => D[k]!.OmnitideUSD!.proxy as Address;
 export const CLEARINGHOUSE = D.robinhoodTestnet!.OmnitideClearinghouse!.proxy as Address;
 export const ORACLE = D.robinhoodTestnet!.OmnitideOracle!.proxy as Address;
+export const HARBOR = D.robinhoodTestnet!.OmnitideHarbor!.proxy as Address;
+export const HARBOR_ADAPTER = D.robinhoodTestnet!.OmnitideHarborShareAdapter!.proxy as Address;
+export const TIDE_READER = D.arbitrumSepolia!.OmnitideTideReader!.proxy as Address;
+/** Chains that hold Harbor shares besides the hub (direct lanes both ways). */
+export const SHARE_CHAINS = (Object.keys(CHAINS) as ChainKey[]).filter((k) => D[k]?.OmnitideHarborShare);
+export const shareAddress = (k: ChainKey) => (CHAINS[k].hub ? HARBOR : (D[k]!.OmnitideHarborShare!.proxy as Address));
 
 /** Every proxy and its implementation, for the contracts section. */
 export const CONTRACT_ROWS = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) =>
-  (["OmnitideClearinghouse", "OmnitideOracle", "OmnitideUSD"] as const).flatMap((name) => {
+  (["OmnitideClearinghouse", "OmnitideOracle", "OmnitideUSD", "OmnitideHarbor", "OmnitideHarborShareAdapter", "OmnitideHarborShare", "OmnitideTideReader"] as const).flatMap((name) => {
     const rec = D[k]?.[name];
     return rec ? [{ chain: k, name, proxy: rec.proxy as Address, implementation: rec.implementation as Address }] : [];
   }),
