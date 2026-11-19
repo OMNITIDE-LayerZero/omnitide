@@ -97,6 +97,16 @@ body {
   color: var(--on-accent);
 }
 
+/* Tailwind v4 preflight resets buttons to the default cursor. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}
+
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
