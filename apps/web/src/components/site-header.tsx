@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme";
@@ -15,8 +15,16 @@ const LINKS = [
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
-    <header className="absolute inset-x-0 top-0 z-30">
+    // stays pinned; clear over the hero, frosted once the page moves under it
+    <header className={`fixed inset-x-0 top-0 z-30 border-b transition-[background-color,border-color] duration-200 ${scrolled || open ? "border-line bg-bg/80 backdrop-blur-md" : "border-transparent"}`}>
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-8">
         <Logo />
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
