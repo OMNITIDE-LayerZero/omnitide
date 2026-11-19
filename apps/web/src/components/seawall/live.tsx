@@ -72,7 +72,7 @@ export function SeaWallLive() {
           </div>
           <p className="tag text-ink-3">refreshed {new Date(data.at).toLocaleTimeString("en-US")}</p>
         </div>
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-[13px]">
             <thead className="text-[12px] text-ink-3">
               <tr>

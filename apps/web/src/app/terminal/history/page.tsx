@@ -28,7 +28,7 @@ function TxLink({ hash, href }: { hash: string; href: string }) {
 
 function Table({ head, children }: { head: string[]; children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[720px] text-left text-[13px]">
         <thead className="text-[12px] text-ink-3">
           <tr>
@@ -77,7 +77,9 @@ export default function History() {
             {trades.map((t) => {
               const m = MARKETS[t.marketId]!;
               const size = wad(t.sizeDelta);
-              const pnl = units6(t.realizedPnl);
+              // under half a cent rounds to $0.00, so it reads as an opening fill
+              const raw = units6(t.realizedPnl);
+              const pnl = Math.abs(raw) >= 0.005 ? raw : 0;
               return (
                 <tr key={t.id} className="border-t border-line">
                   <td className="px-4 py-3 font-medium">

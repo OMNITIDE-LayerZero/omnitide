@@ -12,7 +12,7 @@ export function MarketsBoard({ compact = false }: { compact?: boolean }) {
   const { data: stats } = useStats();
   const vol = new Map(stats?.markets.map((m) => [m.id, wad(m.volumeUsd)]));
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full min-w-[640px] text-left">
         <thead>
           <tr className="text-[12px] text-ink-3">

@@ -111,7 +111,7 @@ export function Ticket({ market }: { market: MarketConfig }) {
         ))}
       </div>
 
-      <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="Order type">
+      <div className="relative flex gap-1 overflow-x-auto" role="tablist" aria-label="Order type">
         {KINDS.map(({ k, label }) => (
           <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => pickKind(k)} className={`btn btn-sm shrink-0 ${kind === k ? "bg-raised text-ink" : "btn-ghost"}`}>
             {label}

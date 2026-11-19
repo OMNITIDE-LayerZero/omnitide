@@ -22,7 +22,7 @@ export function LayerZeroMessages() {
         <p className="text-[13px] text-ink-3">LayerZero messages · indexed on both ends</p>
         <p className="mt-1 text-[16px] font-medium">Every tdUSD crossing, traceable</p>
       </div>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[640px] text-left text-[13px]">
           <thead className="text-[12px] text-ink-3">
             <tr>

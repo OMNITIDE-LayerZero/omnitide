@@ -46,7 +46,7 @@ function AccountStrip() {
 function ViewTabs({ className }: { className: string }) {
   const path = usePathname();
   return (
-    <nav className={`items-center gap-1 overflow-x-auto ${className}`} aria-label="Terminal views">
+    <nav className={`relative items-center gap-1 overflow-x-auto ${className}`} aria-label="Terminal views">
       {VIEWS.map((v, i) => {
         const active = path?.startsWith(`/terminal/${v.slug}`);
         return (

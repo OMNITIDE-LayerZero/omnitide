@@ -13,7 +13,7 @@ const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`;
 
 export function ContractsTable() {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-line bg-card">
+    <div className="relative overflow-x-auto rounded-2xl border border-line bg-card">
       <table className="w-full min-w-[760px] text-left text-[14px]">
         <thead>
           <tr className="text-[12px] text-ink-3">

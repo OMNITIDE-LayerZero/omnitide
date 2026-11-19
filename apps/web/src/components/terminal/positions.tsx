@@ -55,7 +55,7 @@ export function PositionsPanel() {
         ))}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         {tab === "positions" ? (
           positions.length === 0 ? (
             <p className="px-4 py-8 text-[14px] text-ink-2">{isConnected ? "No open positions. Pick a side in the ticket and your first fill lands here." : "Connect a wallet to see your positions."}</p>
