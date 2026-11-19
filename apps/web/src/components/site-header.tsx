@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme";
@@ -13,18 +13,21 @@ const LINKS = [
   { href: "/#contracts", label: "Contracts" },
 ];
 
+// blur strength per band, weakest at the bottom edge of the haze
+const BLUR = [1, 2, 4, 8, 16, 32];
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
   return (
-    // stays pinned; clear over the hero, frosted once the page moves under it
-    <header className={`fixed inset-x-0 top-0 z-30 border-b transition-[background-color,border-color] duration-200 ${scrolled || open ? "border-line bg-bg/80 backdrop-blur-md" : "border-transparent"}`}>
+    <header className="fixed inset-x-0 top-0 z-30">
+      {/* progressive blur: content melts into haze as it scrolls under the nav, no hard edge */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[120px]">
+        {BLUR.map((b, i) => {
+          const mask = `linear-gradient(to top, transparent ${i * 12.5}%, black ${(i + 1) * 12.5}%${i < BLUR.length - 1 ? `, black ${(i + 2) * 12.5}%, transparent ${(i + 3) * 12.5}%` : ""})`;
+          return <div key={b} className="absolute inset-0" style={{ backdropFilter: `blur(${b}px)`, WebkitBackdropFilter: `blur(${b}px)`, maskImage: mask, WebkitMaskImage: mask }} />;
+        })}
+        <div className="absolute inset-0 bg-gradient-to-b from-bg/85 via-bg/40 to-transparent" />
+      </div>
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-8">
         <Logo />
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
