@@ -18,6 +18,8 @@ export interface ChainConfig {
   lzRead?: ChainKey[];
   /** Spoke that carries Harbor shares (needs direct LayerZero lanes both ways with the hub). */
   harborShares?: boolean;
+  /** Spoke carries the V3 OApps: TIDE, Council, Lighthouse and Arena Badges. */
+  deepWater?: boolean;
 }
 
 export const CHAINS: Record<ChainKey, ChainConfig> = {
@@ -56,6 +58,7 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
     hub: false,
     lzRead: ["arbitrumSepolia", "sepolia"],
     harborShares: true,
+    deepWater: true,
     lz: { sendLib: "0x4f7cd4da19abb31b0ec98b9066b9e857b1bf9c0e", receiveLib: "0x75db67cdab2824970131d5aa9cecfc9f69c69636", executor: "0x5df3a1cebbd9c8ba7f8df51fd632a9aef8308897", dvn: "0x53f488e93b4f1b60e8e83aa374dbe1780a1ee8a8" },
   },
   sepolia: {

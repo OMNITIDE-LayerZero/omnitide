@@ -16,7 +16,7 @@
     },
     "OmnitideClearinghouse": {
       "proxy": "0x31fcb7B2DaC407ECC2AB51c1764204Bd3a882F1e",
-      "implementation": "0x69F8dD983896AafcD6D478a404e12b0D2a2ef837",
+      "implementation": "0x13d4FD013f67c01DC894Ce799096C5AA4Ed685B4",
       "deployTx": "0x4bdeeb24632469a43c8e10f66e09108cc82571be9baf226f5c1ea30754f31707",
       "block": 154985732
     },
@@ -32,6 +32,44 @@
       "implementation": "0xF9F801EA7ac160aA0e76572cAbf71e9f3800A85b",
       "deployTx": "0xc2b0b7d31710e8b449141419d201a4b94ff65747622433a6e96ad99001fb7300",
       "block": 155614711
+    },
+    "OmnitideDeepPool": {
+      "proxy": "0x543e374215c6969393392b52FaAEe546d7775C32",
+      "implementation": "0x8A567757d535dFa0a02DFE6630d91f47cD472c33",
+      "deployTx": "0xc8f110a46c97630a7ed1a67275f8cdb70ca31a599e81e7db4e4241a9848ba78f",
+      "block": 155631896
+    },
+    "OmnitideCopyVaultFactory": {
+      "proxy": "0xee937F9eBe5f5ebC3AC82516efE3Cd792a117549",
+      "implementation": "0x28285647f1f14632D3DcfA1D6248690B7Ec2F6a5",
+      "deployTx": "0xfd29a56459bce6bb16011db9447accd0d5af64550661600f522694c5002f9487",
+      "block": 155631957,
+      "beacon": "0x906024b11079026040FeE872C91AA37118337171",
+      "vaultImplementation": "0xA2fD1EFbdbD010F2606788d6Cc908BF17897a256"
+    },
+    "OmnitideToken": {
+      "proxy": "0x6ddbC6B3B1EcE4c460b50545D78FE0362982AC00",
+      "implementation": "0x2fb059fF11b0Ee9a9544d1CE7d6c7C8906A429C5",
+      "deployTx": "0x2c626ff9c7ce7f0dd9c722ab223a83f2939efa5ba68da347ff76856bf8713aff",
+      "block": 155631999
+    },
+    "OmnitideLighthouse": {
+      "proxy": "0xCf401Fa7b1a262547C9EaCEb1B2826DAA01C50E2",
+      "implementation": "0x4b3dcb9CDD57f8b02BeD2e076d667F81Ead59237",
+      "deployTx": "0x5c46a868fad77ba4de5d4a678835538fde1d3ee60d2074ebe13e6c749740645b",
+      "block": 155632043
+    },
+    "OmnitideBadge": {
+      "proxy": "0x78fA38f779513F44b70C457523d73401b24C7fe0",
+      "implementation": "0xF1741902830d6C4853126A0C75961F4e030bAc9C",
+      "deployTx": "0x4ca130d7b25494c5865e50b6bc874c68f023d176afbda0d18b52d674c20579dc",
+      "block": 155632072
+    },
+    "OmnitideCouncil": {
+      "proxy": "0xE0F4BE5C8F91B73F496A7474a968a40f294a44Ce",
+      "implementation": "0x3ef6F67718E55A30240e3a4ED26508512ad56103",
+      "deployTx": "0x5d65de1fc6e0fa8fbca0ba4f652c249e654761d56f498abf661196ea18c61387",
+      "block": 155632109
     }
   },
   "sepolia": {
@@ -99,6 +137,30 @@
       "implementation": "0x7a9263bA0757760E1753255959dBFb20400bc30B",
       "deployTx": "0x07bf24fadf37e8e406d9f5a636b4ed339778dc27fe401b7eebb08dba319078b3",
       "block": 330852707
+    },
+    "OmnitideToken": {
+      "proxy": "0x38bB52A638e57c2309DA832CCD649abEEF4B971D",
+      "implementation": "0xf67aFdA52C0924E15886d429DD7B7DB69d0D0937",
+      "deployTx": "0x0be141b5a0e51a8401e9296cc8fdb76071e7c6aa94f5cfcb64af368ee944fca3",
+      "block": 330867216
+    },
+    "OmnitideLighthouse": {
+      "proxy": "0x4E50AeB021057703a2EC6cc7bC23192Ce335474D",
+      "implementation": "0xD0A876e47738BE35F64F78972BEE5f8FbB855820",
+      "deployTx": "0xf032f72b247a9e200c4bb69fae30f171f8b54a7e5541fb32a81d96ab10f531b5",
+      "block": 330867258
+    },
+    "OmnitideBadge": {
+      "proxy": "0x5e007E5Da3512DC17dCAff2AE13515bCB205BF04",
+      "implementation": "0x4A9A6De281edF6a41b54C77265e473059bCFc7Fd",
+      "deployTx": "0x47966a127c2d8236c4a176630f91ae530c7174eda5a88ed6b1417626f8efd1a9",
+      "block": 330867295
+    },
+    "OmnitideCouncil": {
+      "proxy": "0x877FeB2211cf8851Bea7d7d0dBAEd1547430E930",
+      "implementation": "0xaE831E8b7D6A98b1b2FfF45F55b669f77B3a6465",
+      "deployTx": "0x4df8206beb48e4ff18cfdd39b8466a46c7ded9bdb7204583252ba348e7f8efdc",
+      "block": 330867334
     }
   },
   "hyperEvmTestnet": {

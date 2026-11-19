@@ -95,6 +95,15 @@ contract OmnitideClearinghouse is
 
     address public harbor; // Harbor vault: owns the Tide Pool once set
 
+    struct SealedOrder {
+        address account;
+        bool active;
+        bytes32 commitment; // keccak256(abi.encode(account, marketId, kind, sizeDelta, triggerPrice, salt))
+    }
+
+    uint256 public nextSealedId;
+    mapping(uint256 => SealedOrder) public sealedOrders;
+
     event Deposited(address indexed account, uint256 amount, uint32 srcEid, bytes32 guid);
     event Withdrawn(address indexed account, uint256 amount, uint32 dstEid, address receiver, bytes32 guid);
     event Traded(
@@ -123,6 +132,18 @@ contract OmnitideClearinghouse is
     event MarketSet(uint8 indexed id, bytes32 feed, uint16 initialMarginBps, uint16 maintenanceMarginBps, uint256 maxOpenInterestUsd, bool active);
     event ParamsSet(uint16 feeBps, uint256 depositCap, address guardian);
     event HarborSet(address harbor);
+    event SealedOrderPlaced(uint256 indexed id, address indexed account, bytes32 commitment, bytes ciphertext);
+    event SealedOrderCancelled(uint256 indexed id, address indexed account);
+    event SealedOrderExecuted(
+        uint256 indexed id,
+        address indexed account,
+        uint8 marketId,
+        OrderKind kind,
+        int256 sizeDelta,
+        uint256 triggerPrice,
+        uint256 price,
+        address executor
+    );
 
     error NotGuardian();
     error NotEndpoint();
@@ -145,6 +166,8 @@ contract OmnitideClearinghouse is
     error ZeroAddress();
     error NotHarbor();
     error HarborActive();
+    error BadReveal(uint256 id);
+    error LimitNotSealable();
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -354,17 +377,56 @@ contract OmnitideClearinghouse is
         Order memory o = orders[id];
         if (!o.active) revert OrderNotActive(id);
         uint256 price = _priceOf(reports, _market(o.marketId).feed);
-        bool buy = o.sizeDelta > 0;
-        bool met = o.kind == OrderKind.StopLoss
-            ? (buy ? price >= o.triggerPrice : price <= o.triggerPrice)
-            : (buy ? price <= o.triggerPrice : price >= o.triggerPrice);
-        if (!met) revert TriggerNotMet(price, o.triggerPrice);
+        _requireTriggered(o.kind, o.sizeDelta, price, o.triggerPrice);
 
         int256 delta = o.sizeDelta;
         if (o.reduceOnly) delta = _clampReduce(positions[o.account][o.marketId].size, delta);
         _closeOrder(id, o.account);
         if (delta != 0) _execute(o.account, o.marketId, delta, price, reports);
         emit OrderExecuted(id, o.account, price, msg.sender);
+    }
+
+    /// @notice Sealed Orders: only a commitment and a ciphertext go on-chain; the level stays hidden until it fires.
+    function placeSealedOrder(bytes32 commitment, bytes calldata ciphertext) external returns (uint256 id) {
+        if (commitment == bytes32(0)) revert ZeroAmount();
+        if (openOrderCount[msg.sender] >= MAX_ORDERS) revert TooManyOrders();
+        id = nextSealedId++;
+        sealedOrders[id] = SealedOrder(msg.sender, true, commitment);
+        openOrderCount[msg.sender]++;
+        emit SealedOrderPlaced(id, msg.sender, commitment, ciphertext);
+    }
+
+    function cancelSealedOrder(uint256 id) external {
+        SealedOrder storage o = sealedOrders[id];
+        if (!o.active) revert OrderNotActive(id);
+        if (o.account != msg.sender) revert NotOrderOwner(id);
+        o.active = false;
+        openOrderCount[msg.sender]--;
+        emit SealedOrderCancelled(id, msg.sender);
+    }
+
+    /// @notice Whoever holds the preimage (normally the keeper) reveals and fills once the trigger is met. Always reduce-only.
+    function executeSealedOrder(
+        uint256 id,
+        uint8 marketId,
+        OrderKind kind,
+        int256 sizeDelta,
+        uint256 triggerPrice,
+        bytes32 salt,
+        OmnitideOracle.PriceReport[] calldata reports
+    ) external nonReentrant {
+        SealedOrder storage o = sealedOrders[id];
+        if (!o.active) revert OrderNotActive(id);
+        address account = o.account;
+        if (keccak256(abi.encode(account, marketId, kind, sizeDelta, triggerPrice, salt)) != o.commitment) revert BadReveal(id);
+        if (kind == OrderKind.Limit) revert LimitNotSealable();
+        uint256 price = _priceOf(reports, _market(marketId).feed);
+        _requireTriggered(kind, sizeDelta, price, triggerPrice);
+        o.active = false;
+        openOrderCount[account]--;
+        int256 delta = _clampReduce(positions[account][marketId].size, sizeDelta);
+        if (delta != 0) _execute(account, marketId, delta, price, reports);
+        emit SealedOrderExecuted(id, account, marketId, kind, sizeDelta, triggerPrice, price, msg.sender);
     }
 
     function liquidate(address account, OmnitideOracle.PriceReport[] calldata reports) external nonReentrant {
@@ -508,6 +570,12 @@ contract OmnitideClearinghouse is
             if (reports[i].feed == feed) return oracle.verify(reports[i]);
         }
         revert MissingPrice(feed);
+    }
+
+    function _requireTriggered(OrderKind kind, int256 sizeDelta, uint256 price, uint256 trigger) private pure {
+        bool buy = sizeDelta > 0;
+        bool met = kind == OrderKind.StopLoss ? (buy ? price >= trigger : price <= trigger) : (buy ? price <= trigger : price >= trigger);
+        if (!met) revert TriggerNotMet(price, trigger);
     }
 
     function _market(uint8 id) private view returns (Market storage m) {

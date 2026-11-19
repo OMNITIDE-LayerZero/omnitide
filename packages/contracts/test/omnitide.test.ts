@@ -482,3 +482,331 @@ describe("OmnitideTideReader (lzRead)", () => {
     await expect(reader.connect(alice).setTargets([])).to.be.revertedWithCustomError(reader, "OwnableUnauthorizedAccount");
   });
 });
+
+// ───────────────────────── V3 Deep Water ─────────────────────────
+
+const abi = ethers.AbiCoder.defaultAbiCoder();
+const lzOpts = { kind: "uups" as const, initializer: "initialize", unsafeAllow: [...OFT_UNSAFE_ALLOW] };
+
+/** Deploys one OApp on the hub and one on the spoke, peered, with enforced receive gas for every msgType. */
+async function oappPair(ctx: Ctx, name: string, hubArgs: unknown[], spokeArgs: unknown[], msgTypes: number[] = [1]) {
+  const F = await ethers.getContractFactory(name);
+  // OApps share the OFT's peer and enforced-option surface, so the OmnitideUSD ABI wires any of them
+  const hub = await ethers.getContractAt("OmnitideUSD", await (await up.deployProxy(F, hubArgs, { ...lzOpts, constructorArgs: [await ctx.hubEp.getAddress()] })).getAddress());
+  const spoke = await ethers.getContractAt("OmnitideUSD", await (await up.deployProxy(F, spokeArgs, { ...lzOpts, constructorArgs: [await ctx.spokeEp.getAddress()] })).getAddress());
+  await ctx.hubEp.setDestLzEndpoint(await spoke.getAddress(), await ctx.spokeEp.getAddress());
+  await ctx.spokeEp.setDestLzEndpoint(await hub.getAddress(), await ctx.hubEp.getAddress());
+  await hub.setPeer(SPOKE, ethers.zeroPadValue(await spoke.getAddress(), 32));
+  await spoke.setPeer(HUB, ethers.zeroPadValue(await hub.getAddress(), 32));
+  for (const [app, dst] of [[hub, SPOKE], [spoke, HUB]] as const)
+    await app.setEnforcedOptions(msgTypes.map((msgType) => ({ eid: dst, msgType, options: lzReceiveOption(200_000n) })));
+  return { hub: await hub.getAddress(), spoke: await spoke.getAddress() };
+}
+
+describe("Sealed Orders", () => {
+  const SL = 1;
+  const seal = (account: string, marketId: number, kind: number, size: bigint, trigger: bigint, salt: string) =>
+    ethers.keccak256(abi.encode(["address", "uint8", "uint8", "int256", "uint256", "bytes32"], [account, marketId, kind, size, trigger, salt]));
+
+  it("keeps the level hidden until a valid reveal fires it, reduce-only", async () => {
+    const ctx = await networkHelpers.loadFixture(deploy);
+    const { ch, alice, bob, keeper } = ctx;
+    await depositLocal(ctx, alice, usd(1_000));
+    await ch.connect(alice).trade(0, E18 / 10n, 61_000n * E18, [await report(ctx, BTC, 60_000n * E18)]);
+    const salt = ethers.id("salt");
+    const commitment = seal(alice.address, 0, SL, -E18, 58_000n * E18, salt); // oversized: clamps to the open 0.1
+    await expect(ch.connect(alice).placeSealedOrder(commitment, "0xc1f3e5")).to.emit(ch, "SealedOrderPlaced").withArgs(0, alice.address, commitment, "0xc1f3e5");
+    expect(await ch.openOrderCount(alice.address)).to.equal(1);
+    await expect(ch.connect(bob).cancelSealedOrder(0)).to.be.revertedWithCustomError(ch, "NotOrderOwner");
+
+    const at = async (p: bigint) => [await report(ctx, BTC, p)];
+    await expect(ch.connect(keeper).executeSealedOrder(0, 0, SL, -E18, 57_000n * E18, salt, await at(57_000n * E18))).to.be.revertedWithCustomError(ch, "BadReveal");
+    await expect(ch.connect(keeper).executeSealedOrder(0, 0, SL, -E18, 58_000n * E18, salt, await at(59_000n * E18))).to.be.revertedWithCustomError(ch, "TriggerNotMet");
+    await expect(ch.connect(keeper).executeSealedOrder(0, 0, SL, -E18, 58_000n * E18, salt, await at(57_900n * E18))).to.emit(ch, "SealedOrderExecuted");
+    expect((await ch.positions(alice.address, 0)).size).to.equal(0);
+    expect(await ch.openOrderCount(alice.address)).to.equal(0);
+    await expect(ch.connect(keeper).executeSealedOrder(0, 0, SL, -E18, 58_000n * E18, salt, await at(57_900n * E18))).to.be.revertedWithCustomError(ch, "OrderNotActive");
+  });
+
+  it("refuses sealed limit orders and lets the owner cancel", async () => {
+    const ctx = await networkHelpers.loadFixture(deploy);
+    const { ch, alice, keeper } = ctx;
+    const salt = ethers.id("s");
+    await ch.connect(alice).placeSealedOrder(seal(alice.address, 0, 0, E18, 50_000n * E18, salt), "0x");
+    await expect(ch.connect(keeper).executeSealedOrder(0, 0, 0, E18, 50_000n * E18, salt, [await report(ctx, BTC, 49_000n * E18)])).to.be.revertedWithCustomError(ch, "LimitNotSealable");
+    await expect(ch.connect(alice).cancelSealedOrder(0)).to.emit(ch, "SealedOrderCancelled");
+    await expect(ch.connect(alice).placeSealedOrder(ethers.ZeroHash, "0x")).to.be.revertedWithCustomError(ch, "ZeroAmount");
+  });
+});
+
+describe("OmnitideDeepPool (Deep Mode)", () => {
+  async function deepFixture() {
+    const ctx = await deploy();
+    const { owner, keeper, guardian, ch } = ctx;
+    const pool = await up.deployProxy(await ethers.getContractFactory("OmnitideDeepPool"), [owner.address, keeper.address, guardian.address, await ch.getAddress()], { kind: "uups", initializer: "initialize" });
+    const salt = ethers.id("alice-deep");
+    const id = await pool.deepId(ctx.alice.address, salt);
+    const endpoint = await networkHelpers.impersonateAccount(await ctx.hubEp.getAddress()).then(() => ethers.getSigner(ctx.hubEp.target as string));
+    await networkHelpers.setBalance(await ctx.hubEp.getAddress(), E18);
+    return { ...ctx, pool, salt, id, endpoint };
+  }
+  type D = Awaited<ReturnType<typeof deepFixture>>;
+  const commit = (id: string, nonce: number, collateral: bigint, flat: boolean, detail: string) =>
+    ethers.keccak256(abi.encode(["bytes32", "uint64", "uint256", "bool", "bytes32"], [id, nonce, collateral, flat, detail]));
+  async function signWithdrawal(ctx: D, w: { owner: string; salt: string; amount: bigint; dstEid: number; receiver: string; deadline: number }, signer: Signer = ctx.alice) {
+    const domain = { name: "OMNITIDE Deep Pool", version: "1", chainId: (await ethers.provider.getNetwork()).chainId, verifyingContract: await ctx.pool.getAddress() };
+    const types = { DeepWithdrawal: [{ name: "salt", type: "bytes32" }, { name: "amount", type: "uint256" }, { name: "dstEid", type: "uint32" }, { name: "receiver", type: "address" }, { name: "deadline", type: "uint64" }] };
+    return signer.signTypedData(domain, types, w);
+  }
+
+  it("pools deposits under a hashed id, trades without one, and seals books in batches", async () => {
+    const ctx = await networkHelpers.loadFixture(deepFixture);
+    const { pool, ch, hubUsd, alice, keeper, id } = ctx;
+    await hubUsd.connect(alice).drip();
+    await hubUsd.connect(alice).approve(await pool.getAddress(), usd(500));
+    await expect(pool.connect(alice).deposit(id, usd(500))).to.emit(pool, "DeepDeposit").withArgs(id, usd(500), HUB, ethers.ZeroHash);
+    expect(await ch.balances(await pool.getAddress())).to.equal(usd(500));
+
+    await expect(pool.connect(alice).trade(0, E18 / 100n, 61_000n * E18, [await report(ctx, BTC, 60_000n * E18)])).to.be.revertedWithCustomError(pool, "NotOperator");
+    await pool.connect(keeper).trade(0, E18 / 100n, 61_000n * E18, [await report(ctx, BTC, 60_000n * E18)]);
+    expect((await ch.positions(await pool.getAddress(), 0)).size).to.equal(E18 / 100n);
+
+    const c = commit(id, 1, usd(499), false, ethers.id("detail"));
+    await expect(pool.connect(keeper).seal([id], [c], ["0xabcd"])).to.emit(pool, "Sealed").withArgs(id, 1, c, "0xabcd");
+    await expect(pool.connect(keeper).seal([id], [], [])).to.be.revertedWithCustomError(pool, "LengthMismatch");
+  });
+
+  it("credits a private Inflow from a spoke to the Deep id only", async () => {
+    const ctx = await networkHelpers.loadFixture(deepFixture);
+    const { pool, hubUsd, owner, endpoint, alice, id } = ctx;
+    await hubUsd.faucetMint(await pool.getAddress(), usd(300)); // the OFT credit that precedes compose
+    const msg = composed(1, SPOKE, usd(300), alice.address, abi.encode(["bytes32"], [id]));
+    await expect(pool.connect(alice).lzCompose(await hubUsd.getAddress(), ethers.id("g"), msg, alice.address, "0x")).to.be.revertedWithCustomError(pool, "NotEndpoint");
+    await expect(pool.connect(endpoint).lzCompose(await hubUsd.getAddress(), ethers.id("g"), msg, alice.address, "0x"))
+      .to.emit(pool, "DeepDeposit").withArgs(id, usd(300), SPOKE, ethers.id("g"));
+  });
+
+  it("pays out only on the owner's signature, once", async () => {
+    const ctx = await networkHelpers.loadFixture(deepFixture);
+    const { pool, hubUsd, alice, bob, keeper, id, salt } = ctx;
+    await hubUsd.connect(alice).drip();
+    await hubUsd.connect(alice).approve(await pool.getAddress(), usd(500));
+    await pool.connect(alice).deposit(id, usd(500));
+    const deadline = (await networkHelpers.time.latest()) + 600;
+    const w = { owner: alice.address, salt, amount: usd(200), dstEid: HUB, receiver: bob.address, deadline };
+    const forged = await signWithdrawal(ctx, w, bob);
+    const c = commit(id, 1, usd(300), true, ethers.ZeroHash);
+    await expect(pool.connect(keeper).withdraw(w, forged, [], c, "0x")).to.be.revertedWithCustomError(pool, "BadSignature");
+    const sig = await signWithdrawal(ctx, w);
+    await expect(pool.connect(alice).withdraw(w, sig, [], c, "0x")).to.be.revertedWithCustomError(pool, "NotOperator");
+    await expect(pool.connect(keeper).withdraw(w, sig, [], c, "0x")).to.emit(pool, "DeepWithdraw").withArgs(id, usd(200), HUB, bob.address, ethers.ZeroHash);
+    expect(await hubUsd.balanceOf(bob.address)).to.equal(usd(200));
+    await expect(pool.connect(keeper).withdraw(w, sig, [], c, "0x")).to.be.revertedWithCustomError(pool, "Replayed");
+  });
+
+  it("lets a flat book exit without the keeper after the delay unless a newer seal lands", async () => {
+    const ctx = await networkHelpers.loadFixture(deepFixture);
+    const { pool, hubUsd, alice, keeper, id, salt } = ctx;
+    await hubUsd.connect(alice).drip();
+    await hubUsd.connect(alice).approve(await pool.getAddress(), usd(500));
+    await pool.connect(alice).deposit(id, usd(500));
+    await pool.connect(keeper).seal([id], [commit(id, 1, usd(500), true, ethers.ZeroHash)], ["0x"]);
+    await expect(pool.connect(alice).requestExit(salt, usd(900), ethers.ZeroHash)).to.be.revertedWithCustomError(pool, "BadPreimage");
+    await pool.connect(alice).requestExit(salt, usd(500), ethers.ZeroHash);
+    await expect(pool.exit(id, [])).to.be.revertedWithCustomError(pool, "ExitNotReady");
+    await networkHelpers.time.increase(86_400);
+    const before = await hubUsd.balanceOf(alice.address);
+    await expect(pool.exit(id, [])).to.emit(pool, "Exited").withArgs(id, usd(500), alice.address);
+    expect((await hubUsd.balanceOf(alice.address)) - before).to.equal(usd(500));
+
+    // a newer seal cancels a pending exit
+    await hubUsd.connect(alice).approve(await pool.getAddress(), usd(100));
+    await pool.connect(alice).deposit(id, usd(100));
+    await pool.connect(keeper).seal([id], [commit(id, 3, usd(100), true, ethers.ZeroHash)], ["0x"]);
+    await pool.connect(alice).requestExit(salt, usd(100), ethers.ZeroHash);
+    await pool.connect(keeper).seal([id], [commit(id, 4, usd(100), true, ethers.ZeroHash)], ["0x"]);
+    await networkHelpers.time.increase(86_400);
+    await expect(pool.exit(id, [])).to.be.revertedWithCustomError(pool, "ExitNotReady");
+  });
+});
+
+describe("OmnitideLighthouse", () => {
+  async function lighthouseFixture() {
+    const ctx = await deploy();
+    const a = await oappPair(ctx, "OmnitideLighthouse", [ctx.owner.address, ctx.keeper.address], [ctx.owner.address, ctx.keeper.address]);
+    return { ...ctx, hub: await ethers.getContractAt("OmnitideLighthouse", a.hub), spoke: await ethers.getContractAt("OmnitideLighthouse", a.spoke) };
+  }
+
+  it("lights an attested Book Score here and on the spoke, newest only", async () => {
+    const ctx = await networkHelpers.loadFixture(lighthouseFixture);
+    const { hub, spoke, keeper, alice, bob } = ctx;
+    const now = await networkHelpers.time.latest();
+    const beam = { account: alice.address, score: 91, grade: 0, issuedAt: now, expiry: now + 7 * 86_400 };
+    const domain = { name: "OMNITIDE Lighthouse", version: "1", chainId: (await ethers.provider.getNetwork()).chainId, verifyingContract: await hub.getAddress() };
+    const types = { Beam: [{ name: "account", type: "address" }, { name: "score", type: "uint8" }, { name: "grade", type: "uint8" }, { name: "issuedAt", type: "uint64" }, { name: "expiry", type: "uint64" }] };
+    const forged = await bob.signTypedData(domain, types, beam);
+    await expect(hub.connect(alice).shine(beam, forged, [SPOKE])).to.be.revertedWithCustomError(hub, "BadAttestation");
+    const sig = await keeper.signTypedData(domain, types, beam);
+    const fee = await hub.quoteShine(beam, [SPOKE]);
+    await expect(hub.connect(alice).shine(beam, sig, [SPOKE], { value: fee - 1n })).to.be.revertedWithCustomError(hub, "FeeTooLow");
+    await expect(hub.connect(alice).shine(beam, sig, [SPOKE], { value: fee })).to.emit(spoke, "BeamLit").withArgs(alice.address, 91, 0, now, now + 7 * 86_400, HUB);
+    expect((await spoke.scoreOf(alice.address)).live).to.equal(true);
+    expect((await hub.scoreOf(alice.address)).score).to.equal(91);
+    await expect(hub.connect(alice).shine(beam, sig, [])).to.be.revertedWithCustomError(hub, "Stale");
+  });
+});
+
+describe("OmnitideBadge (Arena, ONFT)", () => {
+  async function badgeFixture() {
+    const ctx = await deploy();
+    const a = await oappPair(ctx, "OmnitideBadge", [ctx.owner.address, ctx.keeper.address, true, "https://x/b/"], [ctx.owner.address, ctx.keeper.address, false, "https://x/b/"]);
+    return { ...ctx, hub: await ethers.getContractAt("OmnitideBadge", a.hub), spoke: await ethers.getContractAt("OmnitideBadge", a.spoke) };
+  }
+  async function claimSig(ctx: Awaited<ReturnType<typeof badgeFixture>>, to: string, kind: number, deadline: number) {
+    const domain = { name: "OMNITIDE Arena", version: "1", chainId: (await ethers.provider.getNetwork()).chainId, verifyingContract: await ctx.hub.getAddress() };
+    return ctx.keeper.signTypedData(domain, { Claim: [{ name: "to", type: "address" }, { name: "kind", type: "uint8" }, { name: "deadline", type: "uint64" }] }, { to, kind, deadline });
+  }
+
+  it("mints once per kind against an attestation and travels to the spoke", async () => {
+    const ctx = await networkHelpers.loadFixture(badgeFixture);
+    const { hub, spoke, alice, bob } = ctx;
+    const deadline = (await networkHelpers.time.latest()) + 600;
+    const sig = await claimSig(ctx, alice.address, 3, deadline);
+    await expect(hub.connect(bob).claim(3, deadline, sig)).to.be.revertedWithCustomError(hub, "BadAttestation");
+    await expect(hub.connect(alice).claim(3, deadline, sig)).to.emit(hub, "BadgeClaimed").withArgs(alice.address, 1, 3);
+    await expect(hub.connect(alice).claim(3, deadline, sig)).to.be.revertedWithCustomError(hub, "AlreadyClaimed");
+    await expect(spoke.connect(alice).claim(3, deadline, sig)).to.be.revertedWithCustomError(spoke, "NotHome");
+    expect(await hub.tokenURI(1)).to.equal("https://x/b/3/1");
+
+    await expect(hub.connect(bob).send(SPOKE, bob.address, 1)).to.be.revertedWithCustomError(hub, "NotOwner");
+    const fee = await hub.quoteSend(SPOKE, alice.address, 1);
+    await expect(hub.connect(alice).send(SPOKE, alice.address, 1, { value: fee })).to.emit(spoke, "BadgeReceived").withArgs(alice.address, 1, HUB, 3);
+    expect(await spoke.ownerOf(1)).to.equal(alice.address);
+    expect(await spoke.kindOf(1)).to.equal(3);
+    await expect(hub.ownerOf(1)).to.be.revertedWithCustomError(hub, "ERC721NonexistentToken");
+  });
+});
+
+describe("OmnitideCouncil (cross-chain governance)", () => {
+  async function councilFixture() {
+    const ctx = await deploy();
+    const t = await oappPair(ctx, "OmnitideToken", [ctx.owner.address, true], [ctx.owner.address, true]);
+    const c = await oappPair(ctx, "OmnitideCouncil", [ctx.owner.address, t.hub, HUB, 86_400, 1_000n * E18], [ctx.owner.address, t.spoke, HUB, 86_400, 1_000n * E18], [1, 2]);
+    const [hubTide, spokeTide] = await Promise.all([t.hub, t.spoke].map((a) => ethers.getContractAt("OmnitideToken", a)));
+    const [hub, spoke] = await Promise.all([c.hub, c.spoke].map((a) => ethers.getContractAt("OmnitideCouncil", a)));
+    return { ...ctx, hubTide: hubTide!, spokeTide: spokeTide!, hub: hub!, spoke: spoke! };
+  }
+
+  it("tallies hub and spoke stake on the hub, counting only stake older than the proposal", async () => {
+    const ctx = await networkHelpers.loadFixture(councilFixture);
+    const { hub, spoke, hubTide, spokeTide, alice, bob, owner } = ctx;
+    for (const [t, c, who] of [[hubTide, hub, alice], [spokeTide, spoke, bob]] as const) {
+      await t.connect(who).drip();
+      await t.connect(who).approve(await c.getAddress(), 1_000n * E18);
+      await c.connect(who).stake(1_000n * E18);
+    }
+    await expect(hub.connect(owner).propose("t", "b", [SPOKE])).to.be.revertedWithCustomError(hub, "BelowThreshold");
+    await expect(spoke.connect(bob).propose("t", "b", [])).to.be.revertedWithCustomError(spoke, "NotHub");
+    await networkHelpers.time.increase(10);
+    const fee = await hub.quotePropose([SPOKE]);
+    await expect(hub.connect(alice).propose("Raise the BTC cap", "Lift BTC-PERP max OI to 500k", [SPOKE], { value: fee })).to.emit(spoke, "ProposalMirrored");
+
+    await hub.connect(alice).castVote(1, 1);
+    const vfee = await spoke.quoteVote(1, 0, bob.address);
+    await expect(spoke.connect(bob).castVote(1, 0, { value: vfee })).to.emit(hub, "VoteTallied").withArgs(1, bob.address, 0, 1_000n * E18, SPOKE);
+    const p = await hub.proposals(1);
+    expect(p.forVotes).to.equal(1_000n * E18);
+    expect(p.againstVotes).to.equal(1_000n * E18);
+    await expect(hub.connect(alice).castVote(1, 1)).to.be.revertedWithCustomError(hub, "AlreadyVoted");
+    await expect(hub.connect(alice).unstake(1n)).to.be.revertedWithCustomError(hub, "Locked");
+
+    // fresh stake after the proposal opened carries no weight
+    await hubTide.connect(owner).drip();
+    await hubTide.connect(owner).approve(await hub.getAddress(), E18);
+    await hub.connect(owner).stake(E18);
+    await expect(hub.connect(owner).castVote(1, 1)).to.be.revertedWithCustomError(hub, "NoWeight");
+
+    await networkHelpers.time.increase(86_401);
+    await expect(hub.connect(alice).castVote(1, 1)).to.be.revertedWithCustomError(hub, "VotingClosed");
+    await hub.connect(alice).unstake(1_000n * E18);
+    expect(await hubTide.balanceOf(alice.address)).to.equal(1_000n * E18);
+  });
+});
+
+describe("OmnitideCopyVault", () => {
+  async function copyFixture() {
+    const ctx = await deploy();
+    const impl = await (await ethers.getContractFactory("OmnitideCopyVault")).deploy();
+    const factory = await up.deployProxy(await ethers.getContractFactory("OmnitideCopyVaultFactory"), [ctx.owner.address, await ctx.ch.getAddress(), await impl.getAddress(), usd(100)], { kind: "uups", initializer: "initialize" });
+    const { alice, hubUsd } = ctx;
+    await hubUsd.connect(alice).drip();
+    await hubUsd.connect(alice).approve(await factory.getAddress(), usd(500));
+    await factory.connect(alice).createVault("Alice Momentum", "cALICE", usd(500), []);
+    const vault = await ethers.getContractAt("OmnitideCopyVault", await factory.vaults(0));
+    const endpoint = await networkHelpers.impersonateAccount(await ctx.hubEp.getAddress()).then(() => ethers.getSigner(ctx.hubEp.target as string));
+    await networkHelpers.setBalance(await ctx.hubEp.getAddress(), E18);
+    return { ...ctx, factory, vault, endpoint };
+  }
+
+  it("seeds at creation, lets followers ride the leader's PnL and redeem at NAV", async () => {
+    const ctx = await networkHelpers.loadFixture(copyFixture);
+    const { factory, vault, hubUsd, ch, alice, bob } = ctx;
+    await expect(factory.connect(bob).createVault("x", "x", usd(10), [])).to.be.revertedWithCustomError(factory, "SeedTooSmall");
+    expect(await vault.leader()).to.equal(alice.address);
+    expect(await vault.balanceOf(alice.address)).to.equal(usd(500));
+
+    await hubUsd.connect(bob).drip();
+    await hubUsd.connect(bob).approve(await vault.getAddress(), usd(500));
+    await vault.connect(bob).deposit(usd(500), bob.address, []);
+    expect(await vault.balanceOf(bob.address)).to.equal(usd(500));
+
+    await expect(vault.connect(bob).trade(0, E18 / 10n, 61_000n * E18, [await report(ctx, BTC, 60_000n * E18)])).to.be.revertedWithCustomError(vault, "NotLeader");
+    await vault.connect(alice).trade(0, E18 / 10n, 61_000n * E18, [await report(ctx, BTC, 60_000n * E18)]); // fee 6
+    await vault.connect(alice).trade(0, -E18 / 10n, 0, [await report(ctx, BTC, 62_000n * E18)]); // +200, fee 6.2
+    const navNow = await vault.nav([]);
+    expect(navNow).to.equal(usd(1_000) + usd(200) - 12_200_000n);
+    const before = await hubUsd.balanceOf(bob.address);
+    await vault.connect(bob).redeem(usd(500), HUB, bob.address, []);
+    expect((await hubUsd.balanceOf(bob.address)) - before).to.equal(navNow / 2n);
+    expect(await ch.balances(await vault.getAddress())).to.equal(navNow - navNow / 2n);
+  });
+
+  it("queues omnichain deposits and prices them on settle", async () => {
+    const ctx = await networkHelpers.loadFixture(copyFixture);
+    const { vault, hubUsd, owner, bob, endpoint } = ctx;
+    await hubUsd.faucetMint(await vault.getAddress(), usd(250));
+    const msg = composed(1, SPOKE, usd(250), bob.address, abi.encode(["address"], [bob.address]));
+    await expect(vault.connect(endpoint).lzCompose(await hubUsd.getAddress(), ethers.id("c"), msg, bob.address, "0x")).to.emit(vault, "Queued").withArgs(bob.address, usd(250), SPOKE, ethers.id("c"));
+    expect(await vault.pending(bob.address)).to.equal(usd(250));
+    await vault.settle([bob.address], []);
+    expect(await vault.balanceOf(bob.address)).to.equal(usd(250));
+    await expect(vault.settle([bob.address], [])).to.be.revertedWithCustomError(vault, "NothingPending");
+  });
+});
+
+describe("Deep Water crypto (deep.ts)", () => {
+  it("round-trips sealed boxes for every recipient, refuses strangers, and matches on-chain hashes", async () => {
+    const deep = await import("../deep.js");
+    const a = deep.deriveDeepKeys(ethers.hexlify(ethers.randomBytes(65)) as `0x${string}`);
+    const keeper = ethers.hexlify(ethers.randomBytes(32)) as `0x${string}`;
+    const box = deep.seal([a.viewPublic, deep.x25519Public(keeper)], '{"tide":"low"}');
+    expect(deep.open(a.viewPrivate, box)).to.equal('{"tide":"low"}');
+    expect(deep.open(keeper, box)).to.equal('{"tide":"low"}');
+    expect(deep.open(ethers.hexlify(ethers.randomBytes(32)) as `0x${string}`, box)).to.equal(null);
+    expect(deep.deriveDeepKeys("0x1234").salt).to.equal(deep.deriveDeepKeys("0x1234").salt);
+
+    const dk = deep.disclosureKey(ethers.id("x") as `0x${string}`, a.viewPrivate);
+    expect(deep.parseDisclosureKey(dk)).to.deep.equal({ id: ethers.id("x"), viewPrivate: a.viewPrivate });
+    expect(deep.parseDisclosureKey("nope")).to.equal(null);
+
+    const ctx = await networkHelpers.loadFixture(deploy);
+    const pool = await up.deployProxy(await ethers.getContractFactory("OmnitideDeepPool"), [ctx.owner.address, ctx.keeper.address, ctx.guardian.address, await ctx.ch.getAddress()], { kind: "uups", initializer: "initialize" });
+    expect(await pool.deepId(ctx.alice.address, a.salt)).to.equal(deep.deepId(ctx.alice.address as `0x${string}`, a.salt));
+
+    // a flat book the escape hatch accepts
+    const id = (await pool.deepId(ctx.alice.address, a.salt)) as `0x${string}`;
+    const book = { id, nonce: 1, collateral: "250000000", positions: [], realized: "0", fees: "0", updatedAt: 1, history: [] };
+    await pool.connect(ctx.keeper).seal([id], [deep.deepCommitment(book)], ["0x"]);
+    await expect(pool.connect(ctx.alice).requestExit(a.salt, usd(250), deep.detailHash(book))).to.emit(pool, "ExitRequested");
+  });
+});

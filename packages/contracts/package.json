@@ -37,9 +37,13 @@
     "@layerzerolabs/oft-evm": "4.0.1",
     "@layerzerolabs/oft-evm-upgradeable": "4.0.2",
     "@layerzerolabs/test-devtools-evm-hardhat": "^0.5.3",
+    "@noble/ciphers": "1.3.0",
+    "@noble/curves": "1.9.1",
+    "@noble/hashes": "1.8.0",
     "@openzeppelin/contracts": "5.6.1",
     "@openzeppelin/contracts-upgradeable": "5.6.1",
-    "solidity-bytes-utils": "^0.8.4"
+    "solidity-bytes-utils": "^0.8.4",
+    "viem": "2.58.0"
   },
   "exports": {
     "./abi": "./abi/index.ts",
@@ -49,6 +53,7 @@
     "./deployments/*": "./deployments/*",
     "./deployments": "./deployments/index.ts",
     "./margin": "./margin.ts",
-    "./riptide": "./riptide.ts"
+    "./riptide": "./riptide.ts",
+    "./deep": "./deep.ts"
   }
 }

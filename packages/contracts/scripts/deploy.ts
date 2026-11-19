@@ -149,6 +149,49 @@ if (chain.hub) {
   }
 }
 
+// ───────── V3 Deep Water: Sealed Orders, Deep Pool, Lighthouse, Arena Badges, TIDE + Council, copy vaults ─────────
+const BADGE_URI = process.env.BADGE_BASE_URI ?? "https://omnitide-testnet.vercel.app/api/badge/";
+const VOTING_PERIOD = isTestnet ? 2 * 86_400 : 7 * 86_400;
+const PROPOSAL_THRESHOLD = ethers.parseEther("1000");
+
+async function deployOnce(name: "OmnitideDeepPool" | "OmnitideToken" | "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil", fn: () => Promise<BaseContract>) {
+  if (dep[name]) return;
+  const c = await fn();
+  await c.waitForDeployment();
+  dep[name] = await record(c);
+  saveDeployments(all);
+  console.log(name, await c.getAddress());
+}
+
+if (chain.hub || chain.deepWater) {
+  const F = (n: string) => ethers.getContractFactory(n);
+  if (chain.hub) {
+    const chAddr = dep.OmnitideClearinghouse!.proxy;
+    const hasSealed = await ethers.provider.call({ to: chAddr, data: ethers.id("nextSealedId()").slice(0, 10) }).then(() => true, () => false);
+    if (!hasSealed) {
+      await up.upgradeProxy(chAddr, await F("OmnitideClearinghouse"), { kind: "uups" });
+      dep.OmnitideClearinghouse!.implementation = await up.erc1967.getImplementationAddress(chAddr);
+      saveDeployments(all);
+      console.log("OmnitideClearinghouse upgraded (Sealed Orders) →", dep.OmnitideClearinghouse!.implementation);
+    }
+    await deployOnce("OmnitideDeepPool", async () => up.deployProxy(await F("OmnitideDeepPool"), [DEPLOYER, DEPLOYER, DEPLOYER, chAddr], { kind: "uups" }));
+    if (!dep.OmnitideCopyVaultFactory) {
+      const impl = await (await F("OmnitideCopyVault")).deploy();
+      await impl.waitForDeployment();
+      const factory = await up.deployProxy(await F("OmnitideCopyVaultFactory"), [DEPLOYER, chAddr, await impl.getAddress(), ethers.parseUnits("100", 6)], { kind: "uups" });
+      await factory.waitForDeployment();
+      dep.OmnitideCopyVaultFactory = { ...(await record(factory)), beacon: await (await ethers.getContractAt("OmnitideCopyVaultFactory", await factory.getAddress())).beacon(), vaultImplementation: await impl.getAddress() };
+      saveDeployments(all);
+      console.log("OmnitideCopyVaultFactory", dep.OmnitideCopyVaultFactory.proxy);
+    }
+  }
+  await deployOnce("OmnitideToken", async () => up.deployProxy(await F("OmnitideToken"), [DEPLOYER, isTestnet], lzOpts));
+  await deployOnce("OmnitideLighthouse", async () => up.deployProxy(await F("OmnitideLighthouse"), [DEPLOYER, DEPLOYER], lzOpts));
+  await deployOnce("OmnitideBadge", async () => up.deployProxy(await F("OmnitideBadge"), [DEPLOYER, DEPLOYER, !!chain.hub, BADGE_URI], lzOpts));
+  const hubEid = Object.values(CHAINS).find((c) => c.hub)!.eid;
+  await deployOnce("OmnitideCouncil", async () => up.deployProxy(await F("OmnitideCouncil"), [DEPLOYER, dep.OmnitideToken!.proxy, hubEid, VOTING_PERIOD, PROPOSAL_THRESHOLD], lzOpts));
+}
+
 async function hasHarborHooks(addr: string) {
   return ethers.provider.call({ to: addr, data: ethers.id("harbor()").slice(0, 10) }).then(() => true, () => false);
 }

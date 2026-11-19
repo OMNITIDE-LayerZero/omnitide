@@ -18,6 +18,12 @@ export interface ChainDeployment {
   OmnitideHarborShareAdapter?: ProxyRecord;
   OmnitideHarborShare?: ProxyRecord;
   OmnitideTideReader?: ProxyRecord;
+  OmnitideDeepPool?: ProxyRecord;
+  OmnitideLighthouse?: ProxyRecord;
+  OmnitideBadge?: ProxyRecord;
+  OmnitideToken?: ProxyRecord;
+  OmnitideCouncil?: ProxyRecord;
+  OmnitideCopyVaultFactory?: ProxyRecord & { beacon: string; vaultImplementation: string };
   wired?: string;
 }
 
