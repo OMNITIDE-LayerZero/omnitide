@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useTheme } from "./theme";
 
 const LOGO = "/brand/mark-512.webp";
-const SRC = 600; // the mark is resampled at this size before stippling
+const SRC = 720; // the mark is resampled at this size before stippling
 const STEP = 3;
 const LOOP = 8; // seconds; every motion term repeats on it so the loop is seamless
 const TAU = Math.PI * 2;
@@ -70,6 +70,23 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
     wait: 0,
   }));
 
+  // leftmost reach of the mark per horizontal slice, used to fit it beside the hero copy
+  const SLICES = 48;
+  const reach = new Float32Array(SLICES).fill(2);
+  for (const p of parts) {
+    const i = Math.min(SLICES - 1, Math.floor(p.oy * SLICES));
+    reach[i] = Math.min(reach[i]!, p.ox);
+  }
+  // line boxes of the hero copy (text ink, not the full-width blocks), relative to the canvas
+  const copyLines = () => {
+    const c = canvas.getBoundingClientRect();
+    const range = document.createRange();
+    return [...(document.querySelector("[data-hero-copy]")?.children ?? [])].flatMap((el) => {
+      range.selectNodeContents(el);
+      return [...range.getClientRects()].map((r) => ({ t: r.top - c.top, b: r.bottom - c.top, r: r.right - c.left }));
+    });
+  };
+
   let pal = PALETTE[document.documentElement.dataset.theme === "dark" ? "dark" : "light"];
   let w = 0;
   let h = 0;
@@ -83,14 +100,38 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
     canvas.width = Math.round(w * dpr);
     canvas.height = Math.round(h * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const wide = w >= 1024;
-    // wide: the mark owns the right half above the tide table; narrow: it sits faint low behind the buttons
-    const bw = wide ? Math.min(w * 0.48, w - 644, h * 0.6 * aspect) : w * 1.05;
-    const bh = bw / aspect;
-    const cx = wide ? w - 24 - bw / 2 : w * 0.6;
-    const cy = wide ? Math.min(h * 0.42, h - 210 - bh / 2) : h * 0.66;
-    box = { x: cx - bw / 2, y: cy - bh / 2, w: bw, h: bh };
-    fade = wide ? 1 : 0.22;
+    const dock = document.querySelector("[data-hero-dock]")?.getBoundingClientRect();
+    const floor = dock ? dock.top - canvas.getBoundingClientRect().top + 40 : h - 140; // the tails tuck just behind the tide table
+    const text = copyLines();
+    // largest mark, bleeding 7% off the right edge, whose every slice stays clear of the copy
+    const fits = (bw: number) => {
+      const bh = bw / aspect;
+      const x = w - bw * 0.93;
+      const y = floor - bh;
+      return text.every((r) =>
+        reach.every((ox, i) => {
+          const top = y + (i / SLICES) * bh;
+          return top + bh / SLICES < r.t - 20 || top > r.b + 20 || x + ox * bw > r.r + 32;
+        }),
+      );
+    };
+    let lo = 0;
+    let hi = Math.min(w * 0.8, (floor - 72) * aspect);
+    for (let k = 0; k < 18; k++) {
+      const mid = (lo + hi) / 2;
+      if (fits(mid)) lo = mid;
+      else hi = mid;
+    }
+    if (lo >= Math.max(360, w * 0.38)) {
+      box = { x: w - lo * 0.93, y: floor - lo / aspect, w: lo, h: lo / aspect };
+      fade = 1;
+    } else {
+      // no room beside the copy (phones, portrait tablets): the mark sits faint and low behind the buttons
+      const bw = w * 1.2;
+      const bh = bw / aspect;
+      box = { x: w * 0.6 - bw / 2, y: h * 0.64 - bh / 2, w: bw, h: bh };
+      fade = 0.22;
+    }
     if (!placed) {
       for (const p of parts) {
         // a loose spray off to the right that rolls left into the mark, like the waves themselves
@@ -107,7 +148,6 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
   let disperse = 0;
   const pointer = { x: 0, y: 0, on: false };
   const splash = { x: 0, y: 0, at: -1e9 };
-  const glints: number[] = [];
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let start = 0;
@@ -132,7 +172,6 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
     const ring = age < 1.2 ? age * 520 : -1;
 
     ctx.clearRect(0, 0, w, h);
-    glints.length = 0;
     let band = -1;
     for (const p of parts) {
       if (p.band !== band) {
@@ -151,8 +190,6 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
         hx += (p.sx - 0.6) * s;
         hy -= Math.abs(p.sy) * s;
       }
-      const shine = Math.max(0, Math.cos(TAU * (p.ox * 0.8 + p.oy * 0.4) + u)) ** 20;
-      const size = dot * (1 + shine * 0.3);
       let x = hx;
       let y = hy;
       if (!reduced) {
@@ -192,14 +229,7 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
           y = p.py + p.sy * spread * 0.6;
         }
       }
-      ctx.fillRect(x, y, size, size);
-      if (shine > 0.4) glints.push(x, y, size, shine);
-    }
-    // a sheen of light sweeps the mark once per loop
-    ctx.fillStyle = "#ffffff";
-    for (let i = 0; i < glints.length; i += 4) {
-      ctx.globalAlpha = ((glints[i + 3]! - 0.4) / 0.6) * 0.75 * alpha;
-      ctx.fillRect(glints[i]!, glints[i + 1]!, glints[i + 2]!, glints[i + 2]!);
+      ctx.fillRect(x, y, dot, dot);
     }
     ctx.globalAlpha = 1;
   };
@@ -223,12 +253,18 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
   };
   const still = () => draw(performance.now());
 
-  const ro = new ResizeObserver(() => {
+  let live = true;
+  const refit = () => {
+    if (!live) return;
     resize();
     if (reduced) still();
-  });
+  };
+  const ro = new ResizeObserver(refit);
   ro.observe(canvas);
+  const copy = document.querySelector("[data-hero-copy]");
+  if (copy) ro.observe(copy);
   resize();
+  void document.fonts.ready.then(refit); // the display face changes the headline's width when it swaps in
   const io = new IntersectionObserver(([e]) => {
     visible = !!e?.isIntersecting;
     if (visible) play();
@@ -272,6 +308,7 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
   };
 
   return () => {
+    live = false;
     pause();
     ro.disconnect();
     io.disconnect();

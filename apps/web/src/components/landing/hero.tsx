@@ -24,7 +24,7 @@ export function Hero() {
       <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-bg to-transparent" />
 
       <div className="mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-between px-4 pt-28 pb-0 sm:px-8 sm:pt-36">
-        <div className="rise max-w-3xl">
+        <div data-hero-copy className="rise max-w-3xl">
           <p className="tag text-ink-2">LayerZero V2 · 5 chains · settled on Robinhood Chain</p>
           <h1 className="display mt-4 text-[clamp(52px,9.5vw,128px)] text-ink">
             Be the tide.
@@ -46,7 +46,7 @@ export function Hero() {
         </div>
 
         {/* product view rising from the bottom edge: the live tide table */}
-        <div className="rise mt-16 grid gap-4 lg:grid-cols-[1fr_320px]" style={{ animationDelay: "120ms" }}>
+        <div data-hero-dock className="rise mt-16 grid gap-4 lg:grid-cols-[1fr_320px]" style={{ animationDelay: "120ms" }}>
           <div className="rounded-t-2xl border border-b-0 border-line bg-card/90 p-4 shadow-md backdrop-blur-sm sm:p-5">
             <div className="flex items-center justify-between">
               <span className="tag text-ink-3">Tide table · live venue prices</span>
