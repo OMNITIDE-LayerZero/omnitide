@@ -27,7 +27,7 @@ export default function Home() {
       <main>
         <Hero />
 
-        <section className="engrave bg-navy py-24 text-white sm:py-32">
+        <section data-tone="dark" className="engrave bg-navy py-24 text-white sm:py-32">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
             <div className="grid gap-6 md:grid-cols-[1fr_360px] md:items-end">
               <div>
@@ -69,7 +69,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="engrave bg-accent py-24 sm:py-32" style={{ backgroundColor: "#1f3dff" }}>
+        <section data-tone="dark" className="engrave bg-accent py-24 sm:py-32" style={{ backgroundColor: "#1f3dff" }}>
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
             <SeaWallBand />
           </div>
