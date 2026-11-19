@@ -1,17 +1,15 @@
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { HUB_KEY, LANES, SHORT, inflowRoute } from "@/lib/chains";
 
-const SPOKES: ChainKey[] = ["sepolia", "fuji", "monadTestnet", "arcTestnet"];
+const SPOKES: ChainKey[] = ["sepolia", "fuji"];
 // port positions on a 600×360 chart
 const POS: Record<ChainKey, [number, number]> = {
-  robinhoodTestnet: [300, 196],
-  sepolia: [96, 72],
-  fuji: [504, 72],
-  monadTestnet: [72, 300],
-  arcTestnet: [528, 300],
+  robinhoodTestnet: [300, 240],
+  sepolia: [110, 96],
+  fuji: [490, 96],
 };
 
-/** The five ports and the LayerZero lanes that connect them, drawn like a nautical chart. */
+/** The three ports and the LayerZero lanes that connect them, drawn like a nautical chart. */
 export function RouteMap() {
   const drawn = new Set<string>();
   const lanes: [ChainKey, ChainKey][] = [];
@@ -47,7 +45,7 @@ export function RouteMap() {
           <animateMotion dur="3.6s" repeatCount="indefinite" path={`M${POS.fuji[0]},${POS.fuji[1]} L${POS[HUB_KEY][0]},${POS[HUB_KEY][1]}`} />
         </circle>
         <circle r="3" fill="#8ea2ff">
-          <animateMotion dur="5.2s" repeatCount="indefinite" path={`M${POS.monadTestnet[0]},${POS.monadTestnet[1]} L${POS.sepolia[0]},${POS.sepolia[1]} L${POS[HUB_KEY][0]},${POS[HUB_KEY][1]}`} />
+          <animateMotion dur="5.2s" repeatCount="indefinite" path={`M${POS.sepolia[0]},${POS.sepolia[1]} L${POS[HUB_KEY][0]},${POS[HUB_KEY][1]}`} />
         </circle>
         {(Object.keys(POS) as ChainKey[]).map((k) => {
           const [x, y] = POS[k];
@@ -77,7 +75,7 @@ export function RouteMap() {
           );
         })}
         <li className="border-t border-white/10 pt-4 text-[13px] leading-5 text-white/60">
-          Lanes shown are the ones LayerZero runs today. Monad and Arc arrive through Sepolia, and the terminal routes them for you.
+          Lanes shown are the ones LayerZero runs today. Every spoke lands on the hub in one hop, one transaction.
         </li>
       </ol>
     </div>

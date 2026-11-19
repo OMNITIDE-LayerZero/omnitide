@@ -8,8 +8,6 @@ const Env = z.object({
   INDEXER_URL: z.string().url().default("http://127.0.0.1:4302"),
   RPC_46630: z.string().url().default("https://rpc.testnet.chain.robinhood.com"),
   RPC_11155111: z.string().url().default("https://ethereum-sepolia-rpc.publicnode.com"),
-  RPC_10143: z.string().url().default("https://testnet-rpc.monad.xyz"),
-  RPC_5042002: z.string().url().default("https://rpc.testnet.arc.io"),
   RPC_43113: z.string().url().default("https://avalanche-fuji-c-chain-rpc.publicnode.com"),
 });
 

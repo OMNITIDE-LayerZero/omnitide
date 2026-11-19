@@ -179,7 +179,6 @@ function Ebb() {
         <input className="field mt-1" inputMode="decimal" placeholder="0.00" value={value} onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ""))} />
       </label>
       {dst !== HUB_KEY && fee !== undefined && <p className="num text-[13px] text-ink-2">LayerZero fee {Number(formatEther(fee)).toPrecision(3)} ETH on Robinhood Chain</p>}
-      <p className="text-[13px] leading-5 text-ink-2">Monad and Arc are not reachable from the hub yet; ebb to Sepolia and ferry on from there.</p>
       <button type="button" className="btn btn-primary w-full" disabled={busy || amount === 0n || Number(value) > withdrawable + 1e-6 || (dst !== HUB_KEY && fee === undefined)} onClick={() => void go().catch(() => {})}>
         {dst === HUB_KEY ? "Withdraw to wallet" : `Ebb to ${SHORT[dst]}`}
       </button>
@@ -193,11 +192,11 @@ function Faucet() {
   const { data } = useLocalToken(chainId);
   const { send, busy } = useTx();
   const waiting = data && data.nextDrip * 1000 > Date.now();
-  if (!key) return <p className="text-[14px] text-ink-2">Switch to one of the five OMNITIDE chains to collect test tdUSD.</p>;
+  if (!key) return <p className="text-[14px] text-ink-2">Switch to one of the three OMNITIDE chains to collect test tdUSD.</p>;
   return (
     <div className="space-y-4">
       <p className="text-[14px] leading-[22px] text-ink-2">
-        Every address can collect 1,000 test tdUSD per day on each of the five chains. Collect on {SHORT[key]}, then Inflow it into the book.
+        Every address can collect 1,000 test tdUSD per day on each of the three chains. Collect on {SHORT[key]}, then Inflow it into the book.
       </p>
       <button type="button" className="btn btn-primary w-full" disabled={busy || !!waiting} onClick={() => void send(`Collect 1,000 tdUSD on ${SHORT[key]}`, { chainId: CHAINS[key].chainId, address: usdAddress(key), abi: omnitideUSDAbi, functionName: "drip" }).catch(() => {})}>
         {waiting ? `Refills ${new Date(data!.nextDrip * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "Collect 1,000 tdUSD"}

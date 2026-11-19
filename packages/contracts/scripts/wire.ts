@@ -35,6 +35,13 @@ for (const peer of peers) {
 }
 if (options.length) await (await usd.setEnforcedOptions(options)).wait();
 
+// chains dropped from CHAINS keep their deployment record; close their lanes so nothing is sent into them
+for (const [k, rec] of Object.entries(all)) {
+  if (k in CHAINS || !rec?.eid || (await usd.peers(rec.eid)) === ethers.ZeroHash) continue;
+  await (await usd.setPeer(rec.eid, ethers.ZeroHash)).wait();
+  console.log(`unpeered ${k} (${rec.eid})`);
+}
+
 all[key]!.wired = peers.join(",");
 saveDeployments(all);
 console.log(`wired ${key} → ${peers.join(", ")} · spent ${ethers.formatEther(start - (await ethers.provider.getBalance(signer.address)))}`);

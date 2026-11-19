@@ -10,7 +10,7 @@ const MAX_BATCH = 20;
 
 type RpcReq = { id?: unknown; method?: unknown };
 
-/** JSON-RPC relay for the five OMNITIDE chains: read methods plus signed-tx broadcast, nothing else. */
+/** JSON-RPC relay for the OMNITIDE chains: read methods plus signed-tx broadcast, nothing else. */
 export async function POST(req: Request, ctx: { params: Promise<{ chainId: string }> }) {
   const { chainId } = await ctx.params;
   const target = upstreamRpc(Number(chainId));

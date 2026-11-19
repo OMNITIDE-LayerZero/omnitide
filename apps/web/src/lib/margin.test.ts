@@ -33,9 +33,8 @@ describe("format", () => {
 });
 
 describe("routes", () => {
-  it("routes Monad and Arc through Sepolia, Fuji direct", () => {
+  it("routes every spoke straight to the hub", () => {
     expect(inflowRoute("fuji")).toEqual(["robinhoodTestnet"]);
-    expect(inflowRoute("monadTestnet")).toEqual(["sepolia", "robinhoodTestnet"]);
-    expect(inflowRoute("arcTestnet")).toEqual(["sepolia", "robinhoodTestnet"]);
+    expect(inflowRoute("sepolia")).toEqual(["robinhoodTestnet"]);
   });
 });

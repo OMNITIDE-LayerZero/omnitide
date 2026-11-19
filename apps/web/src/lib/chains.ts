@@ -1,8 +1,8 @@
-import { arcTestnet, avalancheFuji, monadTestnet, robinhoodTestnet, sepolia } from "viem/chains";
+import { avalancheFuji, robinhoodTestnet, sepolia } from "viem/chains";
 import type { Chain } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 
-const VIEM: Record<ChainKey, Chain> = { robinhoodTestnet, sepolia, monadTestnet, arcTestnet, fuji: avalancheFuji };
+const VIEM: Record<ChainKey, Chain> = { robinhoodTestnet, sepolia, fuji: avalancheFuji };
 
 /** Browser RPC goes through our own proxy so every visitor reaches every chain, whatever their DNS. */
 export function proxiedRpc(chainId: number) {
@@ -26,20 +26,15 @@ export const chainKeyOf = (chainId: number | undefined) => CHAIN_KEYS.find((k) =
 export const SHORT: Record<ChainKey, string> = {
   robinhoodTestnet: "Robinhood Chain",
   sepolia: "Ethereum Sepolia",
-  monadTestnet: "Monad",
-  arcTestnet: "Arc",
   fuji: "Avalanche Fuji",
 };
 
 /**
  * LayerZero testnet lanes that exist today (ULN isSupportedEid, re-checked live on the Sea Wall page).
- * Monad and Arc reach the hub through Sepolia.
  */
 export const LANES: Record<ChainKey, ChainKey[]> = {
   robinhoodTestnet: ["sepolia", "fuji"],
-  sepolia: ["robinhoodTestnet", "monadTestnet", "arcTestnet", "fuji"],
-  monadTestnet: ["sepolia", "arcTestnet", "fuji"],
-  arcTestnet: ["sepolia", "monadTestnet", "fuji"],
+  sepolia: ["robinhoodTestnet", "fuji"],
   fuji: ["robinhoodTestnet", "sepolia"],
 };
 

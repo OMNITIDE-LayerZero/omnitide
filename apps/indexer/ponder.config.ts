@@ -4,11 +4,7 @@ import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
 import { omnitideUSDAbi, omnitideClearinghouseAbi } from "@omnitide/contracts/abi";
 
 const d = DEPLOYMENTS.testnet;
-// Monad makes ~2 blocks/s and its public RPC rate-limits alone, so ponder spreads load over three
-const EXTRA_RPCS: Partial<Record<keyof typeof CHAINS, string[]>> = {
-  monadTestnet: ["https://monad-testnet.drpc.org", "https://10143.rpc.thirdweb.com"],
-};
-const rpc = (key: keyof typeof CHAINS) => process.env[`PONDER_RPC_${CHAINS[key].chainId}`]?.split(",") ?? [CHAINS[key].rpc, ...(EXTRA_RPCS[key] ?? [])];
+const rpc = (key: keyof typeof CHAINS) => process.env[`PONDER_RPC_${CHAINS[key].chainId}`]?.split(",") ?? CHAINS[key].rpc;
 const usdOn = (key: keyof typeof CHAINS) => ({ address: d[key].OmnitideUSD.proxy as `0x${string}`, startBlock: d[key].OmnitideUSD.block });
 
 export default createConfig({
@@ -17,8 +13,6 @@ export default createConfig({
   chains: {
     robinhoodTestnet: { id: CHAINS.robinhoodTestnet.chainId, rpc: rpc("robinhoodTestnet"), pollingInterval: 2_000 },
     sepolia: { id: CHAINS.sepolia.chainId, rpc: rpc("sepolia"), maxRequestsPerSecond: 8 },
-    monadTestnet: { id: CHAINS.monadTestnet.chainId, rpc: rpc("monadTestnet"), maxRequestsPerSecond: 20, ethGetLogsBlockRange: 100 },
-    arcTestnet: { id: CHAINS.arcTestnet.chainId, rpc: rpc("arcTestnet"), maxRequestsPerSecond: 8 },
     fuji: { id: CHAINS.fuji.chainId, rpc: rpc("fuji"), maxRequestsPerSecond: 8 },
   },
   contracts: {
@@ -27,8 +21,6 @@ export default createConfig({
       chain: {
         robinhoodTestnet: usdOn("robinhoodTestnet"),
         sepolia: usdOn("sepolia"),
-        monadTestnet: usdOn("monadTestnet"),
-        arcTestnet: usdOn("arcTestnet"),
         fuji: usdOn("fuji"),
       },
       filter: [{ event: "OFTSent", args: {} }, { event: "OFTReceived", args: {} }, { event: "Dripped", args: {} }],

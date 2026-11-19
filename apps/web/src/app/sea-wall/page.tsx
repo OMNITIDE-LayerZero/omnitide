@@ -21,7 +21,7 @@ export default function SeaWall() {
       <main className="mx-auto max-w-[1440px] px-4 pt-28 pb-24 sm:px-8 sm:pt-36">
         <div className="grid gap-6 md:grid-cols-[1fr_380px] md:items-end">
           <div>
-            <p className="tag text-ink-3">Safeguards · read live from six contracts on five chains</p>
+            <p className="tag text-ink-3">Safeguards · read live from four contracts on three chains</p>
             <h1 className="display mt-4 text-[clamp(52px,8vw,112px)] text-ink">The Sea Wall</h1>
           </div>
           <p className="text-[14px] leading-[22px] text-ink-2">Everything on this page is read from the chain as you look at it: what the hub holds, what it owes, and how each LayerZero lane is guarded.</p>

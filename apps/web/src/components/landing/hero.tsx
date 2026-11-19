@@ -25,14 +25,14 @@ export function Hero() {
 
       <div className="mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-between px-4 pt-28 pb-0 sm:px-8 sm:pt-36">
         <div data-hero-copy className="rise max-w-3xl">
-          <p className="tag text-ink-2">LayerZero V2 · 5 chains · settled on Robinhood Chain</p>
+          <p className="tag text-ink-2">LayerZero V2 · 3 chains · settled on Robinhood Chain</p>
           <h1 className="display mt-4 text-[clamp(52px,9.5vw,128px)] text-ink">
             Be the tide.
             <br />
             Not the target.
           </h1>
           <p className="mt-6 max-w-xl text-[18px] leading-7 text-ink-2">
-            Fund from Ethereum, Avalanche, Monad or Arc. LayerZero lands it in a single margin account on Robinhood Chain, where BTC, ETH, NVDA and TSLA perps all trade off the same balance.
+            Fund from Ethereum or Avalanche. LayerZero lands it in a single margin account on Robinhood Chain, where BTC, ETH, NVDA and TSLA perps all trade off the same balance.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link href="/terminal/trade" className="btn btn-primary btn-lg">

@@ -1,6 +1,6 @@
 import type { Address } from "viem";
 import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
-import type { ChainKey } from "@omnitide/contracts/chains";
+import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { MARKETS } from "@omnitide/contracts/markets";
 
 import { omnitideClearinghouseAbi, omnitideOracleAbi } from "@omnitide/contracts/abi";
@@ -17,7 +17,7 @@ export const CLEARINGHOUSE = D.robinhoodTestnet.OmnitideClearinghouse.proxy as A
 export const ORACLE = D.robinhoodTestnet.OmnitideOracle.proxy as Address;
 
 /** Every proxy and its implementation, for the contracts section. */
-export const CONTRACT_ROWS = (Object.keys(D) as ChainKey[]).flatMap((k) =>
+export const CONTRACT_ROWS = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) =>
   (["OmnitideClearinghouse", "OmnitideOracle", "OmnitideUSD"] as const).flatMap((name) => {
     const rec = (D[k] as Partial<Record<typeof name, { proxy: string; implementation: string }>>)[name];
     return rec ? [{ chain: k, name, proxy: rec.proxy as Address, implementation: rec.implementation as Address }] : [];

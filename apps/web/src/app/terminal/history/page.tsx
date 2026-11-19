@@ -58,7 +58,7 @@ export default function History() {
     <div className="rounded-2xl border border-line bg-card">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line px-5 pt-5">
         <div>
-          <p className="tag text-ink-3">{acct ? "Your account, indexed across five chains" : "Recent fills across OMNITIDE"}</p>
+          <p className="tag text-ink-3">{acct ? "Your account, indexed across three chains" : "Recent fills across OMNITIDE"}</p>
           <h1 className="display mt-2 text-[44px] text-ink">History</h1>
         </div>
         <div className="flex gap-1" role="tablist">

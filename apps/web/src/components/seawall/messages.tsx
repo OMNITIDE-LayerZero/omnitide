@@ -40,11 +40,11 @@ export function LayerZeroMessages() {
               return (
                 <tr key={m.guid} className="border-t border-line">
                   <td className="px-5 py-3">
-                    {src ? SHORT[src] : m.srcChainId} <span className="text-ink-3">→</span> {dst ? SHORT[dst] : m.dstEid}
+                    {src ? SHORT[src] : m.srcChainId} <span className="text-ink-3">→</span> {dst ? SHORT[dst] : `eid ${m.dstEid}`}
                   </td>
                   <td className="num px-5 py-3">{money(units6(m.amount))}</td>
                   <td className="px-5 py-3 text-ink-3">{ago(m.sentAt)}</td>
-                  <td className="px-5 py-3">{m.receivedAt ? <span className="text-flood">Delivered in {Math.max(1, Math.round((m.receivedAt - m.sentAt) / 60))} min</span> : <span className="text-warn">In flight</span>}</td>
+                  <td className="px-5 py-3">{m.receivedAt ? <span className="text-flood">Delivered in {Math.max(1, Math.round((m.receivedAt - m.sentAt) / 60))} min</span> : src && dst ? <span className="text-warn">In flight</span> : <span className="text-ink-3">Lane closed</span>}</td>
                   <td className="px-5 py-3">
                     <a href={`https://testnet.layerzeroscan.com/tx/${m.sentTx}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-ink">
                       {m.sentTx.slice(0, 10)}…{m.sentTx.slice(-4)}

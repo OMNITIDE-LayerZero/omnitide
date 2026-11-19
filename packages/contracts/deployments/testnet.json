@@ -20,7 +20,7 @@
       "deployTx": "0x4bdeeb24632469a43c8e10f66e09108cc82571be9baf226f5c1ea30754f31707",
       "block": 154985732
     },
-    "wired": "sepolia,monadTestnet,arcTestnet,fuji"
+    "wired": "sepolia,fuji"
   },
   "sepolia": {
     "chainId": 11155111,
@@ -31,7 +31,7 @@
       "deployTx": "0x46232a233d9643d27fca1a477436cfc43cab004a82a88398b1ac6fd7a09dd3d6",
       "block": 12161600
     },
-    "wired": "robinhoodTestnet,monadTestnet,arcTestnet,fuji"
+    "wired": "robinhoodTestnet,fuji"
   },
   "arcTestnet": {
     "chainId": 5042002,
@@ -53,7 +53,7 @@
       "deployTx": "0x4121195fceaeac91f629a7d7316ca13c7b37fd11d8484894491610d46535d2ee",
       "block": 61283107
     },
-    "wired": "robinhoodTestnet,sepolia,monadTestnet,arcTestnet"
+    "wired": "robinhoodTestnet,sepolia"
   },
   "monadTestnet": {
     "chainId": 10143,

@@ -46,7 +46,7 @@ export function SeaWallLive() {
           </dl>
         </section>
         <section className="rounded-2xl border border-line bg-card p-5">
-          <p className="text-[13px] text-ink-3">tdUSD across five chains</p>
+          <p className="text-[13px] text-ink-3">tdUSD across three chains</p>
           <p className="num mt-2 text-[28px] leading-8 font-medium">{money(supply)}</p>
           <ul className="mt-4 space-y-3">
             {data.chains.filter((c) => BigInt(c.supply) > 0n).map((c) => (
