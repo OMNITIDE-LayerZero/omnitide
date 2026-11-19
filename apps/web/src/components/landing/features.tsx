@@ -1,10 +1,10 @@
 const FEATURES = [
-  { tag: "#01 · inflow", title: "Deposit from anywhere", body: "Send tdUSD from any spoke. LayerZero carries it and lzCompose credits your account the moment it lands. One signature from Sepolia or Fuji; Monad and Arc ferry through Sepolia first.", note: "OFT send → DVN verify → lzReceive → lzCompose → credit" },
+  { tag: "#01 · inflow", title: "Deposit from anywhere", body: "One signature from any spoke. LayerZero routes your tdUSD to the hub and lzCompose credits your account the moment it lands.", note: "OFT send → DVN verify → lzReceive → lzCompose → credit" },
   { tag: "#02 · ebb", title: "Leave where you like", body: "Withdraw to the hub, Sepolia or Fuji. Free margin is checked against live signed prices before a single unit moves.", note: "withdraw(amount, dstEid, receiver, reports)" },
   { tag: "#03 · cross margin", title: "One balance backs it all", body: "Long NVDA, short ETH, same collateral. Gains in one position hold up the other, and one account health covers the book.", note: "max 8 positions · equity = balance + Σ uPnL" },
   { tag: "#04 · orders", title: "Orders that wait for you", body: "Limit, stop-loss and take-profit live on-chain. The keeper checks every five seconds and fills once the signed price crosses your trigger.", note: "keeper tick 5 s · reduce-only for SL/TP" },
-  { tag: "#06 · tide pool", title: "Liquidity on the other side", body: "The Tide Pool takes the other side of every fill at the oracle price. No book to thin out, no slippage past your limit.", note: "fee 10 bps · liquidation 1%, 20% to the caller" },
-  { tag: "#07 · prices", title: "Prices with a signature", body: "Crypto from Coinbase, US stocks from Nasdaq, each report signed under EIP-712 and rejected on-chain after 120 seconds.", note: "PriceReport(bytes32 feed, uint256 price, uint64 timestamp)" },
+  { tag: "#05 · tide pool", title: "Liquidity on the other side", body: "The Tide Pool takes the other side of every fill at the oracle price. No book to thin out, no slippage past your limit.", note: "fee 10 bps · liquidation 1%, 20% to the caller" },
+  { tag: "#06 · prices", title: "Prices with a signature", body: "Crypto from Coinbase, US stocks from Nasdaq, each report signed under EIP-712 and rejected on-chain after 120 seconds.", note: "PriceReport(bytes32 feed, uint256 price, uint64 timestamp)" },
 ];
 
 export function Features() {

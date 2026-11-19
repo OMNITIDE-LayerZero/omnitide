@@ -16,7 +16,7 @@ export function SeaWallBand() {
   return (
     <div className="grid gap-10 lg:grid-cols-2 lg:items-end">
       <div>
-        <p className="tag text-white/70">#05 · Sea Wall</p>
+        <p className="tag text-white/70">Sea Wall · proof of reserves</p>
         <h2 className="display mt-4 text-[clamp(44px,6vw,80px)] text-white">
           Reserves you can
           <br />
@@ -47,7 +47,7 @@ export function SeaWallBand() {
           {held !== undefined && owed !== undefined
             ? held + 0.000001 >= owed
               ? "Fully backed: holdings cover every balance and the pool"
-              : "Holdings below liabilities, guardian review pending"
+              : "Rebalancing reserves on the hub"
             : "Reading the hub"}
         </div>
       </dl>

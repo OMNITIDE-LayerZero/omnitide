@@ -39,7 +39,7 @@ export default function Home() {
                 </h2>
               </div>
               <p className="text-[14px] leading-[22px] text-white/70">
-                Every deposit becomes margin in the same book on Robinhood Chain. No wrapped IOU per network, no split balances, no hunting for the chain your collateral got stuck on.
+                Every deposit lands as real margin in one book on Robinhood Chain. One balance, every network, always where you need it.
               </p>
             </div>
             <div className="mt-16">
@@ -50,7 +50,7 @@ export default function Home() {
 
         <section className="py-24 sm:py-32">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
-            <SectionHead tag="Shoreline · V1" title={<>Built for the<br />cross-chain trader</>} aside="Six pieces working as one: collateral that travels, a single margin account, orders that wait for you and a pool that is always on the other side." />
+            <SectionHead tag="Live now · V1" title={<>Powered by LayerZero.<br />Built for every chain.</>} aside="Six pieces working as one: collateral that travels, a single margin account, orders that wait for you and a pool that is always on the other side." />
             <div className="mt-16">
               <Features />
             </div>
@@ -59,7 +59,7 @@ export default function Home() {
 
         <section id="markets" className="scroll-mt-16 bg-sky/60 py-24 sm:py-32">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
-            <SectionHead tag="12 markets · crypto and US stocks" title={<>Bitcoin to<br />Nvidia, one margin</>} aside="Crypto majors at up to 10× and US stocks at up to 5×, priced live from Coinbase and Nasdaq and settled in tdUSD." />
+            <SectionHead tag="12 markets · crypto and US stocks" title={<>Bitcoin to<br />Nvidia, one margin</>} aside="Crypto majors at up to 10× and US stocks at up to 5×, priced live from Coinbase and Nasdaq and settled in tdUSD, the dollar that moves with you across chains." />
             <div className="mt-12 rounded-2xl border border-line bg-card p-4 sm:p-6">
               <MarketsBoard />
             </div>

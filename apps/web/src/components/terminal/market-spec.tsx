@@ -14,7 +14,7 @@ export function MarketSpec({ market }: { market: MarketConfig }) {
     ["Maintenance", `${market.maintenanceMarginBps / 100}%`],
     ["Open interest cap", `${moneyCompact(market.maxOpenInterestUsd)} per side`],
     ["Taker fee", `${FEE_BPS / 100}%`],
-    ["Funding", "None in Shoreline"],
+    ["Funding", "Waived in V1"],
     ["Liquidation", "1% penalty, 20% to the caller"],
     ["Order fills", "Keeper, every 5 s"],
   ];
