@@ -3,26 +3,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { HardhatEthers } from "@nomicfoundation/hardhat-ethers/types";
 import { CHAINS, type ChainKey } from "../chains.js";
+import type { Deployments } from "../deployments/index.js";
 
 export const DEPLOYER = "0xB58dE05CC819F7B04ca611F23e4be9E4be0C23f9";
 
-export interface ProxyRecord {
-  proxy: string;
-  implementation: string;
-  deployTx: string;
-  block: number;
-}
-
-export interface ChainDeployment {
-  chainId: number;
-  eid: number;
-  OmnitideUSD?: ProxyRecord;
-  OmnitideOracle?: ProxyRecord;
-  OmnitideClearinghouse?: ProxyRecord;
-  wired?: string;
-}
-
-export type Deployments = Partial<Record<ChainKey, ChainDeployment>>;
+export type { ProxyRecord, ChainDeployment, Deployments } from "../deployments/index.js";
 
 const file = join(dirname(fileURLToPath(import.meta.url)), "..", "deployments", `${process.env.OMNITIDE_ENV ?? "testnet"}.json`);
 

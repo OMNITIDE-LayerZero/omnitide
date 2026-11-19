@@ -9,6 +9,13 @@ const Env = z.object({
   RPC_46630: z.string().url().default("https://rpc.testnet.chain.robinhood.com"),
   RPC_11155111: z.string().url().default("https://ethereum-sepolia-rpc.publicnode.com"),
   RPC_43113: z.string().url().default("https://avalanche-fuji-c-chain-rpc.publicnode.com"),
+  RPC_998: z.string().url().default("https://rpc.hyperliquid-testnet.xyz/evm"),
+  RPC_84532: z.string().url().default("https://base-sepolia-rpc.publicnode.com"),
+  RPC_421614: z.string().url().default("https://sepolia-rollup.arbitrum.io/rpc"),
+  RPC_11155420: z.string().url().default("https://optimism-sepolia-rpc.publicnode.com"),
+  RPC_97: z.string().url().default("https://bsc-testnet-rpc.publicnode.com"),
+  RPC_80002: z.string().url().default("https://polygon-amoy.gateway.tenderly.co"),
+  RPC_97476: z.string().url().default("https://rpc-testnet.doma.xyz"),
 });
 
 let cached: z.infer<typeof Env> | undefined;

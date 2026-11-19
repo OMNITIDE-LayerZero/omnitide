@@ -6,7 +6,7 @@ import { ExternalLink } from "lucide-react";
 import { MARKETS } from "@omnitide/contracts/markets";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { useIndexer } from "@/lib/hooks";
-import { SHORT, explorerTx } from "@/lib/chains";
+import { CHAIN_COUNT, SHORT, explorerTx } from "@/lib/chains";
 import { ago, money, price, shortHash, signedMoney, units6, wad } from "@/lib/format";
 
 interface Trade { id: string; account: string; marketId: number; sizeDelta: string; price: string; realizedPnl: string; fee: string; notionalUsd: string; viaOrder: boolean; timestamp: number; tx: string }
@@ -58,7 +58,7 @@ export default function History() {
     <div className="rounded-2xl border border-line bg-card">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line px-5 pt-5">
         <div>
-          <p className="tag text-ink-3">{acct ? "Your account, indexed across three chains" : "Recent fills across OMNITIDE"}</p>
+          <p className="tag text-ink-3">{acct ? `Your account, indexed across ${CHAIN_COUNT} chains` : "Recent fills across OMNITIDE"}</p>
           <h1 className="display mt-2 text-[44px] text-ink">History</h1>
         </div>
         <div className="flex gap-1" role="tablist">

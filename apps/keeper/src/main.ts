@@ -17,6 +17,7 @@ const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
 const db = createDb(env.DATABASE_URL);
 const account = privateKeyToAccount(env.KEEPER_PRIVATE_KEY as `0x${string}`);
 const hub = DEPLOYMENTS[env.OMNITIDE_ENV as "testnet"].robinhoodTestnet;
+if (!hub?.OmnitideOracle || !hub.OmnitideClearinghouse) throw new Error("hub contracts are not deployed");
 const hubChain = defineChain({
   id: CHAINS.robinhoodTestnet.chainId,
   name: CHAINS.robinhoodTestnet.name,

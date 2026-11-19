@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
 import { encodeAbiParameters, formatEther, pad, parseUnits, type Address } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
-import { CHAIN_KEYS, HUB, HUB_KEY, LANES, SHORT, chainKeyOf, inflowRoute } from "@/lib/chains";
+import { CHAIN_COUNT, CHAIN_KEYS, HUB, HUB_KEY, LANES, SHORT, chainKeyOf, inflowRoute } from "@/lib/chains";
 import { CLEARINGHOUSE, CH_ABI, omnitideUSDAbi, usdAddress } from "@/lib/contracts";
 import { fetchReports, feedsFor, useHubAccount, useLocalToken } from "@/lib/account";
 import { usePriceMap } from "@/lib/hooks";
@@ -196,7 +196,7 @@ function Faucet() {
   return (
     <div className="space-y-4">
       <p className="text-[14px] leading-[22px] text-ink-2">
-        Every address can collect 1,000 test tdUSD per day on each of the three chains. Collect on {SHORT[key]}, then Inflow it into the book.
+        Every address can collect 1,000 test tdUSD per day on each of the {CHAIN_COUNT} chains. Collect on {SHORT[key]}, then Inflow it into the book.
       </p>
       <button type="button" className="btn btn-primary w-full" disabled={busy || !!waiting} onClick={() => void send(`Collect 1,000 tdUSD on ${SHORT[key]}`, { chainId: CHAINS[key].chainId, address: usdAddress(key), abi: omnitideUSDAbi, functionName: "drip" }).catch(() => {})}>
         {waiting ? `Refills ${new Date(data!.nextDrip * 1000).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : "Collect 1,000 tdUSD"}

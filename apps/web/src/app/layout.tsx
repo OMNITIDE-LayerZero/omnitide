@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Geist, Geist_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { CHAIN_COUNT } from "@/lib/chains";
 import "@rainbow-me/rainbowkit/styles.css";
 import "./globals.css";
 
@@ -11,7 +12,7 @@ const barlow = Barlow_Condensed({ subsets: ["latin"], weight: ["300", "400"], va
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4391"),
   title: { default: "OMNITIDE — Be the tide. Not the target.", template: "%s · OMNITIDE" },
-  description: "One book. Every chain. Beneath the surface. Bring collateral from three chains into one cross-margin account and trade crypto and US stock perps on Robinhood Chain.",
+  description: `One book. Every chain. Beneath the surface. Bring collateral from ${CHAIN_COUNT} chains into one cross-margin account and trade crypto and US stock perps on Robinhood Chain.`,
   openGraph: { images: ["/brand/og.jpg"], siteName: "OMNITIDE" },
   twitter: { card: "summary_large_image", images: ["/brand/og.jpg"] },
 };

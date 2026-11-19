@@ -12,14 +12,15 @@ export { MARKETS };
 
 const D = DEPLOYMENTS.testnet;
 
-export const usdAddress = (k: ChainKey) => D[k].OmnitideUSD.proxy as Address;
-export const CLEARINGHOUSE = D.robinhoodTestnet.OmnitideClearinghouse.proxy as Address;
-export const ORACLE = D.robinhoodTestnet.OmnitideOracle.proxy as Address;
+// callers only pass live chains (CHAIN_KEYS), and the hub is always deployed
+export const usdAddress = (k: ChainKey) => D[k]!.OmnitideUSD!.proxy as Address;
+export const CLEARINGHOUSE = D.robinhoodTestnet!.OmnitideClearinghouse!.proxy as Address;
+export const ORACLE = D.robinhoodTestnet!.OmnitideOracle!.proxy as Address;
 
 /** Every proxy and its implementation, for the contracts section. */
 export const CONTRACT_ROWS = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) =>
   (["OmnitideClearinghouse", "OmnitideOracle", "OmnitideUSD"] as const).flatMap((name) => {
-    const rec = (D[k] as Partial<Record<typeof name, { proxy: string; implementation: string }>>)[name];
+    const rec = D[k]?.[name];
     return rec ? [{ chain: k, name, proxy: rec.proxy as Address, implementation: rec.implementation as Address }] : [];
   }),
 );
