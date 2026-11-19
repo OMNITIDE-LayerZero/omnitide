@@ -54,6 +54,7 @@ export function createCurrent(d: CurrentDeps) {
   }
 
   async function snapshot() {
+    const list = await accounts();
     const at = new Date();
     const prices = d.prices();
     const [supply, assets] = await Promise.all([
@@ -63,7 +64,7 @@ export function createCurrent(d: CurrentDeps) {
     if (supply > 0n) await db.harborSnapshot.create({ data: { at, totalAssets: (Number(assets) / 1e6).toFixed(6), totalSupply: (Number(supply) / 1e6).toFixed(6) } });
 
     let n = 0;
-    for (const account of await accounts()) {
+    for (const account of list) {
       const s = await readAccount(account);
       if (s.collateral === 0 && s.positions.length === 0) continue;
       // skip accounts whose open markets have no fresh price: their equity would be wrong

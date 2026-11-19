@@ -107,7 +107,17 @@ void backfill(db, MARKETS, log);
 every(3_000, "crypto", () => pollPrices("crypto"));
 every(10_000, "stocks", () => pollPrices("stock"));
 if (env.EXECUTE === "1") every(5_000, "executor", async () => (executorState = await executor.tick()));
-every(10 * 60_000, "snapshots", async () => Object.assign(currentState, await current.snapshot()));
+// the indexer restarts with us on deploy, so give it a couple of minutes before giving up on this round
+every(10 * 60_000, "snapshots", async () => {
+  for (let i = 0; ; i++) {
+    try {
+      return Object.assign(currentState, await current.snapshot());
+    } catch (e) {
+      if (i >= 4) throw e;
+      await new Promise((r) => setTimeout(r, 30_000));
+    }
+  }
+});
 every(60_000, "riptide", async () => Object.assign(currentState, await current.riptide()));
 every(20_000, "telegram", () => current.telegramLink());
 if (env.EXECUTE === "1" && env.TIDE_READ_HOURS > 0) every(env.TIDE_READ_HOURS * 3_600_000, "lzRead", async () => Object.assign(currentState, await current.tideRead()));
