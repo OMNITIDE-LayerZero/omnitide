@@ -33,10 +33,8 @@ describe("format", () => {
 });
 
 describe("routes", () => {
-  it("routes spokes with a hub lane straight in, HyperEVM through Sepolia", () => {
-    expect(inflowRoute("fuji")).toEqual(["robinhoodTestnet"]);
-    expect(inflowRoute("sepolia")).toEqual(["robinhoodTestnet"]);
-    expect(inflowRoute("baseSepolia")).toEqual(["robinhoodTestnet"]);
-    expect(inflowRoute("hyperEvmTestnet")).toEqual(["sepolia", "robinhoodTestnet"]);
+  it("routes Arbitrum straight in, HyperEVM through Arbitrum", () => {
+    expect(inflowRoute("arbitrumSepolia")).toEqual(["robinhoodTestnet"]);
+    expect(inflowRoute("hyperEvmTestnet")).toEqual(["arbitrumSepolia", "robinhoodTestnet"]);
   });
 });

@@ -50,6 +50,6 @@ export default defineConfig({
       },
     ]),
   ),
-  // Etherscan-compatible verification is used only for Routescan (Fuji), which accepts any key.
+  // Etherscan-compatible verification is unused (Blockscout + Sourcify); hardhat-verify still wants a key.
   verify: { etherscan: { apiKey: "verifyContract" } },
 });

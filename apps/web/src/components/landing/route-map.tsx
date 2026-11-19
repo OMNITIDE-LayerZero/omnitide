@@ -79,7 +79,7 @@ export function RouteMap() {
           );
         })}
         <li className="border-t border-white/10 pt-4 text-[13px] leading-5 text-white/60">
-          Lanes shown are the ones LayerZero runs today. Every spoke with a hub lane lands in one hop, one transaction; the rest ride one extra hop through Sepolia.
+          Lanes shown are the ones LayerZero runs today. Every spoke with a hub lane lands in one hop, one transaction; the rest ride one extra hop through Arbitrum.
         </li>
       </ol>
     </div>
