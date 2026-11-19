@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { db } from "ponder:api";
 import schema from "ponder:schema";
-import { and, client, desc, eq, ne } from "ponder";
+import { and, client, desc, eq, isNotNull, ne } from "ponder";
 
 // Bound to 127.0.0.1 on the VPS: only the web app's route handlers call this.
 const app = new Hono();
@@ -46,7 +46,8 @@ app.get("/flows", async (c) => {
 });
 
 app.get("/bridge", async (c) => {
-  const rows = await db.select().from(schema.bridge).orderBy(desc(schema.bridge.sentAt)).limit(limit(c.req.query("limit")));
+  // receive-only rows come from retired spokes whose send side is no longer indexed
+  const rows = await db.select().from(schema.bridge).where(isNotNull(schema.bridge.sentTx)).orderBy(desc(schema.bridge.sentAt)).limit(limit(c.req.query("limit")));
   return c.json(json(rows));
 });
 
