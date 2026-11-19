@@ -198,9 +198,9 @@ export default function Harbor() {
           <h1 className="display mt-2 text-[44px] text-ink">Harbor</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-[22px] text-ink-2">Idle tdUSD moors here and becomes the Tide Pool: the counterparty to every trade on OMNITIDE. Harbor earns the 10 bps trading fee, 80% of every liquidation penalty and whatever traders give back, and it pays out when traders win.</p>
           {live ? (
-            <dl className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-3 xl:grid-cols-5">
+            <dl className="mt-6 flex flex-wrap gap-px overflow-hidden rounded-xl border border-line bg-line">
               {figures.map((f) => (
-                <div key={f.label} className="bg-card p-4">
+                <div key={f.label} className="min-w-[150px] flex-1 bg-card p-4">
                   <dt className="text-[13px] text-ink-3">{f.label}</dt>
                   <dd className="num mt-1 text-[22px] leading-8 font-medium">{f.value}</dd>
                 </div>
