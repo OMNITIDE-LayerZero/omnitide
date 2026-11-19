@@ -4,7 +4,7 @@ import { lzReceiveAndComposeOption, lzReceiveOption, MSG_SEND, MSG_SEND_AND_CALL
 import { chainKeyById, deployerSigner, loadDeployments, saveDeployments } from "./lib.js";
 
 const RATE_LIMIT = 100_000n * 10n ** 6n; // tdUSD per pathway per hour
-const RECEIVE_GAS = 100_000n;
+const RECEIVE_GAS = 200_000n; // 100k ran out on the first HyperEVM → Sepolia delivery
 const COMPOSE_GAS = 300_000n;
 
 const { ethers } = await network.create();
