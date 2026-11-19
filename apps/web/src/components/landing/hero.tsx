@@ -8,7 +8,7 @@ import { usePrices, useSwell } from "@/lib/hooks";
 import { LivePrice } from "../live-price";
 import { Change } from "../change";
 
-const Ocean = dynamic(() => import("../ocean").then((m) => m.Ocean), { ssr: false });
+const Polygraph = dynamic(() => import("../polygraph").then((m) => m.Polygraph), { ssr: false });
 
 const TAPE = ["BTC", "ETH", "SOL", "NVDA", "TSLA", "HOOD"];
 
@@ -20,7 +20,7 @@ export function Hero() {
 
   return (
     <section className="relative isolate min-h-[100svh] overflow-hidden">
-      <Ocean swell={swell} className="absolute inset-0 -z-10" />
+      <Polygraph swell={swell} className="absolute inset-0 -z-10" />
       <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-bg to-transparent" />
 
       <div className="mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-between px-4 pt-28 pb-0 sm:px-8 sm:pt-36">
@@ -70,7 +70,7 @@ export function Hero() {
             <span className="tag text-ink-3">Sea state</span>
             <p className="display mt-2 text-[40px] text-ink">{swell > 0.66 ? "Heavy swell" : swell > 0.33 ? "Moderate swell" : "Calm water"}</p>
             <p className="mt-2 text-[13px] leading-5 text-ink-2">
-              The sea above moves with the market. Wave height follows the average 24h move across crypto majors{btc?.change24h != null ? `, BTC ${btc.change24h >= 0 ? "up" : "down"} ${Math.abs(btc.change24h).toFixed(2)}% today` : ""}.
+              The traces above are drawn by the market. Pen swing follows the average 24h move across crypto majors{btc?.change24h != null ? `, BTC ${btc.change24h >= 0 ? "up" : "down"} ${Math.abs(btc.change24h).toFixed(2)}% today` : ""}.
             </p>
           </aside>
         </div>
