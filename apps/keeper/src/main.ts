@@ -120,7 +120,7 @@ every(10 * 60_000, "snapshots", async () => {
 });
 every(60_000, "riptide", async () => Object.assign(currentState, await current.riptide()));
 every(20_000, "telegram", () => current.telegramLink());
-if (env.EXECUTE === "1" && env.TIDE_READ_HOURS > 0) every(env.TIDE_READ_HOURS * 3_600_000, "lzRead", async () => Object.assign(currentState, await current.tideRead()));
+if (env.EXECUTE === "1" && env.TIDE_READ_HOURS > 0) every(3_600_000, "lzRead", async () => Object.assign(currentState, await current.tideRead(env.TIDE_READ_HOURS * 3_600_000)));
 every(15_000, "heartbeat", () =>
   db.heartbeat.upsert({
     where: { service: "keeper" },

@@ -203,9 +203,15 @@ export function createCurrent(d: CurrentDeps) {
 
   // ───────── Tide Chart: pay for one lzRead from Arbitrum on a schedule ─────────
 
-  async function tideRead() {
+  /** Pays for an lzRead only when the newest one is older than maxAgeMs, so restarts don't buy extra reads. */
+  async function tideRead(maxAgeMs: number) {
     const a = d.arb;
     if (!a) return;
+    const res = await fetch(`${env.INDEXER_URL}/tide`);
+    if (!res.ok) throw new Error(`indexer /tide ${res.status}`);
+    const reads = z.array(z.object({ readAt: z.number() })).parse(await res.json());
+    const newest = Math.max(0, ...reads.map((r) => r.readAt)) * 1000;
+    if (Date.now() - newest < maxAgeMs) return;
     const fee = await a.pub.readContract({ address: a.reader, abi: omnitideTideReaderAbi, functionName: "quote" });
     const hash = await a.wallet.writeContract({ address: a.reader, abi: omnitideTideReaderAbi, functionName: "refresh", value: (fee * 12n) / 10n, chain: a.wallet.chain, account: a.wallet.account });
     log(`lzRead requested ${hash}`);
