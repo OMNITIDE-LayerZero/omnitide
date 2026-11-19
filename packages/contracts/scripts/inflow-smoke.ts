@@ -3,7 +3,7 @@ import { CHAINS } from "../chains.js";
 import { chainKeyById, deployerSigner, loadDeployments } from "./lib.js";
 
 // Testnet smoke: drip tdUSD on a spoke and Inflow it into the hub clearinghouse (OFT + lzCompose).
-// INFLOW_VIA=arbitrumSepolia ferries to the deployer on Arbitrum Sepolia instead, for spokes without a hub lane (HyperEVM testnet).
+// INFLOW_VIA=sepolia ferries to the deployer on Sepolia instead, for spokes without a hub lane (HyperEVM testnet).
 const AMOUNT = BigInt(process.env.AMOUNT ?? "100") * 10n ** 6n;
 const via = process.env.INFLOW_VIA as keyof typeof CHAINS | undefined;
 const { ethers } = await network.create();

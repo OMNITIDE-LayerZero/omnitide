@@ -1,5 +1,5 @@
 // Single source of chain params for deploy scripts; values verified live in the pre-flight check.
-export type ChainKey = "robinhoodTestnet" | "arbitrumSepolia" | "hyperEvmTestnet";
+export type ChainKey = "robinhoodTestnet" | "arbitrumSepolia" | "hyperEvmTestnet" | "sepolia";
 
 export interface ChainConfig {
   name: string;
@@ -51,5 +51,17 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
     nativeSymbol: "ETH",
     hub: false,
     lz: { sendLib: "0x4f7cd4da19abb31b0ec98b9066b9e857b1bf9c0e", receiveLib: "0x75db67cdab2824970131d5aa9cecfc9f69c69636", executor: "0x5df3a1cebbd9c8ba7f8df51fd632a9aef8308897", dvn: "0x53f488e93b4f1b60e8e83aa374dbe1780a1ee8a8" },
+  },
+  sepolia: {
+    name: "Ethereum Sepolia",
+    chainId: 11155111,
+    eid: 40161,
+    endpoint: "0x6edce65403992e310a62460808c4b910d972f10f",
+    rpc: process.env.RPC_SEPOLIA ?? "https://ethereum-sepolia-rpc.publicnode.com",
+    explorer: "https://eth-sepolia.blockscout.com",
+    blockscout: "https://eth-sepolia.blockscout.com/api",
+    nativeSymbol: "ETH",
+    hub: false,
+    lz: { sendLib: "0xcc1ae8cf5d3904cef3360a9532b477529b177cce", receiveLib: "0xdaf00f5ee2158dd58e0d3857851c432e34a3a851", executor: "0x718b92b5cb0a5552039b593faf724d182a881eda", dvn: "0x8eebf8b423b73bfca51a1db4b7354aa0bfca9193" },
   },
 };

@@ -33,8 +33,9 @@ describe("format", () => {
 });
 
 describe("routes", () => {
-  it("routes Arbitrum straight in, HyperEVM through Arbitrum", () => {
+  it("routes Arbitrum and Sepolia straight in, HyperEVM through Sepolia", () => {
     expect(inflowRoute("arbitrumSepolia")).toEqual(["robinhoodTestnet"]);
-    expect(inflowRoute("hyperEvmTestnet")).toEqual(["arbitrumSepolia", "robinhoodTestnet"]);
+    expect(inflowRoute("sepolia")).toEqual(["robinhoodTestnet"]);
+    expect(inflowRoute("hyperEvmTestnet")).toEqual(["sepolia", "robinhoodTestnet"]);
   });
 });

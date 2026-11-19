@@ -20,7 +20,7 @@
       "deployTx": "0x4bdeeb24632469a43c8e10f66e09108cc82571be9baf226f5c1ea30754f31707",
       "block": 154985732
     },
-    "wired": "arbitrumSepolia"
+    "wired": "hyperEvmTestnet,arbitrumSepolia,sepolia"
   },
   "sepolia": {
     "chainId": 11155111,
@@ -31,7 +31,7 @@
       "deployTx": "0x46232a233d9643d27fca1a477436cfc43cab004a82a88398b1ac6fd7a09dd3d6",
       "block": 12161600
     },
-    "wired": "robinhoodTestnet,fuji"
+    "wired": "robinhoodTestnet,hyperEvmTestnet,arbitrumSepolia"
   },
   "arcTestnet": {
     "chainId": 5042002,
@@ -75,6 +75,17 @@
       "deployTx": "0xf38cb7c81073e6d2230e67d9526a1f92a2bfc737cc827883d13397ef050c26f7",
       "block": 330834028
     },
-    "wired": "robinhoodTestnet"
+    "wired": "robinhoodTestnet,hyperEvmTestnet,sepolia"
+  },
+  "hyperEvmTestnet": {
+    "chainId": 998,
+    "eid": 40362,
+    "OmnitideUSD": {
+      "proxy": "0x36e7D5b03a86F228601840EE05Cc86eCAE6e6266",
+      "implementation": "0x9a9d0F696FF6bD4f0fC8BC0B710cC4D085b2B292",
+      "deployTx": "0xab71d7946bc951684ba651f8bf0bdd49a813a439af137d0243f7a39f71044a04",
+      "block": 70069301
+    },
+    "wired": "robinhoodTestnet,arbitrumSepolia,sepolia"
   }
 }

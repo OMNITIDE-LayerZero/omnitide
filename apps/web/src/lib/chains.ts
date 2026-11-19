@@ -1,4 +1,4 @@
-import { arbitrumSepolia, hyperliquidEvmTestnet, robinhoodTestnet } from "viem/chains";
+import { arbitrumSepolia, hyperliquidEvmTestnet, robinhoodTestnet, sepolia } from "viem/chains";
 import type { Chain } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
@@ -7,6 +7,7 @@ const VIEM: Record<ChainKey, Chain> = {
   robinhoodTestnet,
   arbitrumSepolia,
   hyperEvmTestnet: { ...hyperliquidEvmTestnet, blockExplorers: { default: { name: "Purrsec", url: CHAINS.hyperEvmTestnet.explorer } } },
+  sepolia,
 };
 
 /** Browser RPC goes through our own proxy so every visitor reaches every chain, whatever their DNS. */
@@ -35,6 +36,7 @@ export const SHORT: Record<ChainKey, string> = {
   robinhoodTestnet: "Robinhood Chain",
   arbitrumSepolia: "Arbitrum Sepolia",
   hyperEvmTestnet: "HyperEVM",
+  sepolia: "Ethereum Sepolia",
 };
 
 /** Network names for marketing copy, without the testnet suffix. */
@@ -42,24 +44,28 @@ export const NETWORK: Record<ChainKey, string> = {
   robinhoodTestnet: "Robinhood Chain",
   arbitrumSepolia: "Arbitrum",
   hyperEvmTestnet: "HyperEVM",
+  sepolia: "Ethereum",
 };
 
 /** Live spokes as "A, B or C". */
 export const SPOKE_LIST = new Intl.ListFormat("en-US", { type: "disjunction" }).format(CHAIN_KEYS.filter((k) => k !== HUB_KEY).map((k) => NETWORK[k]));
 
-/** LayerZero testnet lanes (ULN isSupportedEid on both ends, checked 2026-11-20; re-checked live on the Sea Wall page). */
+/**
+ * LayerZero testnet lanes per direction: destinations with a live executor and DVN from each chain (checked 2026-11-20).
+ * HyperEVM testnet's executor serves neither the hub nor Arbitrum, so HyperEVM leaves through Sepolia.
+ */
 const ALL_LANES: Record<ChainKey, ChainKey[]> = {
-  robinhoodTestnet: ["arbitrumSepolia"],
-  arbitrumSepolia: ["robinhoodTestnet", "hyperEvmTestnet"],
-  // HyperEVM testnet has no Robinhood lane yet (mainnet does); it reaches the hub through Arbitrum Sepolia
-  hyperEvmTestnet: ["arbitrumSepolia"],
+  robinhoodTestnet: ["arbitrumSepolia", "sepolia"],
+  arbitrumSepolia: ["robinhoodTestnet", "sepolia", "hyperEvmTestnet"],
+  sepolia: ["robinhoodTestnet", "arbitrumSepolia", "hyperEvmTestnet"],
+  hyperEvmTestnet: ["sepolia"],
 };
 export const LANES = Object.fromEntries(CHAIN_KEYS.map((k) => [k, ALL_LANES[k].filter((o) => CHAIN_KEYS.includes(o))])) as Record<ChainKey, ChainKey[]>;
 
-/** Hops from a spoke to the hub: direct when a lane exists, otherwise through Arbitrum Sepolia. */
+/** Hops from a spoke to the hub: direct when a lane exists, otherwise through Sepolia. */
 export function inflowRoute(from: ChainKey): ChainKey[] {
   if (from === HUB_KEY) return [];
-  return ALL_LANES[from].includes(HUB_KEY) ? [HUB_KEY] : ["arbitrumSepolia", HUB_KEY];
+  return ALL_LANES[from].includes(HUB_KEY) ? [HUB_KEY] : ["sepolia", HUB_KEY];
 }
 
 export const explorerTx = (k: ChainKey, hash: string) => `${CHAINS[k].explorer}/tx/${hash}`;
