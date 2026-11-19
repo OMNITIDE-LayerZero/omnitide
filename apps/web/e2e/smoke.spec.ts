@@ -48,10 +48,41 @@ test("sea wall reads reserves and lanes from chain", async ({ page }) => {
 test("terminal views switch with number keys", async ({ page, isMobile }) => {
   test.skip(isMobile, "keyboard shortcuts are a desktop feature");
   await page.goto("/terminal/trade");
-  await page.keyboard.press("4");
+  await page.keyboard.press("7");
   await expect(page).toHaveURL(/\/terminal\/markets/);
-  await page.keyboard.press("3");
+  await page.keyboard.press("6");
   await expect(page).toHaveURL(/\/terminal\/history/);
+});
+
+test("harbor shows live TVL and share price", async ({ page }) => {
+  const errors = await noPageErrors(page);
+  await page.goto("/terminal/harbor");
+  await expect(page.getByRole("heading", { name: "Harbor", level: 1 })).toBeVisible();
+  await expect(page.getByText(/\d\.\d{6} tdUSD/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/deposit|redeem/i).first()).toBeVisible();
+  await checkCopyRules(page);
+  expect(errors).toEqual([]);
+});
+
+test("tide chart lists every chain with its lzRead reading", async ({ page }) => {
+  const errors = await noPageErrors(page);
+  await page.goto("/terminal/tide");
+  await expect(page.getByRole("heading", { name: "Tide Chart", level: 1 })).toBeVisible();
+  await expect(page.getByText(/lzRead attested/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("BTC-PERP").first()).toBeVisible();
+  await checkCopyRules(page);
+  expect(errors).toEqual([]);
+});
+
+test("risk page runs the simulator without a wallet", async ({ page }) => {
+  const errors = await noPageErrors(page);
+  await page.goto("/terminal/risk");
+  await expect(page.getByText(/shared vs isolated/i)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Keeps \$/).first()).toBeVisible();
+  await page.getByRole("radio", { name: "Flash crash" }).click();
+  await expect(page.getByText("Riptide Alerts")).toBeVisible();
+  await checkCopyRules(page);
+  expect(errors).toEqual([]);
 });
 
 test("health endpoint reports database and hub RPC", async ({ request }) => {

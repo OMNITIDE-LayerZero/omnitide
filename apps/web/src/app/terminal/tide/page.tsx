@@ -150,7 +150,7 @@ export default function TideChart() {
               return (
                 <article key={t.m.id} className="rounded-xl border border-line p-3 transition-colors hover:border-line-strong">
                   <div className="flex items-baseline justify-between gap-2">
-                    <span className="font-medium">{t.m.symbol}</span>
+                    <span className="font-medium">{t.m.symbol}-PERP</span>
                     {t.change !== null && <span className={`num text-[12px] ${t.change >= 0 ? "text-flood" : "text-ebb"}`}>{pct(t.change)}</span>}
                   </div>
                   <p className="num mt-1 text-[14px] text-ink-2">{t.px ? price(t.px) : "pricing…"}</p>

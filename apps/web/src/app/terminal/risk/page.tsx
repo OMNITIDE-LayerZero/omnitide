@@ -62,11 +62,11 @@ function Simulator({ prices, seed }: { prices: Record<string, number>; seed: { c
     seed?.legs.length
       ? seed.legs
       : [
-          { marketId: 0, side: 1, notional: 4_000 },
-          { marketId: 11, side: 1, notional: 2_000 },
+          { marketId: 0, side: 1, notional: 3_000 },
+          { marketId: 7, side: -1, notional: 2_000 },
         ],
   );
-  const [scenario, setScenario] = useState(SCENARIOS[2]!.id);
+  const [scenario, setScenario] = useState(SCENARIOS[0]!.id);
   const s = SCENARIOS.find((x) => x.id === scenario)!;
   const col = Math.max(0, Number(collateral) || 0);
   const sim = simulateMargin(col, legs, prices, s);
@@ -149,12 +149,12 @@ function Simulator({ prices, seed }: { prices: Record<string, number>; seed: { c
       <div className="mt-4 grid gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-2">
         <div className="bg-card p-4">
           <p className="text-[13px] text-ink-3">Shared (cross) margin</p>
-          <p className={`num mt-1 text-[22px] font-medium ${sim.shared.liquidated ? "text-ebb" : ""}`}>{sim.shared.liquidated ? "Whole book liquidated" : `Keeps ${money(sim.shared.kept)}`}</p>
+          <p className={`num mt-1 text-[22px] font-medium ${sim.shared.liquidated ? "text-ebb" : ""}`}>{sim.shared.liquidated || sim.shared.kept <= 0 ? "Whole book liquidated" : `Keeps ${money(sim.shared.kept)}`}</p>
           <p className="mt-1 text-[12px] text-ink-3">Equity {money(sim.shared.equity)} vs maintenance {money(sim.shared.mm)}</p>
         </div>
         <div className="bg-card p-4">
           <p className="text-[13px] text-ink-3">Isolated margin</p>
-          <p className="num mt-1 text-[22px] font-medium">Keeps {money(sim.isolated.kept)}</p>
+          <p className={`num mt-1 text-[22px] font-medium ${sim.isolated.kept > 0 ? "" : "text-ebb"}`}>{sim.isolated.kept > 0 ? `Keeps ${money(sim.isolated.kept)}` : "Every leg liquidated"}</p>
           <p className="mt-1 text-[12px] text-ink-3">{sim.isolated.liquidated ? `${sim.isolated.liquidated} of ${legs.length} legs liquidated` : "Every leg stays above its wall"}</p>
         </div>
       </div>
@@ -212,6 +212,16 @@ export default function Risk() {
                 {now && <TideGauge level={now.level} className="mt-3" />}
               </div>
             </div>
+          )}
+          {!mine && (
+            <dl className="mt-6 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
+              {RADAR_AXES.map((ax) => (
+                <div key={ax.key}>
+                  <dt className="tag text-ink-2">{ax.label}</dt>
+                  <dd className="mt-1 text-[12px] leading-[18px] text-ink-3">{ax.hint}</dd>
+                </div>
+              ))}
+            </dl>
           )}
           {mine && (
             <div className="mt-5 flex flex-wrap items-center gap-4">
