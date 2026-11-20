@@ -57,3 +57,12 @@ export const laneRows = (w: SeaWall | undefined): LaneRow[] =>
 
 /** Rate-limit window in words: 86400 → "24h", 3600 → "1h", 600 → "10m". */
 export const windowLabel = (s: number) => (s >= 3600 ? `${Math.round(s / 3600)}h` : `${Math.max(1, Math.round(s / 60))}m`);
+
+/** An eased fade from one colour to the next, mixed in oklab so the middle stays sea-blue instead of going grey; evenly spaced stops so the header haze can read it back. */
+export function tideGradient(from: string, to: string, steps = 8) {
+  const stops = Array.from({ length: steps + 1 }, (_, i) => {
+    const t = i / steps;
+    return `color-mix(in oklab, ${to} ${+(t * t * (3 - 2 * t) * 100).toFixed(2)}%, ${from})`;
+  });
+  return `linear-gradient(to bottom, ${stops.join(", ")})`;
+}

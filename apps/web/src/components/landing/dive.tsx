@@ -5,7 +5,7 @@ import { ExternalLink, Plus } from "lucide-react";
 import { CONTRACT_ROWS } from "@/lib/contracts";
 import { HUB_KEY, explorerAddress } from "@/lib/chains";
 import { InflowDemo, LensDemo, SealDemo } from "./dive-demos";
-import { WaveEdge } from "./wave-edge";
+import { Blend } from "./blend";
 
 const FEATURES = [
   { tag: "#01 · inflow", title: "Deposit from anywhere", body: "One signature from any spoke. LayerZero routes your tdUSD to the hub and lzCompose credits your account the moment it lands.", note: "OFT send → DVN verify → lzReceive → lzCompose → credit" },
@@ -84,9 +84,9 @@ const TIERS = [
 ] as const;
 
 const BANDS = [
-  { from: "var(--bg)", to: "var(--navy-2)", note: "−40 m · thermocline · sunlight gives way to the current" },
-  { from: "var(--navy-2)", to: "var(--abyss)", note: "−200 m · twilight zone · opt in and your book goes dark" },
-];
+  { from: "var(--bg)", to: "var(--navy-2)", engrave: "below", note: "−40 m · thermocline · sunlight gives way to the current" },
+  { from: "var(--navy-2)", to: "var(--abyss)", engrave: "above", note: "−200 m · twilight zone · opt in and your book goes dark" },
+] as const;
 
 const SCALE = 160; // px height of the depth scale on the dive computer
 
@@ -215,8 +215,7 @@ export function Dive() {
 
   return (
     <section id="dive" className="relative bg-bg">
-      <WaveEdge fill="var(--navy)" />
-      <div className="mx-auto max-w-[1440px] px-4 pt-24 sm:px-8 sm:pt-32">
+      <div className="mx-auto max-w-[1440px] px-4 pt-8 sm:px-8 sm:pt-12">
         <div className="grid gap-6 md:grid-cols-[1fr_340px] md:items-end">
           <div>
             <p className="tag text-[12px] text-ink-2">Live now · 23 features across three depths</p>
@@ -236,12 +235,12 @@ export function Dive() {
         {TIERS.map((t, i) => (
           <div key={t.id} className="contents">
             {i > 0 && (
-              <div aria-hidden data-haze className="h-28" style={{ background: `linear-gradient(to bottom, ${BANDS[i - 1]!.from}, ${BANDS[i - 1]!.to})` }}>
-                <div className="mx-auto flex h-full max-w-[1440px] items-center gap-4 px-4 sm:px-8 lg:pl-[248px]">
+              <Blend from={BANDS[i - 1]!.from} to={BANDS[i - 1]!.to} engrave={BANDS[i - 1]!.engrave} className="h-36 sm:h-48">
+                <div className="relative mx-auto flex h-full max-w-[1440px] items-center gap-4 px-4 sm:px-8 lg:pl-[248px]">
                   <span className="tag rounded-full border border-white/15 bg-abyss/70 px-3 py-1 text-white/80 backdrop-blur-sm">{BANDS[i - 1]!.note}</span>
                   <span className="h-px flex-1 bg-gradient-to-r from-white/30 to-transparent" />
                 </div>
-              </div>
+              </Blend>
             )}
             <div id={`dive-${t.id}`} data-tier data-tone={t.dark ? "dark" : undefined} className={`relative scroll-mt-16 overflow-hidden ${t.bg} ${t.dark ? "text-white" : "text-ink"}`}>
               {t.id === "deep" && <div className="snow" aria-hidden />}

@@ -1,9 +1,8 @@
-/** A full-bleed surface under the header haze: its extent in viewport px and its colour at each end (equal unless it is a gradient band). */
+/** A full-bleed surface under the header haze: its extent in viewport px and its colours, evenly spaced top to bottom (one for a flat surface). */
 export interface Surface {
   top: number;
   bottom: number;
-  from: string;
-  to: string;
+  colors: string[];
 }
 
 const SEAM = 40; // px the tint takes to cross a seam, about as far as the wave edges hang
@@ -19,11 +18,22 @@ export function lightness(c: string) {
 
 /** The haze tint as a gradient that tracks the surfaces beneath it, and whether the nav line at y sits on a dark one. */
 export function haze(surfaces: Surface[], y: number) {
-  const px = (v: number) => `${Math.round(Math.min(1000, Math.max(-1000, v)))}px`;
   const seam = (a?: string, b?: string) => (a === undefined || b === undefined || a === b ? 0 : SEAM / 2);
-  const stops = surfaces.flatMap((s, i) => [`${s.from} ${px(s.top + seam(surfaces[i - 1]?.to, s.from))}`, `${s.to} ${px(s.bottom - seam(s.to, surfaces[i + 1]?.from))}`]);
-  const at = surfaces.find((s) => s.bottom > y) ?? surfaces.at(-1);
-  if (!at) return { tint: "", dark: false };
-  const f = at.from === at.to ? 0 : Math.min(1, Math.max(0, (y - at.top) / (at.bottom - at.top)));
-  return { tint: `linear-gradient(to bottom, ${stops.join(", ")})`, dark: lightness(at.from) * (1 - f) + lightness(at.to) * f < 0.6 };
+  const stops = surfaces.flatMap((s, i): [string, number][] => {
+    if (s.colors.length > 1) return s.colors.map((c, k) => [c, s.top + ((s.bottom - s.top) * k) / (s.colors.length - 1)]);
+    const c = s.colors[0]!;
+    return [
+      [c, s.top + seam(surfaces[i - 1]?.colors.at(-1), c)],
+      [c, s.bottom - seam(c, surfaces[i + 1]?.colors[0])],
+    ];
+  });
+  if (!stops.length) return { tint: "", dark: false };
+  // lightness under the nav line, linear between the stops around it
+  let l = lightness(stops[0]![0]);
+  for (let k = 1; k < stops.length && stops[k - 1]![1] < y; k++) {
+    const [[c0, p0], [c1, p1]] = [stops[k - 1]!, stops[k]!];
+    l = p1 > y && p1 > p0 ? lightness(c0) + ((lightness(c1) - lightness(c0)) * (y - p0)) / (p1 - p0) : lightness(c1);
+  }
+  const px = (v: number) => `${Math.round(Math.min(1000, Math.max(-1000, v)))}px`;
+  return { tint: `linear-gradient(to bottom, ${stops.map(([c, p]) => `${c} ${px(p)}`).join(", ")})`, dark: l < 0.6 };
 }

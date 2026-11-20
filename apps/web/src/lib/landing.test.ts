@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sparkGeometry, usSession, windowLabel } from "./landing";
+import { sparkGeometry, tideGradient, usSession, windowLabel } from "./landing";
 
 describe("US session", () => {
   // 2026-11-20 is a Friday; New York is on EST (UTC−5)
@@ -32,5 +32,12 @@ describe("rate-limit window", () => {
   it("prefers hours", () => {
     expect(windowLabel(86400)).toBe("24h");
     expect(windowLabel(600)).toBe("10m");
+  });
+});
+
+describe("tideGradient", () => {
+  it("eases from one colour to the other, flat at both ends", () => {
+    const g = tideGradient("red", "blue", 4);
+    expect(g).toBe("linear-gradient(to bottom, color-mix(in oklab, blue 0%, red), color-mix(in oklab, blue 15.63%, red), color-mix(in oklab, blue 50%, red), color-mix(in oklab, blue 84.38%, red), color-mix(in oklab, blue 100%, red))");
   });
 });
