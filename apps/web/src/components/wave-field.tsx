@@ -11,7 +11,7 @@ const TAU = Math.PI * 2;
 
 // tone bands from deep water to foam, tuned per theme so the crests stay visible on paper
 const PALETTE = {
-  light: ["#1530c0", "#1b34d6", "#1f3dff", "#3b82ff", "#78a9ff"],
+  light: ["#0a1786", "#1026b0", "#1a35e6", "#2556ff", "#4a7dff"],
   dark: ["#1a2a9e", "#1f3dff", "#3f7bff", "#62c4ff", "#f4f7ff"],
 };
 
@@ -87,7 +87,8 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
     });
   };
 
-  let pal = PALETTE[document.documentElement.dataset.theme === "dark" ? "dark" : "light"];
+  let light = document.documentElement.dataset.theme !== "dark";
+  let pal = PALETTE[light ? "light" : "dark"];
   let w = 0;
   let h = 0;
   let fade = 1;
@@ -177,7 +178,7 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
       if (p.band !== band) {
         band = p.band;
         ctx.fillStyle = pal[band]!;
-        ctx.globalAlpha = (0.6 + band * 0.1) * alpha;
+        ctx.globalAlpha = (light ? 0.72 + band * 0.07 : 0.6 + band * 0.1) * alpha;
       }
       // orbital swell rolling right to left like the mark's breaking crests; crests swing wider than troughs
       const phase = p.ox * TAU * 1.5 + u;
@@ -302,6 +303,7 @@ function animate(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, img: 
   api.current = {
     setTheme: (t) => {
       pal = PALETTE[t];
+      light = t === "light";
       if (reduced) still();
     },
     setSwell: (s) => (ampTarget = 0.45 + Math.max(0, Math.min(1, s)) * 0.9),

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "./logo";
+import { NetworkStatus } from "./network-status";
 
 export function SiteFooter() {
   return (
@@ -8,7 +9,7 @@ export function SiteFooter() {
         <div>
           <Logo />
           <p className="display mt-6 text-[40px] text-ink">One book. Every chain.</p>
-          <p className="tag mt-2 text-ink-3">Beneath the surface · testnet season · secured by LayerZero</p>
+          <p className="tag mt-2 text-ink-2">Beneath the surface · testnet season · secured by LayerZero</p>
         </div>
         <nav className="grid grid-cols-2 gap-x-12 gap-y-2 text-[14px] text-ink-2" aria-label="Footer">
           <Link href="/terminal/trade" className="hover:text-ink">Trade</Link>
@@ -21,6 +22,9 @@ export function SiteFooter() {
           <Link href="/sea-wall" className="hover:text-ink">Sea Wall</Link>
           <Link href="/#contracts" className="hover:text-ink">Contracts</Link>
         </nav>
+      </div>
+      <div className="border-t border-line">
+        <NetworkStatus className="mx-auto max-w-[1440px] px-4 py-4 text-ink-2 sm:px-8" />
       </div>
     </footer>
   );

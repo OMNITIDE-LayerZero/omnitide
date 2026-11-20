@@ -438,8 +438,9 @@ export function mountHarbor(canvas: HTMLCanvasElement, o: Opts): Harbor {
   canvas.addEventListener("pointercancel", onLeave);
   canvas.addEventListener("pointerleave", onLeave);
 
-  const labelAt = (k: ChainKey) => (k === o.hub ? new THREE.Vector3(0, LANTERN_Y + 0.85, 0) : P(k).clone().setY(1.45));
-  const anchors = [o.hub, ...o.spokes].map((k) => [k, labelAt(k)] as const);
+  // the hub's label hangs under the tower so it never lands on a spoke's label behind it
+  const labelAt = (k: ChainKey) => (k === o.hub ? new THREE.Vector3(0, HUB_Y, 0) : P(k).clone().setY(1.45));
+  const anchors = [...o.spokes, o.hub].map((k) => [k, labelAt(k)] as const);
   const nextAt = Object.fromEntries(o.spokes.map((k, i) => [k, 0.3 + i * 1.4])) as Record<ChainKey, number>;
 
   let last = 0;
@@ -482,11 +483,24 @@ export function mountHarbor(canvas: HTMLCanvasElement, o: Opts): Harbor {
     lantern.color.copy(GLOW).lerp(INK, flash);
 
     renderer.render(scene, camera);
-    for (const [k, p] of anchors) {
+    // spokes sit above their port; the hub hangs under its tower and steps down past any spoke label it would cover
+    const boxes: { l: number; r: number; t: number; b: number }[] = [];
+    const sizes = anchors.map(([k]) => [o.labels[k]?.offsetWidth ?? 0, o.labels[k]?.offsetHeight ?? 0] as const); // all reads before any write
+    for (const [i, [k, p]] of anchors.entries()) {
       const el = o.labels[k];
       if (!el) continue;
       tmp.copy(p).project(camera);
-      el.style.transform = `translate3d(${((tmp.x + 1) / 2) * w}px, ${((1 - tmp.y) / 2) * h}px, 0) translate(-50%, -100%)`;
+      const x = ((tmp.x + 1) / 2) * w;
+      let y = ((1 - tmp.y) / 2) * h;
+      const [lw, lh] = sizes[i]!;
+      if (k === o.hub) {
+        y += 18;
+        for (const bx of boxes) if (x - lw / 2 < bx.r && x + lw / 2 > bx.l && y < bx.b && y + lh > bx.t) y = bx.b + 4;
+        el.style.transform = `translate3d(${x - lw / 2}px, ${y}px, 0)`;
+      } else {
+        boxes.push({ l: x - lw / 2, r: x + lw / 2, t: y - lh, b: y });
+        el.style.transform = `translate3d(${x - lw / 2}px, ${y - lh}px, 0)`;
+      }
     }
     if (!ready) {
       ready = true;

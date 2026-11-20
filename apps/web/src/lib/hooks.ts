@@ -49,6 +49,11 @@ export function useCandles(feed: string, interval: 60 | 900 | 3600) {
   });
 }
 
+/** Feed → last 24 hourly closes, oldest first. */
+export function useSparks(enabled = true) {
+  return useQuery({ queryKey: ["sparks"], queryFn: () => get<{ sparks: Record<string, number[]> }>("/api/sparks"), refetchInterval: 120_000, select: (d) => d.sparks, enabled });
+}
+
 export interface IndexerStats {
   global: { trades: number; volumeUsd: string; feesPaid: string; inflows: number; ebbs: number; bridged: string; drips: number; liquidations: number } | null;
   markets: { id: number; feed: string; volumeUsd: string; trades: number; maxOpenInterestUsd: string; active: boolean }[];

@@ -11,7 +11,7 @@
   --sky: #e3e9ff;
   --text: #0e1430;
   --text-2: #475069;
-  --text-3: #687089;
+  --text-3: #5f6782;
   --line: rgb(14 20 48 / 0.09);
   --line-strong: rgb(14 20 48 / 0.16);
   --accent: #1f3dff;
@@ -19,6 +19,7 @@
   --on-accent: #ffffff;
   --navy: #070c48;
   --navy-2: #0c1466;
+  --abyss: #04072a;
   --flood: #15803d;
   --ebb: #c42b2b;
   --warn: #a16207;
@@ -43,6 +44,7 @@
   --on-accent: #ffffff;
   --navy: #070b33;
   --navy-2: #0b1146;
+  --abyss: #03041a;
   --flood: #4cc38a;
   --ebb: #e5484d;
   --warn: #e2a336;
@@ -67,6 +69,8 @@
   --color-on-accent: var(--on-accent);
   --color-navy: var(--navy);
   --color-navy-2: var(--navy-2);
+  --color-abyss: var(--abyss);
+  --color-shelf: var(--shelf);
   --color-flood: var(--flood);
   --color-ebb: var(--ebb);
   --color-warn: var(--warn);
@@ -76,6 +80,11 @@
   --ease-tide: cubic-bezier(0.22, 1, 0.36, 1);
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
+}
+
+:root {
+  /* the markets band: a shallow, sunlit shelf between the deep and the Sea Wall */
+  --shelf: color-mix(in oklab, var(--sky) 60%, var(--bg));
 }
 
 html {
@@ -256,6 +265,66 @@ body {
 @keyframes tickDown {
   from {
     color: var(--ebb);
+  }
+}
+
+/* Price cells on the board also wash their background once on a tick. */
+.flash .tick-up {
+  animation: tickUp 900ms var(--ease-tide), washUp 900ms var(--ease-tide);
+}
+.flash .tick-down {
+  animation: tickDown 900ms var(--ease-tide), washDown 900ms var(--ease-tide);
+}
+.flash .num {
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin: -1px -4px;
+}
+@keyframes washUp {
+  from {
+    background-color: color-mix(in oklab, var(--flood) 18%, transparent);
+  }
+}
+@keyframes washDown {
+  from {
+    background-color: color-mix(in oklab, var(--ebb) 18%, transparent);
+  }
+}
+
+/* Marine snow drifting up through Deep Water: one tile of specks, translated by its own height for a seamless loop. */
+.snow {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.snow::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -240px;
+  background-image:
+    radial-gradient(1px 1px at 18px 40px, rgb(255 255 255 / 0.45), transparent),
+    radial-gradient(1px 1px at 96px 130px, rgb(255 255 255 / 0.3), transparent),
+    radial-gradient(1.5px 1.5px at 160px 70px, rgb(142 162 255 / 0.5), transparent),
+    radial-gradient(1px 1px at 210px 200px, rgb(255 255 255 / 0.35), transparent),
+    radial-gradient(1px 1px at 60px 220px, rgb(142 162 255 / 0.35), transparent);
+  background-size: 240px 240px;
+  animation: snow 48s linear infinite;
+  will-change: transform;
+}
+@keyframes snow {
+  to {
+    transform: translateY(-240px);
+  }
+}
+
+/* Crest on the Sea Wall's water column, sliding one period for a seamless loop. */
+.crest {
+  animation: crest 6s linear infinite;
+}
+@keyframes crest {
+  to {
+    transform: translateX(-40px);
   }
 }
 

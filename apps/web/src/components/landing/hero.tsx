@@ -8,6 +8,7 @@ import { usePrices, useSwell } from "@/lib/hooks";
 import { CHAIN_COUNT, SPOKE_LIST } from "@/lib/chains";
 import { LivePrice } from "../live-price";
 import { Change } from "../change";
+import { FlowTicker } from "./flow-ticker";
 
 const WaveField = dynamic(() => import("../wave-field").then((m) => m.WaveField), { ssr: false });
 
@@ -26,7 +27,7 @@ export function Hero() {
 
       <div className="mx-auto flex min-h-[100svh] max-w-[1440px] flex-col justify-between px-4 pt-28 pb-0 sm:px-8 sm:pt-36">
         <div data-hero-copy className="rise max-w-3xl">
-          <p className="tag text-ink-2">LayerZero V2 · {CHAIN_COUNT} chains · settled on Robinhood Chain</p>
+          <p className="tag text-[12px] text-ink-2">LayerZero V2 · {CHAIN_COUNT} chains · settled on Robinhood Chain</p>
           <h1 className="display mt-4 text-[clamp(52px,9.5vw,128px)] text-ink">
             Be the tide.
             <br />
@@ -44,6 +45,7 @@ export function Hero() {
               Inspect the Sea Wall
             </Link>
           </div>
+          <FlowTicker />
         </div>
 
         {/* product view rising from the bottom edge: the live tide table */}
