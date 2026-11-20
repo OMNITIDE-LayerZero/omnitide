@@ -1,5 +1,5 @@
 import { BADGES } from "@omnitide/contracts/deep";
-import { badgeSvg } from "@/lib/badge-art";
+import { MEDAL_FINISH, badgeSvg } from "@/lib/badge-art";
 
 // tokenURI = baseURI + kind + "/" + id; "/image" on the end serves the artwork itself
 export async function GET(req: Request, ctx: { params: Promise<{ kind: string; id: string }> }) {
@@ -22,6 +22,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ kind: string; i
       external_url: `${origin}/terminal/arena`,
       attributes: [
         { trait_type: "Badge", value: b.name },
+        { trait_type: "Finish", value: MEDAL_FINISH[k] },
         { trait_type: "Kind", value: k, display_type: "number" },
       ],
     },

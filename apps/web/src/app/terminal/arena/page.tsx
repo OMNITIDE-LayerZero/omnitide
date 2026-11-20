@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, useConfig } from "wagmi";
 import { getPublicClient } from "wagmi/actions";
@@ -9,7 +10,7 @@ import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { BADGES } from "@omnitide/contracts/deep";
 import { HUB, HUB_KEY, SHORT } from "@/lib/chains";
 import { BADGE_HOME, V3_CHAINS, omnitideBadgeAbi, v3Address } from "@/lib/contracts";
-import { badgeSvg } from "@/lib/badge-art";
+import { MEDAL_FINISH, badgeSvg } from "@/lib/badge-art";
 import { useTx } from "@/lib/tx";
 import { Connect } from "@/components/connect";
 
@@ -29,8 +30,31 @@ interface Held {
 
 const chainOf = (id: number) => V3_CHAINS.find((k) => CHAINS[k].chainId === id);
 
+/** The medal tilts toward the pointer and a sheen follows it across the metal. */
 function Medal({ kind, dim }: { kind: number; dim?: boolean }) {
-  return <div aria-hidden className={`aspect-[5/6] w-full transition-[filter,transform] duration-300 [&>svg]:h-full [&>svg]:w-full ${dim ? "opacity-40 grayscale" : "group-hover:-translate-y-1 group-hover:rotate-[-2deg]"}`} dangerouslySetInnerHTML={{ __html: badgeSvg(kind) }} />;
+  const ref = useRef<HTMLDivElement>(null);
+  const set = (rx: number, ry: number, mx: number, my: number) => {
+    const s = ref.current?.style;
+    if (!s) return;
+    s.setProperty("--rx", `${rx.toFixed(2)}deg`);
+    s.setProperty("--ry", `${ry.toFixed(2)}deg`);
+    s.setProperty("--mx", `${mx.toFixed(1)}%`);
+    s.setProperty("--my", `${my.toFixed(1)}%`);
+  };
+  const move = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const y = (e.clientY - r.top) / r.height;
+    // sheen coords are relative to the medal disc: 9%–91% wide, 5.8%–74.1% tall
+    set((0.5 - y) * 16, (x - 0.5) * 18, ((x - 0.09) / 0.82) * 100, ((y - 0.058) / 0.683) * 100);
+  };
+  return (
+    <div ref={ref} aria-hidden onPointerMove={move} onPointerLeave={() => set(0, 0, 50, 30)} className={`medal relative aspect-[5/6] w-full ${dim ? "opacity-40 grayscale" : ""}`}>
+      <div className="h-full w-full [&>svg]:h-full [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: badgeSvg(kind) }} />
+      <span className="medal-sheen" />
+    </div>
+  );
 }
 
 export default function Arena() {
@@ -87,7 +111,7 @@ export default function Arena() {
           <p className="tag text-ink-3">ERC-721 · LayerZero ONFT · minted on Robinhood Chain against a keeper attestation</p>
           <h1 className="display mt-2 text-[44px] text-ink">Arena</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-[22px] text-ink-2">
-            Eight engraved medals for the things that actually take nerve on OMNITIDE. The keeper checks your record on-chain and signs a one-hour claim; the medal mints on the hub and sails to Arbitrum whenever you want it there.
+            Eight engraved medals, struck in bronze, silver and gold, for the things that actually take nerve on OMNITIDE. The keeper checks your record on-chain and signs a one-hour claim; the medal mints on the hub and sails to Arbitrum whenever you want it there.
           </p>
         </div>
         <div className="flex flex-col justify-between rounded-2xl border border-line bg-navy p-5 text-white">
@@ -119,7 +143,10 @@ export default function Arena() {
           return (
             <article key={b.kind} className={`group flex flex-col rounded-2xl border bg-card p-4 transition-colors ${ready ? "border-accent" : "border-line hover:border-line-strong"}`}>
               <Medal kind={b.kind} dim={!!address && !has && !ready} />
-              <h2 className="mt-3 font-medium">{b.name}</h2>
+              <h2 className="mt-3 flex items-baseline justify-between gap-2 font-medium">
+                {b.name}
+                <span className="tag text-ink-3">{MEDAL_FINISH[b.kind]}</span>
+              </h2>
               <p className="mt-1 flex-1 text-[13px] leading-5 text-ink-2">{b.line}</p>
               <div className="mt-3">
                 {has ? (
