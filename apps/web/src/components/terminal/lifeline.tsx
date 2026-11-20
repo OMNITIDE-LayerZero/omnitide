@@ -6,7 +6,7 @@ import { getPublicClient } from "wagmi/actions";
 import { parseUnits, type Address } from "viem";
 import { LifeBuoy } from "lucide-react";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
-import { CHAIN_KEYS, HUB, HUB_KEY, SHORT, inflowRoute } from "@/lib/chains";
+import { CHAIN_KEYS, HUB, HUB_KEY, IS_MAINNET, SHORT, inflowRoute } from "@/lib/chains";
 import { CLEARINGHOUSE, CH_ABI, omnitideUSDAbi, usdAddress } from "@/lib/contracts";
 import { useHubAccount } from "@/lib/account";
 import { usePriceMap } from "@/lib/hooks";
@@ -105,7 +105,7 @@ export function Lifeline({ always = false }: { always?: boolean }) {
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-[13px] text-ink-3">No spare tdUSD in this wallet on other chains yet. The Faucet tab collects 1,000 per chain per day.</p>
+        <p className="mt-3 text-[13px] text-ink-3">{IS_MAINNET ? "No spare tdUSD in this wallet on other chains yet. Inflow tops the book up straight from USDC on Arbitrum or HyperEVM." : "No spare tdUSD in this wallet on other chains yet. The Faucet tab collects 1,000 per chain per day."}</p>
       )}
     </section>
   );

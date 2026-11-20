@@ -34,7 +34,7 @@ export function SeaWallLive() {
           <dl className="mt-6 grid grid-cols-2 gap-4 border-t border-line pt-4 text-[14px] sm:grid-cols-4">
             {[
               ["Held", money(held)],
-              ["Trader collateral", money(units6(r.collateral))],
+              ["Trader collateral", units6(r.collateral) >= 0.005 ? money(units6(r.collateral)) : "Ready for first deposit"],
               ["Tide Pool", money(units6(r.pool))],
               ["Deposit cap", money(units6(r.depositCap))],
             ].map(([k, v]) => (

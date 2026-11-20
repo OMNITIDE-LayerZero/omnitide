@@ -2,10 +2,10 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, usePublicClient } from "wagmi";
-import type { Address, Hex } from "viem";
+import { erc20Abi, type Address, type Hex } from "viem";
 import { MARKETS } from "@omnitide/contracts/markets";
-import { CLEARINGHOUSE, omnitideClearinghouseAbi, omnitideUSDAbi, usdAddress } from "./contracts";
-import { HUB, chainKeyOf } from "./chains";
+import { CLEARINGHOUSE, omnitideClearinghouseAbi, omnitidePortAbi, omnitideUSDAbi, portOf, usdAddress } from "./contracts";
+import { HUB, HUB_KEY, chainKeyOf } from "./chains";
 import type { Pos } from "./margin";
 
 export interface ChainReport {
@@ -49,7 +49,7 @@ export function useHubAccount() {
         read<bigint>("balances", [a]),
         read<readonly number[]>("openMarkets", [a]),
         read<bigint>("openOrderCount", [a]),
-        client!.readContract({ address: usdAddress("robinhoodTestnet"), abi: omnitideUSDAbi, functionName: "balanceOf", args: [a] }),
+        client!.readContract({ address: usdAddress(HUB_KEY), abi: omnitideUSDAbi, functionName: "balanceOf", args: [a] }),
       ]);
       const positions = await Promise.all(
         open.map(async (id) => {
@@ -62,7 +62,7 @@ export function useHubAccount() {
   });
 }
 
-/** tdUSD in the wallet and faucet cooldown on whichever OMNITIDE chain the wallet is on. */
+/** tdUSD in the wallet, faucet cooldown and (mainnet) the chain's stablecoin Port, on whichever OMNITIDE chain the wallet is on. */
 export function useLocalToken(chainId: number | undefined) {
   const { address } = useAccount();
   const key = chainKeyOf(chainId);
@@ -73,12 +73,17 @@ export function useLocalToken(chainId: number | undefined) {
     refetchInterval: 6_000,
     queryFn: async () => {
       const token = usdAddress(key!);
-      const [balance, last] = await Promise.all([
-        client!.readContract({ address: token, abi: omnitideUSDAbi, functionName: "balanceOf", args: [address as Address] }),
-        client!.readContract({ address: token, abi: omnitideUSDAbi, functionName: "lastDrip", args: [address as Address] }),
+      const a = address as Address;
+      const port = portOf(key!);
+      const [balance, last, stable, allowance, reserve] = await Promise.all([
+        client!.readContract({ address: token, abi: omnitideUSDAbi, functionName: "balanceOf", args: [a] }),
+        client!.readContract({ address: token, abi: omnitideUSDAbi, functionName: "lastDrip", args: [a] }),
+        port ? client!.readContract({ address: port.stable, abi: erc20Abi, functionName: "balanceOf", args: [a] }) : 0n,
+        port ? client!.readContract({ address: port.stable, abi: erc20Abi, functionName: "allowance", args: [a, port.port] }) : 0n,
+        port ? client!.readContract({ address: port.port, abi: omnitidePortAbi, functionName: "reserve" }) : 0n,
       ]);
       const nextDrip = last === 0n ? 0 : Number(last) + 86_400;
-      return { chain: key!, balance: Number(balance) / 1e6, balanceRaw: balance, nextDrip };
+      return { chain: key!, balance: Number(balance) / 1e6, balanceRaw: balance, nextDrip, port, stable: Number(stable) / 1e6, stableRaw: stable, stableAllowance: allowance, reserve: Number(reserve) / 1e6, reserveRaw: reserve };
     },
   });
 }

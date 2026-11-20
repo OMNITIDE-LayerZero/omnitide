@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useSeaWall } from "@/lib/hooks";
 import { moneyCompact, units6 } from "@/lib/format";
-import { SPOKE_LIST } from "@/lib/chains";
+import { IS_MAINNET, SPOKE_LIST } from "@/lib/chains";
 import { laneRows } from "@/lib/landing";
 import { useHubBlock } from "../network-status";
 import { SwellLines } from "./swell-lines";
@@ -26,7 +26,7 @@ export function Surface() {
       <SwellLines className="absolute inset-0 -z-10" />
       <div className="absolute inset-x-0 top-0 -z-10 h-2/5 bg-gradient-to-b from-navy to-transparent" />
       <div className="mx-auto max-w-[1440px] px-4 pt-12 pb-16 sm:px-8 sm:pt-16 sm:pb-24">
-        <p className="tag text-[12px] text-white/75">Surface · testnet season is live</p>
+        <p className="tag text-[12px] text-white/75">Surface · {IS_MAINNET ? "live on mainnet" : "testnet season is live"}</p>
         <h2 className="display mt-4 text-[clamp(48px,7.6vw,112px)]">
           Bring it from any chain.
           <br />

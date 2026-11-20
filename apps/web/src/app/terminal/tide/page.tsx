@@ -6,8 +6,8 @@ import { getPublicClient } from "wagmi/actions";
 import { ExternalLink, Radio } from "lucide-react";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { MARKETS } from "@omnitide/contracts/markets";
-import { CHAIN_KEYS, HUB_KEY, SHORT } from "@/lib/chains";
-import { TIDE_READER, omnitideTideReaderAbi } from "@/lib/contracts";
+import { CHAIN_KEYS, HUB_KEY, LZ_SCAN, SHORT } from "@/lib/chains";
+import { TIDE_READER, TIDE_READER_CHAIN, omnitideTideReaderAbi } from "@/lib/contracts";
 import { useIndexer, usePrices } from "@/lib/hooks";
 import { ago, moneyCompact, pct, price, shortHash, units6, wad } from "@/lib/format";
 import { useTx } from "@/lib/tx";
@@ -21,8 +21,7 @@ interface TideLive {
 }
 interface TideRead { guid: string; readAt: number; requestTx: string | null; eids: number[] | null; supplies: string[] | null; receivedAt: number | null; receivedTx: string | null }
 
-const READER_CHAIN: ChainKey = "arbitrumSepolia";
-const LZ_SCAN = "https://testnet.layerzeroscan.com/tx/";
+const READER_CHAIN = TIDE_READER_CHAIN as ChainKey;
 const keyByEid = (eid: number) => (Object.keys(CHAINS) as ChainKey[]).find((k) => CHAINS[k].eid === eid);
 
 function PullRead() {

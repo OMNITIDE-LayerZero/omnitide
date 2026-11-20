@@ -77,7 +77,7 @@ app.get("/accounts", async (c) => {
 });
 
 // the Deep pool trades for many private books at once, so it never ranks as a trader
-const DEEP_POOL = DEPLOYMENTS.testnet.robinhoodTestnet?.OmnitideDeepPool?.proxy.toLowerCase() as `0x${string}` | undefined;
+const DEEP_POOL = Object.values(DEPLOYMENTS[process.env.OMNITIDE_ENV === "mainnet" ? "mainnet" : "testnet"]).find((c) => c?.OmnitideDeepPool)?.OmnitideDeepPool?.proxy.toLowerCase() as `0x${string}` | undefined;
 const notPool = DEEP_POOL ? notInArray(schema.trader.account, [DEEP_POOL]) : undefined;
 
 app.get("/leaderboard", async (c) => {

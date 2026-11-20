@@ -11,6 +11,7 @@ const ROLE: Record<string, string> = {
   OmnitideClearinghouse: "Cross-margin book, orders and private sealed orders, liquidations, Inflow via lzCompose",
   OmnitideOracle: "Verifies EIP-712 signed price reports, 120 s max age",
   OmnitideUSD: "tdUSD omnichain collateral (LayerZero OFT)",
+  OmnitidePort: "Stablecoin Port: USDG or USDC in, tdUSD out 1:1, redeemable from its reserve",
   OmnitideHarbor: "Harbor OVault (ERC-4626) that owns the Tide Pool; composes cross-chain deposits and redemptions",
   OmnitideHarborShareAdapter: "Locks htdUSD on the hub so Harbor shares travel as an OFT",
   OmnitideHarborShare: "htdUSD on spokes, minted and burned by LayerZero",

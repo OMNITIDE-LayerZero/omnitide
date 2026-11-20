@@ -3,7 +3,7 @@ import { createPublicClient, createWalletClient, defineChain, http, type Address
 import { privateKeyToAccount } from "viem/accounts";
 import { createDb } from "@omnitide/db";
 import { MARKETS } from "@omnitide/contracts/markets";
-import { CHAINS } from "@omnitide/contracts/chains";
+import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
 import { loadEnv } from "./env.js";
 import { quoteFor, type Quote } from "./prices.js";
@@ -18,12 +18,17 @@ const env = loadEnv();
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
 const db = createDb(env.DATABASE_URL);
 const account = privateKeyToAccount(env.KEEPER_PRIVATE_KEY as `0x${string}`);
-const hub = DEPLOYMENTS[env.OMNITIDE_ENV as "testnet"].robinhoodTestnet;
-if (!hub?.OmnitideOracle || !hub.OmnitideClearinghouse || !hub.OmnitideHarbor) throw new Error("hub contracts are not deployed");
-const reader = DEPLOYMENTS[env.OMNITIDE_ENV as "testnet"].arbitrumSepolia?.OmnitideTideReader;
+const deployed = DEPLOYMENTS[env.OMNITIDE_ENV];
+const keys = (Object.keys(CHAINS) as ChainKey[]).filter((k) => deployed[k]?.OmnitideUSD);
+const hubKey = keys.find((k) => CHAINS[k].hub);
+const hub = hubKey ? deployed[hubKey] : undefined;
+if (!hubKey || !hub?.OmnitideOracle || !hub.OmnitideClearinghouse) throw new Error("hub contracts are not deployed");
+// V2/V3 pieces are optional: mainnet ships version by version
+const readerKey = keys.find((k) => deployed[k]?.OmnitideTideReader);
+const reader = readerKey ? deployed[readerKey]!.OmnitideTideReader : undefined;
 const hubChain = defineChain({
-  id: CHAINS.robinhoodTestnet.chainId,
-  name: CHAINS.robinhoodTestnet.name,
+  id: CHAINS[hubKey].chainId,
+  name: CHAINS[hubKey].name,
   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: [env.HUB_RPC_URL] } },
 });
@@ -89,13 +94,13 @@ const executor = createExecutor({
 });
 let executorState: Record<string, unknown> = {};
 
-const arbChain = defineChain({ id: CHAINS.arbitrumSepolia.chainId, name: CHAINS.arbitrumSepolia.name, nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [env.ARB_RPC_URL] } } });
+const arbChain = defineChain({ id: CHAINS[readerKey ?? hubKey].chainId, name: CHAINS[readerKey ?? hubKey].name, nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [env.ARB_RPC_URL] } } });
 const current = createCurrent({
   env,
   db,
   hub: pub,
   clearinghouse: hub.OmnitideClearinghouse.proxy as Address,
-  harbor: hub.OmnitideHarbor.proxy as Address,
+  harbor: hub.OmnitideHarbor?.proxy as Address | undefined,
   arb: reader
     ? { pub: createPublicClient({ chain: arbChain, transport: http(env.ARB_RPC_URL) }), wallet: createWalletClient({ chain: arbChain, transport: http(env.ARB_RPC_URL), account }), reader: reader.proxy as Address }
     : undefined,
@@ -104,7 +109,7 @@ const current = createCurrent({
 });
 let currentState: Record<string, unknown> = {};
 
-const arbDep = DEPLOYMENTS[env.OMNITIDE_ENV as "testnet"].arbitrumSepolia;
+const lighthouseSpokes = keys.filter((k) => k !== hubKey && deployed[k]?.OmnitideLighthouse);
 const deepWater =
   hub.OmnitideDeepPool && hub.OmnitideBadge && hub.OmnitideLighthouse
     ? createDeepWater({
@@ -113,14 +118,14 @@ const deepWater =
         hub: pub,
         wallet,
         keeperKey: env.KEEPER_PRIVATE_KEY as `0x${string}`,
-        hubEid: CHAINS.robinhoodTestnet.eid,
+        hubEid: CHAINS[hubKey].eid,
         clearinghouse: hub.OmnitideClearinghouse.proxy as Address,
         pool: hub.OmnitideDeepPool.proxy as Address,
         poolBlock: BigInt(hub.OmnitideDeepPool.block),
         badge: hub.OmnitideBadge.proxy as Address,
         lighthouses: {
-          [CHAINS.robinhoodTestnet.chainId]: hub.OmnitideLighthouse.proxy as Address,
-          ...(arbDep?.OmnitideLighthouse ? { [CHAINS.arbitrumSepolia.chainId]: arbDep.OmnitideLighthouse.proxy as Address } : {}),
+          [CHAINS[hubKey].chainId]: hub.OmnitideLighthouse.proxy as Address,
+          ...Object.fromEntries(lighthouseSpokes.map((k) => [CHAINS[k].chainId, deployed[k]!.OmnitideLighthouse!.proxy as Address])),
         },
         reports: reportsFor,
         priceOf: (f) => (fresh(f) ? Number(fresh(f)!.price) : undefined),

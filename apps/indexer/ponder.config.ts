@@ -15,19 +15,18 @@ import {
   omnitideCopyVaultFactoryAbi,
 } from "@omnitide/contracts/abi";
 
-const d = DEPLOYMENTS.testnet;
-const hub = d.robinhoodTestnet?.OmnitideClearinghouse;
-const harbor = d.robinhoodTestnet?.OmnitideHarbor;
-const reader = d.arbitrumSepolia?.OmnitideTideReader;
-if (!hub || !harbor || !reader) throw new Error("hub, Harbor and Tide reader contracts must be deployed");
-const rh = d.robinhoodTestnet!;
-if (!rh.OmnitideDeepPool || !rh.OmnitideCopyVaultFactory) throw new Error("Deep Water contracts must be deployed on the hub");
-// V3 OApps live on the hub and every chain with deepWater set
-const v3 = (name: "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil") =>
+const d = DEPLOYMENTS[process.env.OMNITIDE_ENV === "mainnet" ? "mainnet" : "testnet"];
+const hubKey = (Object.keys(CHAINS) as ChainKey[]).find((k) => CHAINS[k].hub && d[k]?.OmnitideClearinghouse);
+if (!hubKey) throw new Error("hub contracts must be deployed");
+const rh = d[hubKey]!;
+// every contract maps chain → deployment; V2/V3 maps stay empty until that version ships (mainnet goes version by version)
+type Name = "OmnitideHarbor" | "OmnitideTideReader" | "OmnitideDeepPool" | "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil" | "OmnitideCopyVaultFactory" | "OmnitideClearinghouse";
+const on = (name: Name) =>
   Object.fromEntries((Object.keys(CHAINS) as ChainKey[]).flatMap((k) => {
     const c = d[k]?.[name];
     return c ? [[k, { address: c.proxy as `0x${string}`, startBlock: c.block }]] : [];
   }));
+const factoryRec = rh.OmnitideCopyVaultFactory;
 // only chains with a deployed OmnitideUSD are indexed
 const LIVE = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) => (d[k]?.OmnitideUSD ? [[k, d[k].OmnitideUSD] as const] : []));
 const rpc = (key: ChainKey) => process.env[`PONDER_RPC_${CHAINS[key].chainId}`]?.split(",") ?? CHAINS[key].rpc;
@@ -36,6 +35,8 @@ const rpc = (key: ChainKey) => process.env[`PONDER_RPC_${CHAINS[key].chainId}`]?
 const LIMITS: Partial<Record<ChainKey, { maxRequestsPerSecond?: number; ethGetLogsBlockRange?: number; pollingInterval?: number; reorgWindow?: number }>> = {
   robinhoodTestnet: { pollingInterval: 2_000 },
   hyperEvmTestnet: { maxRequestsPerSecond: 5, ethGetLogsBlockRange: 1_000, reorgWindow: 0 },
+  robinhood: { pollingInterval: 2_000 },
+  hyperEvm: { maxRequestsPerSecond: 5, ethGetLogsBlockRange: 1_000, reorgWindow: 0 },
 };
 
 export default createConfig({
@@ -48,38 +49,27 @@ export default createConfig({
       chain: Object.fromEntries(LIVE.map(([k, usd]) => [k, { address: usd.proxy as `0x${string}`, startBlock: usd.block }])),
       filter: [{ event: "OFTSent", args: {} }, { event: "OFTReceived", args: {} }, { event: "Dripped", args: {} }],
     },
-    OmnitideClearinghouse: {
-      abi: omnitideClearinghouseAbi,
-      chain: "robinhoodTestnet",
-      address: hub.proxy as `0x${string}`,
-      startBlock: hub.block,
-    },
+    OmnitideClearinghouse: { abi: omnitideClearinghouseAbi, chain: on("OmnitideClearinghouse") },
     OmnitideHarbor: {
       abi: omnitideHarborAbi,
-      chain: "robinhoodTestnet",
-      address: harbor.proxy as `0x${string}`,
-      startBlock: harbor.block,
+      chain: on("OmnitideHarbor"),
       filter: [{ event: "Deposit", args: {} }, { event: "Withdraw", args: {} }, { event: "Composed", args: {} }],
     },
     OmnitideTideReader: {
       abi: omnitideTideReaderAbi,
-      chain: "arbitrumSepolia",
-      address: reader.proxy as `0x${string}`,
-      startBlock: reader.block,
+      chain: on("OmnitideTideReader"),
       filter: [{ event: "TideRequested", args: {} }, { event: "TideRead", args: {} }],
     },
     OmnitideDeepPool: {
       abi: omnitideDeepPoolAbi,
-      chain: "robinhoodTestnet",
-      address: rh.OmnitideDeepPool.proxy as `0x${string}`,
-      startBlock: rh.OmnitideDeepPool.block,
+      chain: on("OmnitideDeepPool"),
       filter: [{ event: "DeepDeposit", args: {} }, { event: "Sealed", args: {} }, { event: "DeepWithdraw", args: {} }, { event: "ExitRequested", args: {} }, { event: "Exited", args: {} }],
     },
-    OmnitideLighthouse: { abi: omnitideLighthouseAbi, chain: v3("OmnitideLighthouse"), filter: [{ event: "BeamLit", args: {} }, { event: "BeamSent", args: {} }] },
-    OmnitideBadge: { abi: omnitideBadgeAbi, chain: v3("OmnitideBadge"), filter: [{ event: "Transfer", args: {} }, { event: "BadgeClaimed", args: {} }, { event: "BadgeReceived", args: {} }, { event: "BadgeSent", args: {} }] },
+    OmnitideLighthouse: { abi: omnitideLighthouseAbi, chain: on("OmnitideLighthouse"), filter: [{ event: "BeamLit", args: {} }, { event: "BeamSent", args: {} }] },
+    OmnitideBadge: { abi: omnitideBadgeAbi, chain: on("OmnitideBadge"), filter: [{ event: "Transfer", args: {} }, { event: "BadgeClaimed", args: {} }, { event: "BadgeReceived", args: {} }, { event: "BadgeSent", args: {} }] },
     OmnitideCouncil: {
       abi: omnitideCouncilAbi,
-      chain: v3("OmnitideCouncil"),
+      chain: on("OmnitideCouncil"),
       filter: [
         { event: "ProposalCreated", args: {} },
         { event: "ProposalMirrored", args: {} },
@@ -91,16 +81,19 @@ export default createConfig({
     },
     OmnitideCopyVaultFactory: {
       abi: omnitideCopyVaultFactoryAbi,
-      chain: "robinhoodTestnet",
-      address: rh.OmnitideCopyVaultFactory.proxy as `0x${string}`,
-      startBlock: rh.OmnitideCopyVaultFactory.block,
+      chain: on("OmnitideCopyVaultFactory"),
       filter: [{ event: "VaultCreated", args: {} }],
     },
     OmnitideCopyVault: {
       abi: omnitideCopyVaultAbi,
-      chain: "robinhoodTestnet",
-      address: factory({ address: rh.OmnitideCopyVaultFactory.proxy as `0x${string}`, event: getAbiItem({ abi: omnitideCopyVaultFactoryAbi, name: "VaultCreated" }), parameter: "vault" }),
-      startBlock: rh.OmnitideCopyVaultFactory.block,
+      chain: factoryRec
+        ? {
+            [hubKey]: {
+              address: factory({ address: factoryRec.proxy as `0x${string}`, event: getAbiItem({ abi: omnitideCopyVaultFactoryAbi, name: "VaultCreated" }), parameter: "vault" }),
+              startBlock: factoryRec.block,
+            },
+          }
+        : {},
       filter: [{ event: "Deposited", args: {} }, { event: "Queued", args: {} }, { event: "Redeemed", args: {} }, { event: "LeaderTrade", args: {} }],
     },
   },

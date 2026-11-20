@@ -1,9 +1,9 @@
 import type { Address } from "viem";
-import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { MARKETS } from "@omnitide/contracts/markets";
 
 import { omnitideClearinghouseAbi, omnitideOracleAbi } from "@omnitide/contracts/abi";
+import { D, HUB_KEY } from "./chains";
 export {
   omnitideClearinghouseAbi,
   omnitideUSDAbi,
@@ -18,24 +18,36 @@ export {
   omnitideCouncilAbi,
   omnitideCopyVaultAbi,
   omnitideCopyVaultFactoryAbi,
+  omnitidePortAbi,
 } from "@omnitide/contracts/abi";
 
 /** Clearinghouse ABI plus the oracle's errors, so reverts from price checks decode by name. */
 export const CH_ABI = [...omnitideClearinghouseAbi, ...omnitideOracleAbi.filter((x) => x.type === "error")] as const;
 export { MARKETS };
 
-const D = DEPLOYMENTS.testnet;
+const hub = D[HUB_KEY]!;
+const readerChain = (Object.keys(CHAINS) as ChainKey[]).find((k) => D[k]?.OmnitideTideReader);
 
 // callers only pass live chains (CHAIN_KEYS), and the hub is always deployed
 export const usdAddress = (k: ChainKey) => D[k]!.OmnitideUSD!.proxy as Address;
-export const CLEARINGHOUSE = D.robinhoodTestnet!.OmnitideClearinghouse!.proxy as Address;
-export const ORACLE = D.robinhoodTestnet!.OmnitideOracle!.proxy as Address;
-export const HARBOR = D.robinhoodTestnet!.OmnitideHarbor!.proxy as Address;
-export const HARBOR_ADAPTER = D.robinhoodTestnet!.OmnitideHarborShareAdapter!.proxy as Address;
-export const TIDE_READER = D.arbitrumSepolia!.OmnitideTideReader!.proxy as Address;
-export const DEEP_POOL = D.robinhoodTestnet!.OmnitideDeepPool!.proxy as Address;
-export const COPY_FACTORY = D.robinhoodTestnet!.OmnitideCopyVaultFactory!.proxy as Address;
-export const BADGE_HOME = D.robinhoodTestnet!.OmnitideBadge!.proxy as Address;
+export const CLEARINGHOUSE = hub.OmnitideClearinghouse!.proxy as Address;
+export const ORACLE = hub.OmnitideOracle!.proxy as Address;
+/** Features ship version by version on mainnet; pages and panels whose contracts are absent stay hidden. */
+export const FEATURES = { harbor: !!hub.OmnitideHarbor, tide: !!readerChain, deepWater: !!hub.OmnitideDeepPool } as const;
+// V2/V3 addresses are only read behind FEATURES
+export const HARBOR = hub.OmnitideHarbor?.proxy as Address;
+export const HARBOR_ADAPTER = hub.OmnitideHarborShareAdapter?.proxy as Address;
+export const TIDE_READER_CHAIN = readerChain;
+export const TIDE_READER = (readerChain && D[readerChain]!.OmnitideTideReader!.proxy) as Address;
+export const DEEP_POOL = hub.OmnitideDeepPool?.proxy as Address;
+export const COPY_FACTORY = hub.OmnitideCopyVaultFactory?.proxy as Address;
+export const BADGE_HOME = hub.OmnitideBadge?.proxy as Address;
+/** Stablecoin Ports (mainnet): tdUSD minted 1:1 against USDG on the hub, USDC on spokes. */
+export const portOf = (k: ChainKey) => {
+  const port = D[k]?.OmnitidePort;
+  const stable = CHAINS[k].stable;
+  return port && stable ? { port: port.proxy as Address, stable: stable.address as Address, symbol: stable.symbol } : undefined;
+};
 /** Chains carrying the V3 OApps (TIDE, Council, Lighthouse, Arena Badges): the hub plus every deepWater spoke. */
 export const V3_CHAINS = (Object.keys(CHAINS) as ChainKey[]).filter((k) => D[k]?.OmnitideCouncil);
 export const v3Address = (k: ChainKey, name: "OmnitideToken" | "OmnitideCouncil" | "OmnitideLighthouse" | "OmnitideBadge") => D[k]![name]!.proxy as Address;
@@ -50,6 +62,7 @@ export const CONTRACT_ROWS = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) =>
       "OmnitideClearinghouse",
       "OmnitideOracle",
       "OmnitideUSD",
+      "OmnitidePort",
       "OmnitideHarbor",
       "OmnitideHarborShareAdapter",
       "OmnitideHarborShare",

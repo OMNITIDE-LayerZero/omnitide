@@ -3,7 +3,7 @@
 import { ExternalLink } from "lucide-react";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { useIndexer } from "@/lib/hooks";
-import { SHORT } from "@/lib/chains";
+import { LZ_SCAN, SHORT } from "@/lib/chains";
 import { ago, money, units6 } from "@/lib/format";
 
 interface Message { guid: string; srcChainId: number; dstEid: number; amount: string; sentAt: number; receivedAt: number | null; sentTx: string }
@@ -46,7 +46,7 @@ export function LayerZeroMessages() {
                   <td className="px-5 py-3 text-ink-3">{ago(m.sentAt)}</td>
                   <td className="px-5 py-3">{m.receivedAt ? <span className="text-flood">Delivered in {Math.max(1, Math.round((m.receivedAt - m.sentAt) / 60))} min</span> : src && dst ? <span className="text-warn">In flight</span> : <span className="text-ink-3">Lane closed</span>}</td>
                   <td className="px-5 py-3">
-                    <a href={`https://testnet.layerzeroscan.com/tx/${m.sentTx}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-ink">
+                    <a href={`${LZ_SCAN}${m.sentTx}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-2 hover:text-ink">
                       {m.sentTx.slice(0, 10)}…{m.sentTx.slice(-4)}
                       <ExternalLink size={12} strokeWidth={1.5} />
                     </a>

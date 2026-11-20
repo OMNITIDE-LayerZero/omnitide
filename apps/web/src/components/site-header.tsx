@@ -6,11 +6,12 @@ import { Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { ThemeToggle, useTheme } from "./theme";
 import { haze, type Surface } from "@/lib/haze";
+import { FEATURES } from "@/lib/contracts";
 
 const LINKS = [
   { href: "/terminal/trade", label: "Terminal" },
   { href: "/#markets", label: "Markets" },
-  { href: "/terminal/deep", label: "Deep Mode" },
+  ...(FEATURES.deepWater ? [{ href: "/terminal/deep", label: "Deep Mode" }] : []),
   { href: "/sea-wall", label: "Sea Wall" },
   { href: "/#contracts", label: "Contracts" },
 ];

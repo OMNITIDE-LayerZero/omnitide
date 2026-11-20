@@ -10,6 +10,9 @@ const Env = z.object({
   RPC_421614: z.string().url().default("https://sepolia-rollup.arbitrum.io/rpc"),
   RPC_998: z.string().url().default("https://rpc.hyperliquid-testnet.xyz/evm"),
   RPC_11155111: z.string().url().default("https://ethereum-sepolia-rpc.publicnode.com"),
+  RPC_4663: z.string().url().default("https://rpc.mainnet.chain.robinhood.com"),
+  RPC_42161: z.string().url().default("https://arb1.arbitrum.io/rpc"),
+  RPC_999: z.string().url().default("https://rpc.hyperliquid.xyz/evm"),
   // project wallets: masked in every indexer response the site serves
   HOUSE_ACCOUNTS: z
     .string()

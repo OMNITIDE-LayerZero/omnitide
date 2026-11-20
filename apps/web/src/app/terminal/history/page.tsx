@@ -7,7 +7,7 @@ import { Download, ExternalLink } from "lucide-react";
 import { MARKETS } from "@omnitide/contracts/markets";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { useIndexer } from "@/lib/hooks";
-import { CHAIN_COUNT, SHORT, explorerTx } from "@/lib/chains";
+import { CHAIN_COUNT, HUB_KEY, LZ_SCAN, SHORT, explorerTx } from "@/lib/chains";
 import { ago, money, price, shortHash, signedMoney, units6, wad } from "@/lib/format";
 import { LineChart } from "@/components/terminal/line-chart";
 import { csv, download, pnlReport } from "@/lib/report";
@@ -17,7 +17,6 @@ interface Flow { id: string; kind: string; amount: string; eid: number; guid: st
 interface Order { id: string; marketId: number; kind: number; sizeDelta: string; triggerPrice: string; status: string; fillPrice: string | null; placedAt: number }
 
 const chainByEid = (eid: number) => (Object.keys(CHAINS) as ChainKey[]).find((k) => CHAINS[k].eid === eid);
-const LZ_SCAN = "https://testnet.layerzeroscan.com/tx/";
 const FLOW: Record<string, string> = { inflow: "Inflow", deposit: "Deposit", ebb: "Ebb", withdraw: "Withdraw" };
 
 function TxLink({ hash, href }: { hash: string; href: string }) {
@@ -105,7 +104,7 @@ export default function History() {
                   <td className="num px-4 py-3 text-ink-2">{money(units6(t.fee))}</td>
                   <td className="px-4 py-3 text-ink-3">{ago(t.timestamp)}</td>
                   <td className="px-4 py-3">
-                    <TxLink hash={t.tx} href={explorerTx("robinhoodTestnet", t.tx)} />
+                    <TxLink hash={t.tx} href={explorerTx(HUB_KEY, t.tx)} />
                   </td>
                 </tr>
               );
@@ -127,7 +126,7 @@ export default function History() {
                   <td className="px-4 py-3 text-ink-2">{k ? SHORT[k] : `eid ${f.eid}`}</td>
                   <td className="px-4 py-3 text-ink-3">{ago(f.timestamp)}</td>
                   <td className="px-4 py-3">
-                    <TxLink hash={f.tx} href={explorerTx("robinhoodTestnet", f.tx)} />
+                    <TxLink hash={f.tx} href={explorerTx(HUB_KEY, f.tx)} />
                   </td>
                   <td className="px-4 py-3">{f.guid ? <TxLink hash={f.tx} href={`${LZ_SCAN}${f.tx}`} /> : <span className="text-ink-3">local</span>}</td>
                 </tr>

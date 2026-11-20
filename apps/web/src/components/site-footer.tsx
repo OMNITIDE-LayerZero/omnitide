@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Logo } from "./logo";
 import { NetworkStatus } from "./network-status";
+import { IS_MAINNET } from "@/lib/chains";
+import { FEATURES } from "@/lib/contracts";
 
 export function SiteFooter() {
   return (
@@ -9,14 +11,14 @@ export function SiteFooter() {
         <div>
           <Logo />
           <p className="display mt-6 text-[40px] text-ink">One book. Every chain.</p>
-          <p className="tag mt-2 text-ink-2">Beneath the surface · testnet season · secured by LayerZero</p>
+          <p className="tag mt-2 text-ink-2">Beneath the surface · {IS_MAINNET ? "live on mainnet" : "testnet season"} · secured by LayerZero</p>
         </div>
         <nav className="grid grid-cols-2 gap-x-12 gap-y-2 text-[14px] text-ink-2" aria-label="Footer">
           <Link href="/terminal/trade" className="hover:text-ink">Trade</Link>
           <Link href="/terminal/portfolio" className="hover:text-ink">Portfolio</Link>
           <Link href="/terminal/markets" className="hover:text-ink">Markets</Link>
           <Link href="/terminal/history" className="hover:text-ink">History</Link>
-          <Link href="/terminal/deep" className="hover:text-ink">Deep Mode</Link>
+          {FEATURES.deepWater && <Link href="/terminal/deep" className="hover:text-ink">Deep Mode</Link>}
           <Link href="/terminal/currents" className="hover:text-ink">Currents</Link>
           <Link href="/disclosure" className="hover:text-ink">Disclosure</Link>
           <Link href="/sea-wall" className="hover:text-ink">Sea Wall</Link>

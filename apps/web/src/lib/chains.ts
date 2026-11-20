@@ -1,13 +1,22 @@
-import { arbitrumSepolia, hyperliquidEvmTestnet, robinhoodTestnet, sepolia } from "viem/chains";
+import { arbitrum, arbitrumSepolia, hyperEvm, hyperliquidEvmTestnet, robinhood, robinhoodTestnet, sepolia } from "viem/chains";
 import type { Chain } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
+
+/** Build-time network: testnet.omnitide.trade builds with testnet, omnitide.trade with mainnet. */
+export const ENV: keyof typeof DEPLOYMENTS = process.env.NEXT_PUBLIC_OMNITIDE_ENV === "mainnet" ? "mainnet" : "testnet";
+export const IS_MAINNET = ENV === "mainnet";
+/** This env's deployment records. */
+export const D = DEPLOYMENTS[ENV];
 
 const VIEM: Record<ChainKey, Chain> = {
   robinhoodTestnet,
   arbitrumSepolia,
   hyperEvmTestnet: { ...hyperliquidEvmTestnet, blockExplorers: { default: { name: "Purrsec", url: CHAINS.hyperEvmTestnet.explorer } } },
   sepolia,
+  robinhood,
+  arbitrum,
+  hyperEvm,
 };
 
 /** Browser RPC goes through our own proxy so every visitor reaches every chain, whatever their DNS. */
@@ -17,7 +26,7 @@ export function proxiedRpc(chainId: number) {
 }
 
 /** Chains with a live OmnitideUSD; a configured chain stays hidden until it is deployed. */
-export const CHAIN_KEYS = (Object.keys(CHAINS) as ChainKey[]).filter((k) => DEPLOYMENTS.testnet[k]?.OmnitideUSD);
+export const CHAIN_KEYS = (Object.keys(CHAINS) as ChainKey[]).filter((k) => D[k]?.OmnitideUSD);
 
 export const CHAIN_COUNT = CHAIN_KEYS.length;
 
@@ -26,7 +35,7 @@ export const CHAIN_LIST = CHAIN_KEYS.map((k) => {
   return { ...c, rpcUrls: { default: { http: [proxiedRpc(c.id)] } } } as Chain;
 }) as [Chain, ...Chain[]];
 
-export const HUB_KEY: ChainKey = "robinhoodTestnet";
+export const HUB_KEY: ChainKey = CHAIN_KEYS.find((k) => CHAINS[k].hub)!;
 export const HUB = CHAINS[HUB_KEY];
 
 export const chainKeyOf = (chainId: number | undefined) => CHAIN_KEYS.find((k) => CHAINS[k].chainId === chainId);
@@ -37,6 +46,9 @@ export const SHORT: Record<ChainKey, string> = {
   arbitrumSepolia: "Arbitrum Sepolia",
   hyperEvmTestnet: "HyperEVM",
   sepolia: "Ethereum Sepolia",
+  robinhood: "Robinhood Chain",
+  arbitrum: "Arbitrum",
+  hyperEvm: "HyperEVM",
 };
 
 /** Network names for marketing copy, without the testnet suffix. */
@@ -45,20 +57,26 @@ export const NETWORK: Record<ChainKey, string> = {
   arbitrumSepolia: "Arbitrum",
   hyperEvmTestnet: "HyperEVM",
   sepolia: "Ethereum",
+  robinhood: "Robinhood Chain",
+  arbitrum: "Arbitrum",
+  hyperEvm: "HyperEVM",
 };
 
 /** Live spokes as "A, B or C". */
 export const SPOKE_LIST = new Intl.ListFormat("en-US", { type: "disjunction" }).format(CHAIN_KEYS.filter((k) => k !== HUB_KEY).map((k) => NETWORK[k]));
 
 /**
- * LayerZero testnet lanes per direction: destinations with a live executor and DVN from each chain (checked 2026-11-20).
- * HyperEVM testnet's executor serves neither the hub nor Arbitrum, so HyperEVM leaves through Sepolia.
+ * LayerZero lanes per direction: destinations with a live executor and DVN from each chain (checked 2026-11-20/21).
+ * HyperEVM testnet's executor serves neither the hub nor Arbitrum, so HyperEVM leaves through Sepolia; mainnet is direct.
  */
 const ALL_LANES: Record<ChainKey, ChainKey[]> = {
   robinhoodTestnet: ["arbitrumSepolia", "sepolia"],
   arbitrumSepolia: ["robinhoodTestnet", "sepolia", "hyperEvmTestnet"],
   sepolia: ["robinhoodTestnet", "arbitrumSepolia", "hyperEvmTestnet"],
   hyperEvmTestnet: ["sepolia"],
+  robinhood: ["arbitrum", "hyperEvm"],
+  arbitrum: ["robinhood", "hyperEvm"],
+  hyperEvm: ["robinhood", "arbitrum"],
 };
 export const LANES = Object.fromEntries(CHAIN_KEYS.map((k) => [k, ALL_LANES[k].filter((o) => CHAIN_KEYS.includes(o))])) as Record<ChainKey, ChainKey[]>;
 
@@ -70,3 +88,5 @@ export function inflowRoute(from: ChainKey): ChainKey[] {
 
 export const explorerTx = (k: ChainKey, hash: string) => `${CHAINS[k].explorer}/tx/${hash}`;
 export const explorerAddress = (k: ChainKey, addr: string) => `${CHAINS[k].explorer}/address/${addr}`;
+
+export const LZ_SCAN = IS_MAINNET ? "https://layerzeroscan.com/tx/" : "https://testnet.layerzeroscan.com/tx/";

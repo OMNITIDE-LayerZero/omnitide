@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, usePublicClient, useSwitchChain } from "wagmi";
-import { encodeAbiParameters, formatEther, pad, parseUnits, type Address } from "viem";
+import { encodeAbiParameters, erc20Abi, formatEther, pad, parseUnits, type Address } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
-import { CHAIN_COUNT, CHAIN_KEYS, HUB, HUB_KEY, LANES, SHORT, chainKeyOf, inflowRoute } from "@/lib/chains";
-import { CLEARINGHOUSE, CH_ABI, omnitideUSDAbi, usdAddress } from "@/lib/contracts";
+import { CHAIN_COUNT, CHAIN_KEYS, HUB, HUB_KEY, IS_MAINNET, LANES, SHORT, chainKeyOf, inflowRoute } from "@/lib/chains";
+import { CLEARINGHOUSE, CH_ABI, omnitidePortAbi, omnitideUSDAbi, usdAddress } from "@/lib/contracts";
 import { fetchReports, feedsFor, useHubAccount, useLocalToken } from "@/lib/account";
 import { usePriceMap } from "@/lib/hooks";
 import { accountHealth } from "@/lib/margin";
@@ -14,7 +14,7 @@ import { money } from "@/lib/format";
 import { useTx } from "@/lib/tx";
 import { Connect } from "../connect";
 
-type Tab = "inflow" | "ebb" | "faucet";
+type Tab = "inflow" | "ebb" | "faucet" | "port";
 
 export function sendParam(dst: ChainKey, to: Address, amount: bigint, compose: Address | null) {
   return {
@@ -54,7 +54,11 @@ function Inflow() {
   const { data: local } = useLocalToken(chainId);
   const { send, busy } = useTx();
   const [value, setValue] = useState("");
+  const [useStable, setUseStable] = useState(true);
   const amount = amountUnits(value);
+  // mainnet: pay in this chain's stablecoin and the Port mints tdUSD 1:1 on the way in
+  const port = local?.port;
+  const viaPort = !!port && useStable;
   const route = from ? inflowRoute(from) : [];
   const nextHop = route[0];
   const direct = nextHop === HUB_KEY;
@@ -73,7 +77,24 @@ function Inflow() {
 
   async function go() {
     if (!from || !address) return;
-    if (from === HUB_KEY) {
+    const chainId = CHAINS[from].chainId;
+    if (viaPort && (local?.stableAllowance ?? 0n) < amount)
+      await send(`Approve ${port!.symbol}`, { chainId, address: port!.stable, abi: erc20Abi, functionName: "approve", args: [port!.port, amount] });
+    if (viaPort && from === HUB_KEY) {
+      await send(`Mint ${value} tdUSD from ${port!.symbol}`, { chainId, address: port!.port, abi: omnitidePortAbi, functionName: "deposit", args: [amount, address] });
+      await send("Approve tdUSD", { chainId, address: usdAddress(HUB_KEY), abi: omnitideUSDAbi, functionName: "approve", args: [CLEARINGHOUSE, amount] });
+      await send(`Deposit ${value} tdUSD`, { chainId, address: CLEARINGHOUSE, abi: CH_ABI, functionName: "deposit", args: [amount] });
+    } else if (viaPort && direct) {
+      if (fee === undefined) return;
+      await send(`Inflow ${value} ${port!.symbol} from ${SHORT[from]}`, {
+        chainId,
+        address: port!.port,
+        abi: omnitidePortAbi,
+        functionName: "depositAndSend",
+        args: [amount, sendParam(HUB_KEY, CLEARINGHOUSE, amount, address)],
+        value: fee,
+      });
+    } else if (from === HUB_KEY) {
       await send("Approve tdUSD", { chainId: HUB.chainId, address: usdAddress(HUB_KEY), abi: omnitideUSDAbi, functionName: "approve", args: [CLEARINGHOUSE, amount] });
       await send(`Deposit ${value} tdUSD`, { chainId: HUB.chainId, address: CLEARINGHOUSE, abi: CH_ABI, functionName: "deposit", args: [amount] });
     } else {
@@ -91,9 +112,20 @@ function Inflow() {
     setValue("");
   }
 
-  const max = local?.balance ?? 0;
+  const max = (viaPort ? local?.stable : local?.balance) ?? 0;
+  const maxRaw = (viaPort ? local?.stableRaw : local?.balanceRaw) ?? 0n;
+  const unit = viaPort ? port!.symbol : "tdUSD";
   return (
     <div className="space-y-4">
+      {port && (
+        <div className="flex gap-1" role="radiogroup" aria-label="Pay with">
+          {([[true, port.symbol], [false, "tdUSD"]] as const).map(([v, label]) => (
+            <button key={label} type="button" role="radio" aria-checked={useStable === v} onClick={() => setUseStable(v)} className={`btn btn-sm ${useStable === v ? "bg-raised text-ink" : "btn-ghost"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2 text-[13px]">
         <span className="text-ink-3">Route</span>
         {[from, ...route].map((k, i) => (
@@ -108,7 +140,7 @@ function Inflow() {
           <span>Amount</span>
           {max > 0 && (
             <button type="button" className="num text-ink-3 hover:text-ink" onClick={() => setValue(String(max))}>
-              {max.toLocaleString("en-US")} tdUSD on {SHORT[from]}
+              {max.toLocaleString("en-US")} {unit} on {SHORT[from]}
             </button>
           )}
         </span>
@@ -124,7 +156,8 @@ function Inflow() {
           LayerZero has no {SHORT[from]} → Robinhood Chain lane yet, so this goes in two hops. First it ferries to {SHORT[nextHop!]}; once it lands (about two minutes), switch there and send it into the book.
         </p>
       )}
-      <button type="button" className="btn btn-primary w-full" disabled={busy || amount === 0n || amount > (local?.balanceRaw ?? 0n) || (from !== HUB_KEY && fee === undefined)} onClick={() => void go().catch(() => {})}>
+      {viaPort && <p className="text-[13px] leading-5 text-ink-2">Your {port!.symbol} becomes tdUSD margin 1:1 through the OMNITIDE Port on {SHORT[from]}. Redeem it back from the Port tab anytime.</p>}
+      <button type="button" className="btn btn-primary w-full" disabled={busy || amount === 0n || amount > maxRaw || (from !== HUB_KEY && fee === undefined)} onClick={() => void go().catch(() => {})}>
         {from === HUB_KEY ? "Deposit to margin" : direct ? "Send into the book" : `Ferry to ${SHORT[nextHop!]}`}
       </button>
     </div>
@@ -182,6 +215,7 @@ function Ebb() {
       <button type="button" className="btn btn-primary w-full" disabled={busy || amount === 0n || Number(value) > withdrawable + 1e-6 || (dst !== HUB_KEY && fee === undefined)} onClick={() => void go().catch(() => {})}>
         {dst === HUB_KEY ? "Withdraw to wallet" : `Ebb to ${SHORT[dst]}`}
       </button>
+      {IS_MAINNET && <p className="text-[13px] leading-5 text-ink-2">Lands as tdUSD in your wallet. Turn it back into {CHAINS[dst].stable?.symbol ?? "stablecoin"} 1:1 from the Port tab on {SHORT[dst]}.</p>}
     </div>
   );
 }
@@ -205,6 +239,43 @@ function Faucet() {
   );
 }
 
+function Port() {
+  const { address, chainId } = useAccount();
+  const key = chainKeyOf(chainId);
+  const { data } = useLocalToken(chainId);
+  const { send, busy } = useTx();
+  const [value, setValue] = useState("");
+  const amount = amountUnits(value);
+  const port = data?.port;
+  if (!key || !port) return <p className="text-[14px] text-ink-2">Switch to one of the {CHAIN_COUNT} OMNITIDE chains to use its Port.</p>;
+  const max = Math.min(data.balance, data.reserve);
+  return (
+    <div className="space-y-4">
+      <p className="text-[14px] leading-[22px] text-ink-2">
+        Every tdUSD is backed 1:1 by {port.symbol} held in the Port on {SHORT[key]}. Ebb to this chain, then redeem here.
+      </p>
+      <dl className="grid grid-cols-2 gap-3 text-[13px]">
+        <div><dt className="text-ink-3">tdUSD in wallet</dt><dd className="num mt-1 text-ink">{money(data.balance)}</dd></div>
+        <div><dt className="text-ink-3">{port.symbol} reserve here</dt><dd className="num mt-1 text-ink">{money(data.reserve)}</dd></div>
+      </dl>
+      <label className="block">
+        <span className="flex justify-between text-[13px] text-ink-2">
+          <span>Redeem</span>
+          {max > 0 && (
+            <button type="button" className="num text-ink-3 hover:text-ink" onClick={() => setValue(String(max))}>
+              {max.toLocaleString("en-US")} tdUSD
+            </button>
+          )}
+        </span>
+        <input className="field mt-1" inputMode="decimal" placeholder="0.00" value={value} onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ""))} />
+      </label>
+      <button type="button" className="btn btn-primary w-full" disabled={busy || amount === 0n || amount > data.balanceRaw || amount > data.reserveRaw} onClick={() => void send(`Redeem ${value} tdUSD for ${port.symbol}`, { chainId: CHAINS[key].chainId, address: port.port, abi: omnitidePortAbi, functionName: "redeem", args: [amount, address!] }).then(() => setValue("")).catch(() => {})}>
+        Redeem for {port.symbol}
+      </button>
+    </div>
+  );
+}
+
 export function CollateralPanel() {
   const { isConnected } = useAccount();
   const [tab, setTab] = useState<Tab>("inflow");
@@ -215,7 +286,7 @@ export function CollateralPanel() {
           [
             ["inflow", "Inflow"],
             ["ebb", "Ebb"],
-            ["faucet", "Faucet"],
+            IS_MAINNET ? (["port", "Port"] as const) : (["faucet", "Faucet"] as const),
           ] as const
         ).map(([t, label]) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`relative h-11 px-3 text-[14px] transition-colors ${tab === t ? "text-ink" : "text-ink-3 hover:text-ink-2"}`}>
@@ -224,7 +295,7 @@ export function CollateralPanel() {
           </button>
         ))}
       </div>
-      <div className="p-4">{!isConnected ? <Connect size="md" /> : tab === "inflow" ? <Inflow /> : tab === "ebb" ? <Ebb /> : <Faucet />}</div>
+      <div className="p-4">{!isConnected ? <Connect size="md" /> : tab === "inflow" ? <Inflow /> : tab === "ebb" ? <Ebb /> : tab === "port" ? <Port /> : <Faucet />}</div>
     </div>
   );
 }

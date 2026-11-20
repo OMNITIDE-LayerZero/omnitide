@@ -1,7 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import type { MarketConfig } from "@omnitide/contracts/markets";
 import { CLEARINGHOUSE, ORACLE, FEE_BPS } from "@/lib/contracts";
-import { explorerAddress } from "@/lib/chains";
+import { HUB_KEY, explorerAddress } from "@/lib/chains";
 import { leverage, moneyCompact } from "@/lib/format";
 
 const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
@@ -34,7 +34,7 @@ export function MarketSpec({ market }: { market: MarketConfig }) {
           ["Clearinghouse", CLEARINGHOUSE],
           ["Oracle", ORACLE],
         ].map(([label, addr]) => (
-          <a key={label} href={explorerAddress("robinhoodTestnet", addr!)} target="_blank" rel="noreferrer" className="flex items-center justify-between text-[12px] text-ink-2 hover:text-ink">
+          <a key={label} href={explorerAddress(HUB_KEY, addr!)} target="_blank" rel="noreferrer" className="flex items-center justify-between text-[12px] text-ink-2 hover:text-ink">
             <span>{label}</span>
             <span className="inline-flex items-center gap-1 font-mono">
               {short(addr!)}

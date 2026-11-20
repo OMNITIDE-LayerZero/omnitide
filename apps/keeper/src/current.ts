@@ -15,7 +15,7 @@ export interface CurrentDeps {
   db: Db;
   hub: PublicClient<Transport, Chain>;
   clearinghouse: Address;
-  harbor: Address;
+  harbor?: Address;
   arb?: { pub: PublicClient<Transport, Chain>; wallet: WalletClient<Transport, Chain, Account>; reader: Address };
   prices: () => Record<string, number>;
   log: (m: string) => void;
@@ -57,10 +57,12 @@ export function createCurrent(d: CurrentDeps) {
     const list = await accounts();
     const at = new Date();
     const prices = d.prices();
-    const [supply, assets] = await Promise.all([
-      hub.readContract({ address: d.harbor, abi: omnitideHarborAbi, functionName: "totalSupply" }),
-      hub.readContract({ address: d.harbor, abi: omnitideHarborAbi, functionName: "totalAssets" }),
-    ]);
+    const [supply, assets] = d.harbor
+      ? await Promise.all([
+          hub.readContract({ address: d.harbor, abi: omnitideHarborAbi, functionName: "totalSupply" }),
+          hub.readContract({ address: d.harbor, abi: omnitideHarborAbi, functionName: "totalAssets" }),
+        ])
+      : [0n, 0n];
     if (supply > 0n) await db.harborSnapshot.create({ data: { at, totalAssets: (Number(assets) / 1e6).toFixed(6), totalSupply: (Number(supply) / 1e6).toFixed(6) } });
 
     let n = 0;

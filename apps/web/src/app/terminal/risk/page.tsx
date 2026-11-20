@@ -6,6 +6,7 @@ import { MARKETS } from "@omnitide/contracts/markets";
 import { useHubAccount } from "@/lib/account";
 import { useIndexer, usePriceMap } from "@/lib/hooks";
 import { LighthousePanel } from "@/components/terminal/lighthouse";
+import { FEATURES } from "@/lib/contracts";
 import { RADAR_AXES, SCENARIOS, bookRank, radar, simulateMargin, stressAccount, stressBook, type Radar, type SimLeg } from "@/lib/risk";
 import { money, moneyCompact, price, signedMoney, wad } from "@/lib/format";
 import { TideGauge } from "@/components/tide-gauge";
@@ -237,7 +238,7 @@ export default function Risk() {
               </dl>
             </div>
           )}
-          {mine && <LighthousePanel />}
+          {mine && FEATURES.deepWater && <LighthousePanel />}
         </section>
 
         <section className="rounded-2xl border border-line bg-card p-5">

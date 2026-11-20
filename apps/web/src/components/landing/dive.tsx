@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Plus } from "lucide-react";
 import { CONTRACT_ROWS } from "@/lib/contracts";
-import { HUB_KEY, explorerAddress } from "@/lib/chains";
+import { HUB_KEY, IS_MAINNET, explorerAddress } from "@/lib/chains";
 import { InflowDemo, LensDemo, SealDemo } from "./dive-demos";
 
 const FEATURES = [
@@ -224,7 +224,7 @@ export function Dive() {
             </h2>
           </div>
           <p className="text-[14px] leading-[22px] text-ink-2">
-            Every layer of OMNITIDE runs live on testnet. Dive through it: the shoreline gets collateral in, the current reads every chain at once, and deep water keeps your book private.
+            {IS_MAINNET ? "The shoreline is open on mainnet, with every deeper layer engineered and proven end to end." : "Every layer of OMNITIDE runs live on testnet."} Dive through it: the shoreline gets collateral in, the current reads every chain at once, and deep water keeps your book private.
           </p>
         </div>
       </div>

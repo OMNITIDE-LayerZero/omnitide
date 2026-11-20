@@ -15,22 +15,25 @@ import { useHubAccount } from "@/lib/account";
 import { usePriceMap } from "@/lib/hooks";
 import { accountHealth } from "@/lib/margin";
 import { money } from "@/lib/format";
+import { FEATURES } from "@/lib/contracts";
 
-export const VIEWS = [
-  { slug: "trade", label: "Trade" },
-  { slug: "portfolio", label: "Portfolio" },
-  { slug: "risk", label: "Risk" },
-  { slug: "deep", label: "Deep" },
-  { slug: "harbor", label: "Harbor" },
-  { slug: "copy", label: "Copy" },
-  { slug: "currents", label: "Currents" },
-  { slug: "council", label: "Council" },
-  { slug: "arena", label: "Arena" },
-  { slug: "tide", label: "Tide Chart" },
-  { slug: "history", label: "History" },
-  { slug: "markets", label: "Markets" },
-  { slug: "watchlist", label: "Watchlist" },
+const ALL_VIEWS = [
+  { slug: "trade", label: "Trade", on: true },
+  { slug: "portfolio", label: "Portfolio", on: true },
+  { slug: "risk", label: "Risk", on: true },
+  { slug: "deep", label: "Deep", on: FEATURES.deepWater },
+  { slug: "harbor", label: "Harbor", on: FEATURES.harbor },
+  { slug: "copy", label: "Copy", on: FEATURES.deepWater },
+  { slug: "currents", label: "Currents", on: true },
+  { slug: "council", label: "Council", on: FEATURES.deepWater },
+  { slug: "arena", label: "Arena", on: FEATURES.deepWater },
+  { slug: "tide", label: "Tide Chart", on: FEATURES.tide },
+  { slug: "history", label: "History", on: true },
+  { slug: "markets", label: "Markets", on: true },
+  { slug: "watchlist", label: "Watchlist", on: true },
 ] as const;
+/** Views whose contracts are live in this env. */
+export const VIEWS = ALL_VIEWS.filter((v) => v.on);
 
 // number keys 1–9 reach the first nine; the rest sit under More on desktop
 const KEYED = VIEWS.slice(0, 9);
