@@ -236,7 +236,7 @@ export function Dive() {
         {TIERS.map((t, i) => (
           <div key={t.id} className="contents">
             {i > 0 && (
-              <div aria-hidden className="h-28" style={{ background: `linear-gradient(to bottom, ${BANDS[i - 1]!.from}, ${BANDS[i - 1]!.to})` }}>
+              <div aria-hidden data-haze className="h-28" style={{ background: `linear-gradient(to bottom, ${BANDS[i - 1]!.from}, ${BANDS[i - 1]!.to})` }}>
                 <div className="mx-auto flex h-full max-w-[1440px] items-center gap-4 px-4 sm:px-8 lg:pl-[248px]">
                   <span className="tag rounded-full border border-white/15 bg-abyss/70 px-3 py-1 text-white/80 backdrop-blur-sm">{BANDS[i - 1]!.note}</span>
                   <span className="h-px flex-1 bg-gradient-to-r from-white/30 to-transparent" />
