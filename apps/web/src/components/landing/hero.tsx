@@ -12,7 +12,7 @@ import { FlowTicker } from "./flow-ticker";
 
 const WaveField = dynamic(() => import("../wave-field").then((m) => m.WaveField), { ssr: false });
 
-const TAPE = ["BTC", "ETH", "SOL", "NVDA", "TSLA", "HOOD"];
+const TAPE = ["BTC", "ETH", "SOL", "NVDA", "BABA", "HOOD"];
 
 export function Hero() {
   const swell = useSwell();
@@ -34,7 +34,7 @@ export function Hero() {
             Not the target.
           </h1>
           <p className="mt-6 max-w-xl text-[18px] leading-7 text-ink-2">
-            Fund from {SPOKE_LIST}. LayerZero lands it in a single margin account on Robinhood Chain, where BTC, ETH, NVDA and TSLA perps all trade off the same balance.
+            Fund from {SPOKE_LIST}. LayerZero lands it in a single margin account on Robinhood Chain, where BTC, ETH, NVDA and BABA perps all trade off the same balance.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link href="/terminal/trade" className="btn btn-primary btn-lg">

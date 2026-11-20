@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@omnitide/db";
 import type { MarketConfig } from "@omnitide/contracts/markets";
 import { bucketStart, INTERVALS } from "./candles.js";
+import { NASDAQ_CLASS } from "./prices.js";
 
 interface Bar {
   start: number; // ms UTC
@@ -50,7 +51,7 @@ async function coinbaseBars(m: MarketConfig, intervalSec: number): Promise<Bar[]
 }
 
 async function nasdaqMinuteBars(m: MarketConfig): Promise<Bar[]> {
-  const cls = m.symbol === "SPY" ? "etf" : "stocks";
+  const cls = NASDAQ_CLASS[m.symbol] ?? "stocks";
   const res = await fetch(`https://api.nasdaq.com/api/quote/${m.symbol}/chart?assetclass=${cls}`, { headers: UA, signal: AbortSignal.timeout(8_000) });
   if (!res.ok) throw new Error(`nasdaq chart ${res.status}`);
   const body = (await res.json()) as { data?: { chart?: { x: number; y: number }[] } };

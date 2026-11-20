@@ -13,24 +13,25 @@ const FEATURES = [
   { tag: "#03 · cross margin", title: "One balance backs it all", body: "Long NVDA, short ETH, same collateral. Gains in one position hold up the other, and one account health covers the book.", note: "max 8 positions · equity = balance + Σ uPnL" },
   { tag: "#04 · orders", title: "Orders that wait for you", body: "Limit, stop-loss and take-profit live on-chain. The keeper checks every five seconds and fills once the signed price crosses your trigger.", note: "keeper tick 5 s · reduce-only for SL/TP" },
   { tag: "#05 · tide pool", title: "Liquidity on the other side", body: "The Tide Pool takes the other side of every fill at the oracle price. No book to thin out, no slippage past your limit.", note: "fee 10 bps · liquidation 1%, 20% to the caller" },
-  { tag: "#06 · prices", title: "Prices with a signature", body: "Crypto from Coinbase, US stocks from Nasdaq, each report signed under EIP-712 and rejected on-chain after 120 seconds.", note: "PriceReport(bytes32 feed, uint256 price, uint64 timestamp)" },
+  { tag: "#06 · prices", title: "Prices with a signature", body: "Crypto from Coinbase, US and China stocks from Nasdaq, each report signed under EIP-712 and rejected on-chain after 120 seconds.", note: "PriceReport(bytes32 feed, uint256 price, uint64 timestamp)" },
   { tag: "#07 · tide chart", title: "Every chain, one read", body: "One LayerZero lzRead pulls tdUSD supply off every chain its read DVNs cover and lands it in a single verified answer, next to live open interest for every market.", note: "OmnitideTideReader · read channel 4294967295" },
-  { tag: "#08 · tidal lens", title: "Crash it before the market does", body: "Throw a flash crash, a tech rotation, a black swan and a short squeeze at your live positions and at the whole book, and see exactly where the wall gives.", note: "instant shock · same math as maintenance margin" },
-  { tag: "#09 · book rank", title: "Your book, graded", body: "Six RADAR dials, from leverage to gap risk, plus four stress scenarios roll into one score out of 100 and a grade from A to D.", note: "an A means surviving every scenario" },
+  { tag: "#08 · tidal lens", title: "Crash it before the market does", body: "Throw a flash crash, a tech rotation, a black swan, a short squeeze and a Hang Seng gap at your live positions and at the whole book, and see exactly where the wall gives.", note: "instant shock · same math as maintenance margin" },
+  { tag: "#09 · book rank", title: "Your book, graded", body: "Six RADAR dials, from leverage to gap risk, plus five stress scenarios roll into one score out of 100 and a grade from A to D.", note: "an A means surviving every scenario" },
   { tag: "#10 · simulator", title: "Shared or walled off", body: "Drop your legs into the margin simulator and compare one shared balance with isolated buckets under the same shock, leg by leg.", note: "isolated buckets sized by initial margin" },
   { tag: "#11 · riptide", title: "A ping before the wall", body: "Arm alerts with one free wallet signature. The keeper reads your account every minute and calls the moment the tide drops under your line.", note: "push to this browser · no transaction" },
   { tag: "#12 · lifeline", title: "Top up from any chain", body: "When margin runs thin, the terminal finds tdUSD sitting in your wallet on other chains and pulls it in with one send. lzCompose credits it on arrival.", note: "need = 2 × maintenance − equity" },
   { tag: "#13 · harbor", title: "Park idle tdUSD, earn the flow", body: "Harbor is an ERC-4626 OVault behind the Tide Pool. Deposit from Robinhood Chain or Arbitrum, earn fees, penalties and trader give-backs, hold htdUSD on either chain.", note: "tdUSD → lzCompose → mint → htdUSD OFT home" },
   { tag: "#14 · reports", title: "Receipts for every tick", body: "An equity curve snapshotted every ten minutes and CSV exports of fills, transfers and equity, every row tied to a transaction hash.", note: "trades · transfers · equity snapshots" },
-  { tag: "#15 · deep mode", title: "Trade below the surface", body: "Private positions and private PnL. Every Deep book trades as one pooled account, and the chain keeps only a keccak commitment and a ciphertext sealed to your key.", note: "x25519 key wrap · AES-256-GCM · keccak commitment" },
-  { tag: "#16 · disclosure key", title: "Prove it to one person", body: "Hand an auditor one read-only key. They replay every sealed state of your book in the browser and match each one to its on-chain commitment.", note: "read-only · can't trade · can't withdraw" },
-  { tag: "#17 · private inflow", title: "Collateral that arrives quietly", body: "Send tdUSD from Arbitrum straight into the Deep pool. lzCompose credits your Deep id, never your public account, and the book stays sealed from there.", note: "OFT send → lzCompose → DeepDeposit(id)" },
-  { tag: "#18 · sealed orders", title: "Stops nobody can hunt", body: "Seal a stop-loss or take-profit and only its hash goes on-chain. The trigger, size and side stay hidden until the keeper fills it at the signed price.", note: "commit · encrypted to keeper + you · reveal on fill" },
-  { tag: "#19 · currents", title: "A leaderboard of receipts", body: "Rank by realized PnL or volume straight from on-chain fills, mint a verified PnL card, warm up in a paper account and post the card to X.", note: "summed from Traded events · zero self-reporting" },
-  { tag: "#20 · arena", title: "Medals that travel", body: "Eight engraved Arena Badges for first fills, Inflows, Grade A books and more. Claim on Robinhood Chain, sail them to Arbitrum as an ONFT.", note: "ERC-721 · keeper-signed claim · LayerZero ONFT" },
-  { tag: "#21 · council", title: "Vote from where you stand", body: "Stake TIDE on Robinhood Chain or Arbitrum. Proposals mirror to every chain and spoke votes ride LayerZero back into one tally on the hub.", note: "stake lock until the vote closes · no double votes" },
-  { tag: "#22 · lighthouse", title: "Your grade, readable anywhere", body: "Publish a keeper-signed Book Score without a single position behind it. Any protocol on any chain can call scoreOf(you).", note: "EIP-712 Beam · OApp broadcast · 7-day expiry" },
-  { tag: "#23 · copy vaults", title: "Back the trader, not the screenshot", body: "Leaders trade a vault, followers hold shares priced at live NAV, and deposits can come straight from Arbitrum in one transaction.", note: "BeaconProxy vault · lzCompose queue · keeper settle" },
+  { tag: "#15 · china shelf", title: "Shanghai hours, Robinhood rails", body: "Alibaba, PDD, JD, Baidu, NIO and the FXI large-cap ETF trade off the same tdUSD as your bitcoin. Hedge a China long with an NVDA short, then gap it in Tidal Lens before Hong Kong opens.", note: "6 markets · US-listed ADRs · up to 5× · Nasdaq-signed" },
+  { tag: "#16 · deep mode", title: "Your book goes dark", body: "Privacy for perps on a public chain. Opt in and your positions, entries and PnL vanish from the explorer: every Deep book trades as one pooled account, and the chain keeps only a keccak commitment and a ciphertext that opens with your key alone.", note: "private book · x25519 key wrap · AES-256-GCM · keccak commitment" },
+  { tag: "#17 · disclosure key", title: "Private to all, provable to one", body: "Selective disclosure on your terms. Hand an auditor, fund admin or tax pro one read-only key: they replay every sealed state of your book in their browser and match each one to its on-chain commitment. Everyone else still sees a hash.", note: "selective disclosure · read-only · can't trade · can't withdraw" },
+  { tag: "#18 · private inflow", title: "Private collateral, cross-chain", body: "Fund a private book straight from Arbitrum. LayerZero lands your tdUSD in the Deep pool and lzCompose credits your Deep id, never your public margin account, so the balance you trade with stays off the open book from the first block.", note: "confidential collateral · OFT send → lzCompose → DeepDeposit(id)" },
+  { tag: "#19 · sealed orders", title: "Private stops nobody can hunt", body: "Your exits stay your business. Seal a stop-loss or take-profit and only its hash goes on-chain: trigger, size and side stay encrypted until the keeper fills it at the signed price, so stop hunters have nothing to aim at.", note: "private orders · commit · encrypted to keeper + you · reveal on fill" },
+  { tag: "#20 · currents", title: "A leaderboard of receipts", body: "Rank by realized PnL or volume straight from on-chain fills, mint a verified PnL card, warm up in a paper account and post the card to X. Deep Mode books stay private and off the board.", note: "summed from Traded events · zero self-reporting" },
+  { tag: "#21 · arena", title: "Medals that travel", body: "Eight engraved Arena Badges for first fills, Inflows, Grade A books and more. Claim on Robinhood Chain, sail them to Arbitrum as an ONFT.", note: "ERC-721 · keeper-signed claim · LayerZero ONFT" },
+  { tag: "#22 · council", title: "Vote from where you stand", body: "Stake TIDE on Robinhood Chain or Arbitrum. Proposals mirror to every chain and spoke votes ride LayerZero back into one tally on the hub.", note: "stake lock until the vote closes · no double votes" },
+  { tag: "#23 · lighthouse", title: "Show the grade, keep the book", body: "Privacy-first reputation. Publish a keeper-signed Book Score with not a single position attached. Any protocol on any chain can call scoreOf(you) and read your grade, never your trades.", note: "score only, no positions · EIP-712 Beam · OApp broadcast · 7-day expiry" },
+  { tag: "#24 · copy vaults", title: "Back the trader, not the screenshot", body: "Leaders trade a vault, followers hold shares priced at live NAV, and deposits can come straight from Arbitrum in one transaction.", note: "BeaconProxy vault · lzCompose queue · keeper settle" },
 ];
 
 type Feature = (typeof FEATURES)[number];
@@ -59,7 +60,7 @@ const TIERS = [
     to: 200,
     title: "See the whole current.",
     blurb: "One lzRead across every chain, a stress test you can throw at your own book, and a ping before the tide reaches your wall. Risk you can see before it moves.",
-    features: FEATURES.slice(6, 14),
+    features: FEATURES.slice(6, 15),
     contracts: ["OmnitideTideReader", "OmnitideHarbor", "OmnitideHarborShareAdapter"],
     primitives: ["lzRead", "OVault (ERC-4626)", "OFT shares", "keeper alerts"],
     Demo: LensDemo,
@@ -73,10 +74,10 @@ const TIERS = [
     from: 200,
     to: 480,
     title: "Trade below the surface.",
-    blurb: "Sealed positions, hidden stops and private inflows, plus grades, medals and vaults anyone can verify without seeing a single position.",
-    features: FEATURES.slice(14),
+    blurb: "The privacy layer. Sealed positions, private stops and private inflows, with selective disclosure when you choose it, plus grades, medals and vaults anyone can verify without seeing a single position.",
+    features: FEATURES.slice(15),
     contracts: ["OmnitideDeepPool", "OmnitideLighthouse", "OmnitideBadge", "OmnitideCouncil", "OmnitideCopyVaultFactory", "OmnitideToken"],
-    primitives: ["OApp", "ONFT", "x25519 + AES-256-GCM", "keccak commitments", "beacon proxies"],
+    primitives: ["OApp", "ONFT", "x25519 + AES-256-GCM", "keccak commitments", "selective disclosure", "beacon proxies"],
     Demo: SealDemo,
     dark: true,
     bg: "bg-abyss",
@@ -85,7 +86,7 @@ const TIERS = [
 
 const BANDS = [
   { from: "var(--bg)", to: "var(--navy-2)", engrave: "below", note: "−40 m · thermocline · sunlight gives way to the current" },
-  { from: "var(--navy-2)", to: "var(--abyss)", engrave: "above", note: "−200 m · twilight zone · opt in and your book goes dark" },
+  { from: "var(--navy-2)", to: "var(--abyss)", engrave: "above", note: "−200 m · twilight zone · opt into privacy and your book goes dark" },
 ] as const;
 
 const SCALE = 160; // px height of the depth scale on the dive computer
@@ -218,7 +219,7 @@ export function Dive() {
       <div className="mx-auto max-w-[1440px] px-4 pt-8 sm:px-8 sm:pt-12">
         <div className="grid gap-6 md:grid-cols-[1fr_340px] md:items-end">
           <div>
-            <p className="tag text-[12px] text-ink-2">Live now · 23 features across three depths</p>
+            <p className="tag text-[12px] text-ink-2">Live now · {FEATURES.length} features across three depths</p>
             <h2 className="display mt-4 text-[clamp(44px,6vw,80px)] text-ink">
               Powered by LayerZero.
               <br />
@@ -226,7 +227,7 @@ export function Dive() {
             </h2>
           </div>
           <p className="text-[14px] leading-[22px] text-ink-2">
-            Every layer of OMNITIDE runs live on testnet. Dive through it: the shoreline gets collateral in, the current reads every chain at once, and deep water keeps your book yours.
+            Every layer of OMNITIDE runs live on testnet. Dive through it: the shoreline gets collateral in, the current reads every chain at once, and deep water keeps your book private.
           </p>
         </div>
       </div>

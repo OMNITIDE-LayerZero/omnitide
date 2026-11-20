@@ -14,6 +14,16 @@ describe("Tidal Lens", () => {
     expect(stressAccount(1_000, [{ marketId: 0, size: 1_000 / 60_000, entry: 60_000 }], px, flash).liquidated).toBe(false);
   });
 
+  it("gaps China ADRs on the Hang Seng scenario and barely touches the rest", () => {
+    const hk = SCENARIOS.find((s) => s.id === "hangseng")!;
+    const pos = [
+      { marketId: 12, size: 100, entry: 80 }, // BABA long $8k
+      { marketId: 7, size: 20, entry: 100 }, // NVDA long $2k
+    ];
+    const r = stressAccount(5_000, pos, { ...px, BABA: 80 }, hk);
+    expect(r.pnl).toBeCloseTo(-8_000 * 0.15 - 2_000 * 0.02, 6);
+  });
+
   it("puts the Tide Pool on the other side of the whole book", () => {
     const book = [
       { marketId: 0, size: 1, entry: 60_000 },

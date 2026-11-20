@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { MARKETS, type MarketKind } from "@omnitide/contracts/markets";
+import { GROUPS, MARKETS, groupOf, type MarketGroup } from "@omnitide/contracts/markets";
 import { usePrices, useSparks, useStats } from "@/lib/hooks";
 import { leverage, moneyCompact, wad } from "@/lib/format";
 import { SESSION_LABEL, usSession, type Session } from "@/lib/landing";
@@ -10,18 +10,15 @@ import { LivePrice } from "../live-price";
 import { Change } from "../change";
 import { Spark } from "./spark";
 
-const FILTERS: { id: MarketKind | "all"; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "crypto", label: "Crypto" },
-  { id: "stock", label: "US stocks" },
-];
+const FILTERS: { id: MarketGroup | "all"; label: string }[] = [{ id: "all", label: "All" }, ...GROUPS];
+const TAG = Object.fromEntries(GROUPS.map((g) => [g.id, g.tag])) as Record<MarketGroup, string>;
 
 /** The market list. `landing` adds kind filters, the NYSE session and a 24h sparkline in place of volume. */
 export function MarketsBoard({ compact = false, landing = false }: { compact?: boolean; landing?: boolean }) {
   const { data } = usePrices();
   const { data: stats } = useStats();
   const { data: sparks } = useSparks(landing);
-  const [kind, setKind] = useState<MarketKind | "all">("all");
+  const [kind, setKind] = useState<MarketGroup | "all">("all");
   const [session, setSession] = useState<Session | null>(null);
   useEffect(() => {
     if (!landing) return;
@@ -31,7 +28,7 @@ export function MarketsBoard({ compact = false, landing = false }: { compact?: b
     return () => clearInterval(t);
   }, [landing]);
   const vol = new Map(stats?.markets.map((m) => [m.id, wad(m.volumeUsd)]));
-  const rows = MARKETS.filter((m) => kind === "all" || m.kind === kind);
+  const rows = MARKETS.filter((m) => kind === "all" || groupOf(m) === kind);
 
   return (
     <div>
@@ -48,7 +45,7 @@ export function MarketsBoard({ compact = false, landing = false }: { compact?: b
                 className={`h-8 rounded-md px-3 text-[13px] transition-colors ${kind === f.id ? "bg-card text-ink shadow-sm" : "text-ink-2 hover:text-ink"}`}
               >
                 {f.label}
-                <span className="tag ml-1.5 text-ink-3">{f.id === "all" ? MARKETS.length : MARKETS.filter((m) => m.kind === f.id).length}</span>
+                <span className="tag ml-1.5 text-ink-3">{f.id === "all" ? MARKETS.length : MARKETS.filter((m) => groupOf(m) === f.id).length}</span>
               </button>
             ))}
           </div>
@@ -56,7 +53,7 @@ export function MarketsBoard({ compact = false, landing = false }: { compact?: b
             {session && (
               <>
                 <span className={`size-1.5 rounded-full ${session === "open" ? "bg-flood" : session === "closed" ? "bg-ink-3" : "bg-warn"}`} aria-hidden />
-                US stocks · {SESSION_LABEL[session]}
+                US and China stocks · {SESSION_LABEL[session]}
               </>
             )}
             <span className="hidden text-ink-3 sm:inline">· crypto 24/7 · every price EIP-712 signed</span>
@@ -89,7 +86,7 @@ export function MarketsBoard({ compact = false, landing = false }: { compact?: b
                   <td className="py-3 pr-4">
                     <span className="font-medium">{m.symbol}</span>
                     <span className="ml-2 text-[13px] text-ink-3">{m.name}</span>
-                    <span className="tag ml-2 text-ink-3">{m.kind === "stock" ? "US stock" : "crypto"}</span>
+                    <span className="tag ml-2 text-ink-3">{TAG[groupOf(m)]}</span>
                   </td>
                   <td className={`py-3 pr-4 text-right ${landing ? "flash" : ""}`}>
                     <LivePrice value={p?.price} />

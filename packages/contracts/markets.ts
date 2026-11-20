@@ -1,5 +1,7 @@
 // Market listing shared by the deploy script, keeper and web app; `id` is the on-chain market id.
 export type MarketKind = "crypto" | "stock";
+/** Where a market sits on the board: China ADRs trade like any US listing but get their own shelf. */
+export type MarketGroup = "crypto" | "us" | "china";
 
 export interface MarketConfig {
   id: number;
@@ -10,6 +12,7 @@ export interface MarketConfig {
   initialMarginBps: number;
   maintenanceMarginBps: number;
   maxOpenInterestUsd: number;
+  region?: "china";
 }
 
 export const MARKETS: MarketConfig[] = [
@@ -25,4 +28,18 @@ export const MARKETS: MarketConfig[] = [
   { id: 9, feed: "COIN", symbol: "COIN", name: "Coinbase", kind: "stock", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
   { id: 10, feed: "HOOD", symbol: "HOOD", name: "Robinhood", kind: "stock", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
   { id: 11, feed: "SPY", symbol: "SPY", name: "S&P 500 ETF", kind: "stock", initialMarginBps: 1000, maintenanceMarginBps: 500, maxOpenInterestUsd: 250_000 },
+  { id: 12, feed: "BABA", symbol: "BABA", name: "Alibaba", kind: "stock", region: "china", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
+  { id: 13, feed: "PDD", symbol: "PDD", name: "PDD Holdings", kind: "stock", region: "china", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
+  { id: 14, feed: "JD", symbol: "JD", name: "JD.com", kind: "stock", region: "china", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
+  { id: 15, feed: "BIDU", symbol: "BIDU", name: "Baidu", kind: "stock", region: "china", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
+  { id: 16, feed: "NIO", symbol: "NIO", name: "NIO", kind: "stock", region: "china", initialMarginBps: 3000, maintenanceMarginBps: 1500, maxOpenInterestUsd: 25_000 },
+  { id: 17, feed: "FXI", symbol: "FXI", name: "China Large-Cap ETF", kind: "stock", region: "china", initialMarginBps: 2000, maintenanceMarginBps: 1000, maxOpenInterestUsd: 100_000 },
+];
+
+export const groupOf = (m: MarketConfig): MarketGroup => (m.kind === "crypto" ? "crypto" : (m.region ?? "us"));
+
+export const GROUPS: { id: MarketGroup; label: string; tag: string }[] = [
+  { id: "crypto", label: "Crypto", tag: "crypto" },
+  { id: "us", label: "US stocks", tag: "US stock" },
+  { id: "china", label: "China", tag: "China ADR" },
 ];

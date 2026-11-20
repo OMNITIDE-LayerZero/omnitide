@@ -1,6 +1,6 @@
 "use client";
 
-import { MARKETS, type MarketConfig } from "@omnitide/contracts/markets";
+import { GROUPS, MARKETS, groupOf, type MarketConfig } from "@omnitide/contracts/markets";
 import { usePrices } from "@/lib/hooks";
 import { LivePrice } from "../live-price";
 import { pct } from "@/lib/format";
@@ -9,11 +9,11 @@ export function MarketRail({ active, onPick }: { active: MarketConfig; onPick: (
   const { data } = usePrices();
   return (
     <div className="flex flex-col">
-      {(["crypto", "stock"] as const).map((kind) => (
-        <div key={kind} className="mb-3">
-          <p className="px-3 pt-2 pb-2 text-[12px] text-ink-3">{kind === "crypto" ? "Crypto" : "US stocks"}</p>
+      {GROUPS.map((g) => (
+        <div key={g.id} className="mb-3">
+          <p className="px-3 pt-2 pb-2 text-[12px] text-ink-3">{g.label}</p>
           <ul className="flex flex-col gap-0.5">
-            {MARKETS.filter((m) => m.kind === kind).map((m) => {
+            {MARKETS.filter((m) => groupOf(m) === g.id).map((m) => {
               const p = data?.[m.feed];
               const on = m.id === active.id;
               return (

@@ -303,7 +303,7 @@ export function SealDemo() {
   return (
     <div className="rounded-2xl border border-white/12 bg-white/[0.04] p-5 text-white backdrop-blur-sm sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="tag text-[12px] text-white/70">Live demo · Sealed Orders</p>
+        <p className="tag text-[12px] text-white/70">Live demo · Sealed Orders · private until fill</p>
         <div className="flex gap-2" role="group" aria-label="Order kind">
           <button type="button" aria-pressed={kind === 1} onClick={() => pick(1)} className={chip(kind === 1, true)}>
             Stop-loss

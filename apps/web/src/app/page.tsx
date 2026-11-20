@@ -9,6 +9,7 @@ import { SeaWallBand } from "@/components/landing/sea-wall-band";
 import { ContractsTable } from "@/components/landing/contracts-table";
 import { Surface } from "@/components/landing/surface";
 import { Blend } from "@/components/landing/blend";
+import { MARKETS } from "@omnitide/contracts/markets";
 
 function SectionHead({ tag, title, aside }: { tag: string; title: React.ReactNode; aside?: string }) {
   return (
@@ -65,7 +66,7 @@ export default function Home() {
 
         <section id="markets" className="relative scroll-mt-16 bg-shelf py-8 sm:py-12">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
-            <SectionHead tag="12 markets · crypto and US stocks" title={<>Bitcoin to<br />Nvidia, one margin</>} aside="Crypto majors at up to 10× and US stocks at up to 5×, priced live from Coinbase and Nasdaq and settled in tdUSD, the dollar that moves with you across chains." />
+            <SectionHead tag={`${MARKETS.length} markets · crypto, US and China stocks`} title={<>Bitcoin to<br />Alibaba, one margin</>} aside="Crypto majors at up to 10×, US and China stocks at up to 5×, priced live from Coinbase and Nasdaq and settled in tdUSD, the dollar that moves with you across chains." />
             <div className="mt-12 rounded-2xl border border-line bg-card p-4 sm:p-6">
               <MarketsBoard landing />
             </div>

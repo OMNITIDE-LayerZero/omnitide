@@ -8,7 +8,7 @@ export default function Markets() {
           <p className="tag text-ink-3">Signed by the keeper · verified on-chain by OmnitideOracle</p>
           <h1 className="display mt-2 text-[44px] text-ink">Markets</h1>
         </div>
-        <p className="max-w-md text-[13px] leading-5 text-ink-2">Crypto prices come from Coinbase and US stock prices from Nasdaq. Each report is signed under EIP-712 and rejected on-chain once it is older than 120 seconds.</p>
+        <p className="max-w-md text-[13px] leading-5 text-ink-2">Crypto prices come from Coinbase, US and China stock prices from Nasdaq. Each report is signed under EIP-712 and rejected on-chain once it is older than 120 seconds.</p>
       </div>
       <div className="mt-6">
         <MarketsBoard />

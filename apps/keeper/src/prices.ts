@@ -9,7 +9,7 @@ export interface Quote {
 }
 
 const UA = { "User-Agent": "Mozilla/5.0 (OMNITIDE keeper)", Accept: "application/json" };
-const NASDAQ_CLASS: Record<string, string> = { SPY: "etf" };
+export const NASDAQ_CLASS: Record<string, string> = { SPY: "etf", FXI: "etf" };
 
 async function getJson(url: string): Promise<unknown> {
   const res = await fetch(url, { headers: UA, signal: AbortSignal.timeout(6_000) });

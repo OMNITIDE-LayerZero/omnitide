@@ -23,6 +23,12 @@ export const SCENARIOS: Scenario[] = [
   },
   { id: "swan", name: "Black swan", blurb: "Correlations go to one: crypto −40%, every stock −15%.", shock: (m) => (m.kind === "crypto" ? -0.4 : -0.15) },
   { id: "squeeze", name: "Short squeeze", blurb: "Shorts get run over: crypto +25%, stocks +8%.", shock: (m) => (m.kind === "crypto" ? 0.25 : 0.08) },
+  {
+    id: "hangseng",
+    name: "Hang Seng gap",
+    blurb: "Hong Kong sells off overnight: China ADRs open −15%, US stocks −2%, crypto −3%.",
+    shock: (m) => (m.region === "china" ? -0.15 : m.kind === "crypto" ? -0.03 : -0.02),
+  },
 ];
 
 export const shocked = (prices: Record<string, number>, s: Scenario) =>
