@@ -31,10 +31,11 @@ const v3 = (name: "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil") =>
 // only chains with a deployed OmnitideUSD are indexed
 const LIVE = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) => (d[k]?.OmnitideUSD ? [[k, d[k].OmnitideUSD] as const] : []));
 const rpc = (key: ChainKey) => process.env[`PONDER_RPC_${CHAINS[key].chainId}`]?.split(",") ?? CHAINS[key].rpc;
-// HyperEVM public RPC caps eth_getLogs ranges and request rates
-const LIMITS: Partial<Record<ChainKey, { maxRequestsPerSecond?: number; ethGetLogsBlockRange?: number; pollingInterval?: number }>> = {
+// HyperEVM public RPC caps eth_getLogs ranges and request rates, and prunes old blocks; HyperBFT is final per block,
+// so reorgWindow 0 stops Ponder's startup finality search from probing pruned heights
+const LIMITS: Partial<Record<ChainKey, { maxRequestsPerSecond?: number; ethGetLogsBlockRange?: number; pollingInterval?: number; reorgWindow?: number }>> = {
   robinhoodTestnet: { pollingInterval: 2_000 },
-  hyperEvmTestnet: { maxRequestsPerSecond: 5, ethGetLogsBlockRange: 1_000 },
+  hyperEvmTestnet: { maxRequestsPerSecond: 5, ethGetLogsBlockRange: 1_000, reorgWindow: 0 },
 };
 
 export default createConfig({
