@@ -12,7 +12,7 @@ import { CLEARINGHOUSE, COPY_FACTORY, MARKETS, V3_CHAINS, omnitideClearinghouseA
 import { fetchReports, feedsFor } from "@/lib/account";
 import { usePriceMap } from "@/lib/hooks";
 import { accountHealth } from "@/lib/margin";
-import { ago, money, moneyCompact, price as fmtPrice, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { ago, money, moneyCompact, price as fmtPrice, shortHash, signedMoney, realized, units6, upnl, wad, who } from "@/lib/format";
 import { useTx } from "@/lib/tx";
 import { amountUnits, sendParam } from "@/components/terminal/collateral";
 import { Connect } from "@/components/connect";
@@ -226,7 +226,7 @@ function VaultView({ v }: { v: VaultRow }) {
       <section className="flex min-w-0 flex-col gap-3">
         <div className="rounded-2xl border border-line bg-card p-5">
           <p className="tag text-ink-3">
-            Copy vault · led by {shortHash(v.leader)} · opened {ago(v.createdAt)}
+            Copy vault · led by {who(v.leader)} · opened {ago(v.createdAt)}
           </p>
           <h2 className="display mt-2 text-[40px] text-ink">{v.name}</h2>
           <dl className="mt-5 flex flex-wrap gap-px overflow-hidden rounded-xl border border-line bg-line">
@@ -252,7 +252,7 @@ function VaultView({ v }: { v: VaultRow }) {
                     <span>
                       {mk.symbol}-PERP <span className={p.size > 0 ? "text-flood" : "text-ebb"}>{p.size > 0 ? "long" : "short"}</span> {money(Math.abs(p.size) * (px ?? p.entry))}
                     </span>
-                    <span className={px && p.size * (px - p.entry) >= 0 ? "text-flood" : "text-ebb"}>{px ? signedMoney(p.size * (px - p.entry)) : ""}</span>
+                    <span className={px && p.size * (px - p.entry) >= 0 ? "text-flood" : "text-ebb"}>{px ? upnl(p.size * (px - p.entry)) : ""}</span>
                   </li>
                 );
               })}
@@ -270,7 +270,7 @@ function VaultView({ v }: { v: VaultRow }) {
                     {MARKETS[t.marketId]?.symbol} <span className={BigInt(t.sizeDelta) > 0n ? "text-flood" : "text-ebb"}>{BigInt(t.sizeDelta) > 0n ? "buy" : "sell"}</span>
                   </span>
                   <span className="num text-ink-2">
-                    {fmtPrice(wad(t.price))} · {signedMoney(units6(t.realizedPnl))}
+                    {fmtPrice(wad(t.price))} · {realized(units6(t.realizedPnl))}
                   </span>
                   <a href={explorerTx(HUB_KEY, t.tx)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-[12px] text-ink-3 hover:text-ink">
                     {ago(t.timestamp)} <ExternalLink size={12} strokeWidth={1.5} />

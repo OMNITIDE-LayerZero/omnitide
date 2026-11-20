@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Share2, ShieldCheck } from "lucide-react";
-import { money, moneyCompact, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { money, moneyCompact, realized, signedMoney, units6, wad, who } from "@/lib/format";
 
 export interface TraderRow {
   account: string;
@@ -47,7 +47,7 @@ export function useBeam(account: string | undefined) {
 export const shareUrl = (account: string) => `${SITE}/currents/${account.toLowerCase()}`;
 
 export function shareOnX(account: string, pnl: number, rank?: number) {
-  const text = `${pnl >= 0 ? "Riding the current" : "Took a wave to the face"}: ${signedMoney(pnl)} realized on OMNITIDE perps${rank ? `, #${rank} on the Currents board` : ""}. Every fill verified on Robinhood Chain.`;
+  const text = `${Math.abs(pnl) < 0.005 ? "Position open on OMNITIDE perps" : `${pnl >= 0 ? "Riding the current" : "Took a wave to the face"}: ${signedMoney(pnl)} realized on OMNITIDE perps`}${rank ? `, #${rank} on the Currents board` : ""}. Every fill verified on Robinhood Chain.`;
   window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl(account))}`, "_blank", "noopener,noreferrer");
 }
 
@@ -73,7 +73,7 @@ export function PnlCard({ account, compact = false }: { account: string; compact
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="tag text-white/60">OMNITIDE Currents · verified PnL</p>
-            <p className="mt-1 font-mono text-[13px] text-white/80">{t.vault ? `${t.vault} · copy vault` : shortHash(t.account)}</p>
+            <p className="mt-1 font-mono text-[13px] text-white/80">{t.vault ? `${t.vault} · copy vault` : who(t.account)}</p>
           </div>
           {beam && (
             <div className="text-right">
@@ -82,7 +82,7 @@ export function PnlCard({ account, compact = false }: { account: string; compact
             </div>
           )}
         </div>
-        <p className={`display mt-6 ${compact ? "text-[44px]" : "text-[clamp(48px,7vw,80px)]"} leading-none ${pnl >= 0 ? "text-[#7ee0b5]" : "text-[#ff9a8a]"}`}>{signedMoney(pnl)}</p>
+        <p className={`display mt-6 ${compact ? "text-[44px]" : "text-[clamp(48px,7vw,80px)]"} leading-none ${pnl >= 0 ? "text-[#7ee0b5]" : "text-[#ff9a8a]"}`}>{realized(pnl)}</p>
         <p className="mt-1 text-[13px] text-white/60">realized over {days} {days === 1 ? "day" : "days"}</p>
         <dl className="mt-6 grid grid-cols-3 gap-3 text-[13px]">
           <div>

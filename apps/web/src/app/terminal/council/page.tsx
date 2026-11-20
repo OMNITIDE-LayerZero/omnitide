@@ -8,7 +8,7 @@ import { formatUnits, parseUnits, type Address } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { HUB_KEY, SHORT } from "@/lib/chains";
 import { V3_CHAINS, omnitideCouncilAbi, omnitideTokenAbi, v3Address } from "@/lib/contracts";
-import { ago, shortHash } from "@/lib/format";
+import { ago, who } from "@/lib/format";
 import { useTx } from "@/lib/tx";
 import { Connect } from "@/components/connect";
 
@@ -27,6 +27,7 @@ interface Proposal {
 }
 interface Vote {
   proposalId: string;
+  eid: number;
   support: number;
   weight: string;
   chainId: number;
@@ -196,7 +197,7 @@ function ProposalCard({ p, mine, chain }: { p: Proposal; mine?: Vote; chain: Cha
     <article className="rounded-2xl border border-line bg-card p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="tag text-ink-3">
-          TIP-{p.id} · by {shortHash(p.proposer)} · {open ? `closes ${new Date(p.end * 1000).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` : `closed ${ago(p.end)}`}
+          TIP-{p.id} · by {who(p.proposer)} · {open ? `closes ${new Date(p.end * 1000).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}` : `closed ${ago(p.end)}`}
         </p>
         <span className={`tag rounded-[4px] px-1.5 py-0.5 ${open ? "bg-accent text-on-accent" : "bg-raised text-ink-2"}`}>{open ? "voting" : totals[1]! > totals[0]! ? "passed" : "did not pass"}</span>
       </div>
@@ -226,7 +227,7 @@ function ProposalCard({ p, mine, chain }: { p: Proposal; mine?: Vote; chain: Cha
       {address &&
         (mine ? (
           <p className="mt-3 text-[13px] text-ink-2">
-            You voted {SUPPORT[mine.support]} with {fmtTide(mine.weight)} TIDE from {SHORT[V3_CHAINS.find((k) => CHAINS[k].chainId === mine.chainId) ?? HUB_KEY]}
+            Your {SHORT[chain]} stake voted {SUPPORT[mine.support]} with {fmtTide(mine.weight)} TIDE
             {!mine.tallied && " · crossing to the hub"}
           </p>
         ) : open && reachable ? (
@@ -284,7 +285,7 @@ export default function Council() {
         </div>
 
         {data && data.proposals.length > 0 ? (
-          data.proposals.map((p) => <ProposalCard key={p.id} p={p} chain={chain} mine={data.votes.find((v) => v.proposalId === p.id)} />)
+          data.proposals.map((p) => <ProposalCard key={p.id} p={p} chain={chain} mine={data.votes.find((v) => v.proposalId === p.id && v.eid === CHAINS[chain].eid)} />)
         ) : (
           <div className="rounded-2xl border border-line bg-card p-5 text-[14px] leading-[22px] text-ink-2">The floor is open. Stake 1,000 TIDE on {SHORT[HUB_KEY]} and table the first proposal; it reaches every chain within a minute.</div>
         )}

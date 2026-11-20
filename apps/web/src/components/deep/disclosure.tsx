@@ -7,7 +7,7 @@ import { HUB_KEY, explorerTx } from "@/lib/chains";
 import { MARKETS } from "@/lib/contracts";
 import { openSeals, useDeepNotes } from "@/lib/deep";
 import { csv, download } from "@/lib/report";
-import { ago, money, price as fmtPrice, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { ago, money, price as fmtPrice, realized, shortHash, signedMoney, units6, wad } from "@/lib/format";
 
 export function DisclosureViewer() {
   const [input, setInput] = useState("");
@@ -62,8 +62,8 @@ export function DisclosureViewer() {
               <dl className="mt-5 flex flex-wrap gap-px overflow-hidden rounded-xl border border-line bg-line">
                 {[
                   ["Collateral", money(units6(latest.collateral))],
-                  ["Realized PnL", signedMoney(units6(latest.realized))],
-                  ["Fees paid", money(units6(latest.fees))],
+                  ["Realized PnL", realized(units6(latest.realized))],
+                  ...(latest.fees !== "0" ? [["Fees paid", money(units6(latest.fees))]] : []),
                   ["Open positions", String(latest.positions.length || "flat")],
                 ].map(([k, v]) => (
                   <div key={k} className="min-w-[140px] flex-1 bg-card p-4">
@@ -110,7 +110,7 @@ export function DisclosureViewer() {
                         <td className="px-5 py-3 font-medium capitalize">{f.kind}</td>
                         <td className="px-5 py-3">{f.marketId !== undefined ? `${MARKETS[f.marketId]?.symbol} ${f.sizeDelta && BigInt(f.sizeDelta) > 0n ? "buy" : "sell"}` : ""}</td>
                         <td className="num px-5 py-3">{f.price ? fmtPrice(wad(f.price)) : ""}</td>
-                        <td className="num px-5 py-3">{f.kind === "trade" ? signedMoney(units6(f.amount)) : money(units6(f.amount))}</td>
+                        <td className="num px-5 py-3">{f.kind === "trade" ? realized(units6(f.amount)) : money(units6(f.amount))}</td>
                         <td className="px-5 py-3 text-ink-3">{ago(f.at)}</td>
                         <td className="px-5 py-3">
                           {f.tx && (

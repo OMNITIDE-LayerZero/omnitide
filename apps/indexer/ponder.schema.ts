@@ -244,9 +244,10 @@ export const proposal = onchainTable("proposal", (t) => ({
 export const vote = onchainTable(
   "vote",
   (t) => ({
-    id: t.text().primaryKey(), // proposal:voter
+    id: t.text().primaryKey(), // proposal:voter:origin eid, stake on each chain votes once
     proposalId: t.bigint().notNull(),
     voter: t.hex().notNull(),
+    eid: t.integer().notNull(),
     support: t.integer().notNull(),
     weight: t.bigint().notNull(),
     chainId: t.integer().notNull(),

@@ -14,7 +14,7 @@ import { useDeepActions, useDeepBook, useDeepKeys, type DeepNote, type Unlocked 
 import { fetchReports, feedsFor, useLocalToken } from "@/lib/account";
 import { useIndexer, usePriceMap } from "@/lib/hooks";
 import { accountHealth } from "@/lib/margin";
-import { ago, money, price as fmtPrice, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { ago, money, price as fmtPrice, shortHash, signedMoney, realized, units6, upnl, wad } from "@/lib/format";
 import { explain, useTx } from "@/lib/tx";
 import { toast } from "@/components/toasts";
 import { amountUnits } from "@/components/terminal/collateral";
@@ -408,14 +408,18 @@ function TwoSides({ keys, book, verified, seal }: { keys: Unlocked; book: DeepBo
               <dt className="text-ink-3">Positions</dt>
               <dd className="num">{book.positions.length ? book.positions.map((p) => `${MARKETS[p.marketId]?.symbol} ${wad(p.size) > 0 ? "long" : "short"}`).join(", ") : "flat"}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-ink-3">Realized PnL</dt>
-              <dd className="num">{signedMoney(units6(book.realized))}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-ink-3">Fees paid</dt>
-              <dd className="num">{money(units6(book.fees))}</dd>
-            </div>
+            {book.realized !== "0" && (
+              <div className="flex justify-between">
+                <dt className="text-ink-3">Realized PnL</dt>
+                <dd className="num">{signedMoney(units6(book.realized))}</dd>
+              </div>
+            )}
+            {book.fees !== "0" && (
+              <div className="flex justify-between">
+                <dt className="text-ink-3">Fees paid</dt>
+                <dd className="num">{money(units6(book.fees))}</dd>
+              </div>
+            )}
             <div className="flex justify-between">
               <dt className="text-ink-3">Sealed</dt>
               <dd className="num">{ago(book.updatedAt)}</dd>
@@ -434,13 +438,13 @@ function DeepDesk({ keys, lock }: { keys: Unlocked; lock: () => void }) {
   const { book, verified, status, seals } = useDeepBook(keys);
   const positions = positionsOf(book);
   const h = accountHealth(units6(book?.collateral ?? "0"), positions, prices);
-  const upnl = h.equity - units6(book?.collateral ?? "0");
+  const unrealized = h.equity - units6(book?.collateral ?? "0");
 
   const figures = book
     ? [
         { label: "Deep equity", value: money(h.equity) },
         { label: "Collateral", value: money(units6(book.collateral)) },
-        ...(positions.length ? [{ label: "Unrealized", value: signedMoney(upnl) }] : []),
+        ...(positions.length ? [{ label: "Unrealized", value: upnl(unrealized) }] : []),
         { label: "Seals on-chain", value: String(seals.length) },
       ]
     : [];
@@ -506,8 +510,8 @@ function DeepDesk({ keys, lock }: { keys: Unlocked; lock: () => void }) {
                         </td>
                         <td className="num px-5 py-3">{Math.abs(p.size).toPrecision(5)}</td>
                         <td className="num px-5 py-3">{fmtPrice(p.entry)}</td>
-                        <td className="num px-5 py-3">{mark ? fmtPrice(mark) : "–"}</td>
-                        <td className={`num px-5 py-3 ${pnl === null ? "" : pnl >= 0 ? "text-flood" : "text-ebb"}`}>{pnl === null ? "–" : signedMoney(pnl)}</td>
+                        <td className="num px-5 py-3">{mark ? fmtPrice(mark) : ""}</td>
+                        <td className={`num px-5 py-3 ${pnl === null ? "" : pnl >= 0 ? "text-flood" : "text-ebb"}`}>{pnl === null ? "" : upnl(pnl)}</td>
                       </tr>
                     );
                   })}
@@ -529,7 +533,7 @@ function DeepDesk({ keys, lock }: { keys: Unlocked; lock: () => void }) {
                     {f.kind}
                     {f.marketId !== undefined && ` ${MARKETS[f.marketId]?.symbol} ${f.sizeDelta && BigInt(f.sizeDelta) > 0n ? "buy" : "sell"}`}
                   </span>
-                  <span className="num text-ink-2">{f.kind === "trade" ? `${f.price ? fmtPrice(wad(f.price)) : ""} · ${signedMoney(units6(f.amount))}` : money(units6(f.amount))}</span>
+                  <span className="num text-ink-2">{f.kind === "trade" ? `${f.price ? fmtPrice(wad(f.price)) : ""} · ${realized(units6(f.amount))}` : money(units6(f.amount))}</span>
                   <span className="flex items-center gap-3 text-ink-3">
                     {ago(f.at)}
                     {f.tx && (

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MARKETS } from "@/lib/contracts";
 import { usePriceMap } from "@/lib/hooks";
 import { accountHealth, type Pos } from "@/lib/margin";
-import { money, price as fmtPrice, signedMoney } from "@/lib/format";
+import { money, price as fmtPrice, signedMoney, upnl } from "@/lib/format";
 
 interface Paper {
   cash: number;
@@ -74,7 +74,7 @@ export function PaperAccount() {
       </div>
       <div className="mt-3 flex items-baseline justify-between">
         <p className="num text-[24px] font-medium">{money(h.equity)}</p>
-        <p className={`num text-[14px] ${pnl >= 0 ? "text-flood" : "text-ebb"}`}>{signedMoney(pnl)}</p>
+        {Math.abs(pnl) >= 0.005 && <p className={`num text-[14px] ${pnl >= 0 ? "text-flood" : "text-ebb"}`}>{signedMoney(pnl)}</p>}
       </div>
       <p className="text-[12px] text-ink-3">
         {paper.fills} paper fills · live OMNITIDE marks · real margin math
@@ -108,7 +108,7 @@ export function PaperAccount() {
                   {mk.symbol} <span className={p.size > 0 ? "text-flood" : "text-ebb"}>{p.size > 0 ? "long" : "short"}</span> <span className="num text-ink-3">@ {fmtPrice(p.entry)}</span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className={`num ${px && p.size * (px - p.entry) >= 0 ? "text-flood" : "text-ebb"}`}>{px ? signedMoney(p.size * (px - p.entry)) : ""}</span>
+                  <span className={`num ${px && p.size * (px - p.entry) >= 0 ? "text-flood" : "text-ebb"}`}>{px ? upnl(p.size * (px - p.entry)) : ""}</span>
                   <button type="button" className="btn btn-ghost btn-sm" disabled={!px} onClick={() => fill(p.marketId, -p.size, px!)}>
                     Close
                   </button>

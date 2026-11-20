@@ -10,6 +10,11 @@ const Env = z.object({
   RPC_421614: z.string().url().default("https://sepolia-rollup.arbitrum.io/rpc"),
   RPC_998: z.string().url().default("https://rpc.hyperliquid-testnet.xyz/evm"),
   RPC_11155111: z.string().url().default("https://ethereum-sepolia-rpc.publicnode.com"),
+  // project wallets: masked in every indexer response the site serves
+  HOUSE_ACCOUNTS: z
+    .string()
+    .default("")
+    .transform((s) => s.split(",").map((a) => a.trim().toLowerCase()).filter((a) => /^0x[0-9a-f]{40}$/.test(a))),
 });
 
 let cached: z.infer<typeof Env> | undefined;

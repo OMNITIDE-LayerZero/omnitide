@@ -67,11 +67,14 @@ if (STEP === "deep") {
   const reg = await signer.signTypedData(deepIntentDomain(chainId), { DeepRegister: [...DEEP_INTENT_TYPES.DeepRegister] }, { id, salt: keys.salt, viewKey: keys.viewPublic });
   await api("/api/keeper/deep/register", { owner: signer.address, id, salt: keys.salt, viewKey: keys.viewPublic, signature: reg });
   log(`registered ${id.slice(0, 10)}…`);
-  const t = await tdusd();
-  await (await t.approve(await pool.getAddress(), usd(50))).wait();
-  const dep = await pool.deposit(id, usd(50));
-  await dep.wait();
-  log(`deposit 50 tdUSD · ${dep.hash}`);
+  const existing = await latestBook().catch(() => null);
+  if (!existing || BigInt(existing.collateral) < usd(50)) {
+    const t = await tdusd();
+    await (await t.approve(await pool.getAddress(), usd(50))).wait();
+    const dep = await pool.deposit(id, usd(50));
+    await dep.wait();
+    log(`deposit 50 tdUSD · ${dep.hash}`);
+  }
   const funded = await until("first seal", async () => {
     const b = await latestBook();
     return b && BigInt(b.collateral) >= usd(50) ? b : null;
@@ -135,6 +138,13 @@ if (STEP === "sealed") {
 }
 
 if (STEP === "lighthouse") {
+  const ch = await ethers.getContractAt("OmnitideClearinghouse", hub.OmnitideClearinghouse!.proxy);
+  if (((await ch.openMarkets(signer.address)) as bigint[]).length === 0) {
+    const px = Number((await api<{ prices: { feed: string; price: string }[] }>("/api/prices")).prices.find((p) => p.feed === "BTC-USD")!.price);
+    const tx = await ch.trade(0, BigInt(Math.round((40 / px) * 1e12)) * 10n ** 6n, BigInt(Math.round(px * 1.02 * 1e8)) * 10n ** 10n, await reportsFor(signer.address, "BTC-USD"));
+    await tx.wait();
+    log(`public BTC long $40 to score · ${tx.hash}`);
+  }
   const issuedAt = new Date().toISOString();
   const signature = await signer.signMessage(lighthouseMessage(signer.address, chainId, issuedAt));
   const r = await api<{ beam: { account: string; score: number; grade: number; issuedAt: number; expiry: number }; signature: string }>("/api/keeper/lighthouse", { account: signer.address, chainId, issuedAt, signature });

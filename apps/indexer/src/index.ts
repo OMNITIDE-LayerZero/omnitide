@@ -1,5 +1,5 @@
 import { and, eq } from "ponder";
-import { zeroAddress } from "viem";
+import { zeroAddress, zeroHash } from "viem";
 import { ponder } from "ponder:registry";
 import {
   badge,
@@ -305,7 +305,7 @@ ponder.on("OmnitideCouncil:ProposalMirrored", async ({ event, context }) => {
 ponder.on("OmnitideCouncil:VoteCast", async ({ event, context }) => {
   const a = event.args;
   const row = { support: a.support, weight: a.weight, chainId: context.chain.id, timestamp: Number(event.block.timestamp), tx: event.transaction.hash };
-  await context.db.insert(vote).values({ id: `${a.id}:${a.voter.toLowerCase()}`, proposalId: a.id, voter: a.voter, tallied: false, ...row }).onConflictDoUpdate(row);
+  await context.db.insert(vote).values({ id: `${a.id}:${a.voter.toLowerCase()}:${a.eid}`, proposalId: a.id, voter: a.voter, eid: a.eid, tallied: false, ...row }).onConflictDoUpdate(row);
 });
 
 // only the hub tallies; a spoke vote counts once its message lands here
@@ -313,7 +313,7 @@ ponder.on("OmnitideCouncil:VoteTallied", async ({ event, context }) => {
   const a = event.args;
   await context.db
     .insert(vote)
-    .values({ id: `${a.id}:${a.voter.toLowerCase()}`, proposalId: a.id, voter: a.voter, support: a.support, weight: a.weight, chainId: context.chain.id, tallied: true, timestamp: Number(event.block.timestamp), tx: event.transaction.hash })
+    .values({ id: `${a.id}:${a.voter.toLowerCase()}:${a.srcEid}`, proposalId: a.id, voter: a.voter, eid: a.srcEid, support: a.support, weight: a.weight, chainId: context.chain.id, tallied: true, timestamp: Number(event.block.timestamp), tx: event.transaction.hash })
     .onConflictDoUpdate({ tallied: true });
   await context.db.update(proposal, { id: a.id }).set((p) => ({
     forVotes: p.forVotes + (a.support === 1 ? a.weight : 0n),
@@ -330,16 +330,24 @@ const setStake = async (context: { chain: { id: number }; db: Db }, account: `0x
 ponder.on("OmnitideCouncil:Staked", async ({ event, context }) => setStake(context, event.args.account, event.args.total, Number(event.block.timestamp)));
 ponder.on("OmnitideCouncil:Unstaked", async ({ event, context }) => setStake(context, event.args.account, event.args.total, Number(event.block.timestamp)));
 
+// the seed's Deposited fires inside createVault, before the factory's VaultCreated, so every write upserts
+const EMPTY_VAULT = { leader: zeroAddress as `0x${string}`, name: "", seed: 0n, deposited: 0n, redeemed: 0n, deposits: 0, leaderTrades: 0, createdAt: 0, tx: zeroHash as `0x${string}` };
+type VaultRow = typeof EMPTY_VAULT;
+async function touchVault(db: Db, address: `0x${string}`, first: Partial<VaultRow>, patch: (v: VaultRow) => Partial<VaultRow>) {
+  await db.insert(copyVault).values({ ...EMPTY_VAULT, address, ...first }).onConflictDoUpdate((v) => patch(v as VaultRow));
+}
+
 ponder.on("OmnitideCopyVaultFactory:VaultCreated", async ({ event, context }) => {
   const a = event.args;
-  await context.db.insert(copyVault).values({ address: a.vault, leader: a.leader, name: a.name, seed: a.seed, deposited: 0n, redeemed: 0n, deposits: 0, leaderTrades: 0, createdAt: Number(event.block.timestamp), tx: event.transaction.hash });
+  const meta = { leader: a.leader, name: a.name, seed: a.seed, createdAt: Number(event.block.timestamp), tx: event.transaction.hash };
+  await touchVault(context.db, a.vault, meta, () => meta);
 });
 
 ponder.on("OmnitideCopyVault:Deposited", async ({ event, context }) => {
   const a = event.args;
   const vault = event.log.address;
   await context.db.insert(copyFlow).values({ ...note(event), vault, account: a.account, kind: "deposit", assets: a.assets, shares: a.shares, eid: a.srcEid });
-  await context.db.update(copyVault, { address: vault }).set((v) => ({ deposited: v.deposited + a.assets, deposits: v.deposits + 1 }));
+  await touchVault(context.db, vault, { deposited: a.assets, deposits: 1 }, (v) => ({ deposited: v.deposited + a.assets, deposits: v.deposits + 1 }));
   if (a.srcEid === 0) await context.db.delete(copyPending, { vault, account: a.account }); // settle() prices queued deposits
 });
 
@@ -354,9 +362,9 @@ ponder.on("OmnitideCopyVault:Redeemed", async ({ event, context }) => {
   const a = event.args;
   const vault = event.log.address;
   await context.db.insert(copyFlow).values({ ...note(event), vault, account: a.account, kind: "redeem", assets: a.assets, shares: a.shares, eid: a.dstEid });
-  await context.db.update(copyVault, { address: vault }).set((v) => ({ redeemed: v.redeemed + a.assets }));
+  await touchVault(context.db, vault, { redeemed: a.assets }, (v) => ({ redeemed: v.redeemed + a.assets }));
 });
 
 ponder.on("OmnitideCopyVault:LeaderTrade", async ({ event, context }) => {
-  await context.db.update(copyVault, { address: event.log.address }).set((v) => ({ leaderTrades: v.leaderTrades + 1 }));
+  await touchVault(context.db, event.log.address, { leaderTrades: 1 }, (v) => ({ leaderTrades: v.leaderTrades + 1 }));
 });

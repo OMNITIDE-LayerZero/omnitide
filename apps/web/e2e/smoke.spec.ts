@@ -98,3 +98,69 @@ test("rpc proxy refuses methods outside the allowlist", async ({ request }) => {
   const body = await res.json();
   expect(body.error?.code).toBe(-32601);
 });
+
+// ───────── V3 Deep Water ─────────
+
+test("deep mode explains the sealed ledger before a wallet connects", async ({ page }) => {
+  const errors = await noPageErrors(page);
+  await page.goto("/terminal/deep");
+  await expect(page.getByRole("heading", { name: "Deep Mode", level: 1 })).toBeVisible();
+  await expect(page.getByText(/who sees what/i)).toBeVisible();
+  await expect(page.getByText(/Live from OmnitideDeepPool/i)).toBeVisible({ timeout: 30_000 });
+  await checkCopyRules(page);
+  expect(errors).toEqual([]);
+});
+
+test("disclosure refuses a malformed key and accepts the dk1 format", async ({ page }) => {
+  const errors = await noPageErrors(page);
+  await page.goto("/disclosure");
+  await page.getByPlaceholder("dk1_…").fill("dk1_nope");
+  await expect(page.getByText(/isn't a Disclosure Key/)).toBeVisible();
+  await page.getByPlaceholder("dk1_…").fill(`dk1_${"ab".repeat(64)}`);
+  await expect(page.getByText(/isn't a Disclosure Key/)).toHaveCount(0);
+  await expect(page.getByText(/No seals for this Deep id yet/)).toBeVisible({ timeout: 20_000 });
+  expect(errors).toEqual([]);
+});
+
+test("currents board ranks traders without the house desk and runs a paper account", async ({ page }) => {
+  const errors = await noPageErrors(page);
+  await page.goto("/terminal/currents");
+  await expect(page.getByRole("heading", { name: "Currents", level: 1 })).toBeVisible();
+  await expect(page.getByText("Paper account")).toBeVisible();
+  await expect(page.locator("text=/\\$\\d+,\\d{3}\\.\\d{2}/").first()).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Paper long" }).click();
+  await expect(page.getByText(/paper fills/)).toContainText(/[1-9]\d* paper fills/);
+  await checkCopyRules(page);
+  expect(errors).toEqual([]);
+});
+
+test("arena shows all eight medals and council and copy render live", async ({ page }) => {
+  const errors = await noPageErrors(page);
+  await page.goto("/terminal/arena");
+  await expect(page.getByRole("heading", { name: "Arena", level: 1 })).toBeVisible();
+  await expect(page.locator("article")).toHaveCount(8);
+  await page.goto("/terminal/council");
+  await expect(page.getByRole("heading", { name: "Council", level: 1 })).toBeVisible();
+  await expect(page.getByText(/TIP-\d+/).first()).toBeVisible({ timeout: 30_000 });
+  await page.goto("/terminal/copy");
+  await expect(page.getByRole("heading", { name: "Copy", level: 1 })).toBeVisible();
+  await expect(page.getByText(/Leader fills/)).toBeVisible({ timeout: 30_000 });
+  await checkCopyRules(page);
+  expect(errors).toEqual([]);
+});
+
+test("badge metadata and artwork are served for tokenURI", async ({ request }) => {
+  const meta = await request.get("/api/badge/0/1");
+  expect(meta.status()).toBe(200);
+  const body = await meta.json();
+  expect(body.name).toBe("First Fill #1");
+  const art = await request.get("/api/badge/0/1.svg");
+  expect(art.headers()["content-type"]).toContain("image/svg+xml");
+  expect((await request.get("/api/badge/9/1")).status()).toBe(404);
+});
+
+test("keeper proxy only forwards the Deep Water allowlist", async ({ request }) => {
+  expect((await request.get("/api/keeper/deep/key")).status()).toBe(200);
+  expect((await request.get("/api/keeper/alerts")).status()).toBe(404);
+  expect((await request.post("/api/keeper/deep/trade", { data: { nope: 1 } })).status()).toBe(400);
+});

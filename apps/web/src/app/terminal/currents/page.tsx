@@ -7,7 +7,7 @@ import { useAccount } from "wagmi";
 import { ArrowUpRight } from "lucide-react";
 import { PnlCard, type TraderRow } from "@/components/currents/pnl-card";
 import { PaperAccount } from "@/components/currents/paper";
-import { moneyCompact, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { moneyCompact, realized, units6, wad, who } from "@/lib/format";
 
 type By = "pnl" | "volume";
 
@@ -37,8 +37,8 @@ export default function Currents() {
           </p>
           {leader && (
             <p className="mt-4 text-[14px] text-ink-2">
-              Leading the current: <Link href={`/currents/${leader.account}`} className="font-mono text-ink underline decoration-line-strong underline-offset-4 hover:decoration-accent">{leader.vault ?? shortHash(leader.account)}</Link>{" "}
-              <span className="num">{by === "pnl" ? signedMoney(units6(leader.realizedPnl)) : moneyCompact(wad(leader.volumeUsd))}</span>
+              Leading the current: <Link href={`/currents/${leader.account}`} className="font-mono text-ink underline decoration-line-strong underline-offset-4 hover:decoration-accent">{leader.vault ?? who(leader.account)}</Link>{" "}
+              <span className="num">{by === "pnl" ? realized(units6(leader.realizedPnl)) : moneyCompact(wad(leader.volumeUsd))}</span>
             </p>
           )}
         </div>
@@ -76,11 +76,11 @@ export default function Currents() {
                       <tr key={r.account} className={`group border-t border-line transition-colors hover:bg-raised/60 ${mine ? "bg-accent/5" : ""}`}>
                         <td className="num px-5 py-3 text-ink-3">{i + 1}</td>
                         <td className="px-5 py-3">
-                          <span className="font-mono">{shortHash(r.account)}</span>
+                          <span className="font-mono">{who(r.account)}</span>
                           {r.vault && <span className="tag ml-2 rounded-[4px] bg-navy px-1.5 py-0.5 text-white">vault · {r.vault}</span>}
                           {mine && <span className="tag ml-2 text-accent">you</span>}
                         </td>
-                        <td className={`num px-5 py-3 ${pnl >= 0 ? "text-flood" : "text-ebb"}`}>{signedMoney(pnl)}</td>
+                        <td className={`num px-5 py-3 ${pnl >= 0 ? "text-flood" : "text-ebb"}`}>{realized(pnl)}</td>
                         <td className="num px-5 py-3">{moneyCompact(wad(r.volumeUsd))}</td>
                         <td className="num px-5 py-3">{r.trades}</td>
                         <td className="px-5 py-3 text-right">

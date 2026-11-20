@@ -1,3 +1,5 @@
+import { zeroAddress } from "viem";
+import { env } from "@/lib/server/env";
 import { upstream } from "@/lib/server/upstream";
 
 const PATHS = new Set(["stats", "trades", "positions", "orders", "flows", "bridge", "leaderboard", "harbor", "tide", "book", "trader", "deep", "sealed", "lighthouse", "badges", "council", "vaults"]);
@@ -12,9 +14,18 @@ export async function GET(req: Request, ctx: { params: Promise<{ path: string[] 
   const src = new URL(req.url).searchParams;
   const qs = new URLSearchParams([...src].filter(([k]) => PARAMS.has(k)));
   try {
-    const data = await upstream<unknown>("indexer", `/${path.join("/")}${qs.size ? `?${qs}` : ""}`);
-    return Response.json(data, { headers: { "cache-control": "public, max-age=3" } });
+    const data = mask(await upstream<unknown>("indexer", `/${path.join("/")}${qs.size ? `?${qs}` : ""}`));
+    // the house desk trades for testing, it never ranks
+    const body = path[0] === "leaderboard" && Array.isArray(data) ? data.filter((r: { account?: string }) => r.account !== zeroAddress) : data;
+    return Response.json(body, { headers: { "cache-control": "public, max-age=3" } });
   } catch {
     return Response.json({ error: "indexer unavailable" }, { status: 503 });
   }
+}
+
+function mask(data: unknown): unknown {
+  const house = env().HOUSE_ACCOUNTS;
+  if (!house.length) return data;
+  const re = new RegExp(house.join("|"), "gi");
+  return JSON.parse(JSON.stringify(data).replace(re, zeroAddress));
 }

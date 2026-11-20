@@ -39,3 +39,12 @@ export function ago(unixSec: number, now = Date.now()): string {
 
 /** Max leverage from initial margin: 1000 bps → "10×", 1500 → "6.7×", 2500 → "4×". */
 export const leverage = (imBps: number) => `${Number((10_000 / imBps).toFixed(1))}×`;
+
+/** Display name for an account; the masked house desk shows as such. */
+export const who = (a: string) => (/^0x0{40}$/.test(a) ? "OMNITIDE desk" : shortHash(a));
+
+/** Realized PnL for display; nothing realized yet reads as an open position, never as $0.00. */
+export const realized = (v: number) => (Math.abs(v) < 0.005 ? "Position open" : signedMoney(v));
+
+/** Unrealized PnL for display; a position that hasn't moved reads "at entry". */
+export const upnl = (v: number) => (Math.abs(v) < 0.005 ? "at entry" : signedMoney(v));

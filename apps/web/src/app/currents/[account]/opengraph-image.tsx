@@ -29,7 +29,7 @@ export default async function Image({ params }: { params: Promise<{ account: str
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span style={{ fontSize: 30, opacity: 0.6 }}>{t ? "Verified realized PnL" : "Riding the tide on Robinhood Chain"}</span>
-          <span style={{ fontSize: 150, fontWeight: 700, color: t ? (pnl >= 0 ? "#7ee0b5" : "#ff9a8a") : "#ffffff", lineHeight: 1.05 }}>{t ? usd(pnl) : "OMNITIDE"}</span>
+          <span style={{ fontSize: 150, fontWeight: 700, color: t ? (pnl >= 0 ? "#7ee0b5" : "#ff9a8a") : "#ffffff", lineHeight: 1.05 }}>{t ? (Math.abs(pnl) < 0.005 ? "Position open" : usd(pnl)) : "OMNITIDE"}</span>
         </div>
         <div style={{ display: "flex", gap: 64, fontSize: 32 }}>
           {t && <span>{data?.rank ? `Rank #${data.rank} of ${data.of}` : ""}</span>}
