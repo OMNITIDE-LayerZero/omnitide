@@ -1,7 +1,7 @@
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Hero } from "@/components/landing/hero";
-import { RouteMap } from "@/components/landing/route-map";
+import { HarborAtlas } from "@/components/landing/harbor-atlas";
 import { Features } from "@/components/landing/features";
 import { MarketsBoard } from "@/components/landing/markets-board";
 import { Pulse } from "@/components/landing/pulse";
@@ -43,7 +43,7 @@ export default function Home() {
               </p>
             </div>
             <div className="mt-16">
-              <RouteMap />
+              <HarborAtlas />
             </div>
           </div>
         </section>
