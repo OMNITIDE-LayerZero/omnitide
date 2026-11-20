@@ -22,16 +22,19 @@ contract OmnitideUSD is OFTUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     bool public faucetEnabled;
     mapping(address => uint256) public lastDrip;
     mapping(uint32 => RateLimit) public rateLimits;
+    mapping(address => bool) public minters;
 
     event GuardianSet(address guardian);
     event Dripped(address indexed to, uint256 amount);
     event RateLimitSet(uint32 indexed dstEid, uint128 limit, uint32 window);
+    event MinterSet(address indexed minter, bool allowed);
 
     error NotGuardian();
     error ZeroAddress();
     error FaucetDisabled();
     error DripCooldown(uint256 availableAt);
     error RateLimitExceeded(uint32 dstEid, uint256 available);
+    error NotMinter();
 
     /// @custom:oz-upgrades-unsafe-allow constructor state-variable-immutable
     constructor(address lzEndpoint) OFTUpgradeable(lzEndpoint) {
@@ -66,6 +69,24 @@ contract OmnitideUSD is OFTUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     function faucetMint(address to, uint256 amount) external onlyOwner {
         if (!faucetEnabled) revert FaucetDisabled();
         _mint(to, amount);
+    }
+
+    /// @notice Minters are OmnitidePorts: they mint only against stablecoin they receive and burn only on redemption.
+    function setMinter(address minter, bool allowed) external onlyOwner {
+        if (minter == address(0)) revert ZeroAddress();
+        minters[minter] = allowed;
+        emit MinterSet(minter, allowed);
+    }
+
+    function mint(address to, uint256 amount) external whenNotPaused {
+        if (!minters[msg.sender]) revert NotMinter();
+        _mint(to, amount);
+    }
+
+    /// @dev Not pausable: redemptions stay open in an emergency.
+    function burn(address from, uint256 amount) external {
+        if (!minters[msg.sender]) revert NotMinter();
+        _burn(from, amount);
     }
 
     function setGuardian(address guardian_) external onlyOwner {

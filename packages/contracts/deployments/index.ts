@@ -1,4 +1,5 @@
 import testnet from "./testnet.json" with { type: "json" };
+import mainnet from "./mainnet.json" with { type: "json" };
 import type { ChainKey } from "../chains.js";
 
 export interface ProxyRecord {
@@ -12,6 +13,7 @@ export interface ChainDeployment {
   chainId: number;
   eid: number;
   OmnitideUSD?: ProxyRecord;
+  OmnitidePort?: ProxyRecord;
   OmnitideOracle?: ProxyRecord;
   OmnitideClearinghouse?: ProxyRecord;
   OmnitideHarbor?: ProxyRecord;
@@ -29,6 +31,6 @@ export interface ChainDeployment {
 
 export type Deployments = Partial<Record<ChainKey, ChainDeployment>>;
 
-// One entry per OMNITIDE_ENV; mainnet is added when Phase 2 deploys. A configured chain may not be deployed yet.
-export const DEPLOYMENTS: Record<"testnet", Deployments> = { testnet };
+// One entry per OMNITIDE_ENV. A configured chain may not be deployed yet; mainnet ships version by version.
+export const DEPLOYMENTS: Record<"testnet" | "mainnet", Deployments> = { testnet, mainnet };
 export type OmnitideEnv = keyof typeof DEPLOYMENTS;

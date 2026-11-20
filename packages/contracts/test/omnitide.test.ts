@@ -293,6 +293,78 @@ describe("Upgrades", () => {
   });
 });
 
+async function portFixture() {
+  const ctx = await deploy();
+  const { owner, guardian, hubUsd, spokeUsd } = ctx;
+  const Stable = await ethers.getContractFactory("TestStable");
+  const usdg = await Stable.deploy(6);
+  const usdc = await Stable.deploy(6);
+  const Port = await ethers.getContractFactory("OmnitidePort");
+  const opts = { kind: "uups" as const, initializer: "initialize" };
+  const hubPort = await up.deployProxy(Port, [owner.address, guardian.address, await usdg.getAddress(), await hubUsd.getAddress()], opts);
+  const spokePort = await up.deployProxy(Port, [owner.address, guardian.address, await usdc.getAddress(), await spokeUsd.getAddress()], opts);
+  await hubUsd.setMinter(await hubPort.getAddress(), true);
+  await spokeUsd.setMinter(await spokePort.getAddress(), true);
+  return { ...ctx, usdg, usdc, hubPort, spokePort };
+}
+
+describe("OmnitidePort (stablecoin-backed tdUSD)", () => {
+  it("mints 1:1 against the stablecoin and redeems from the local reserve only", async () => {
+    const { usdg, hubPort, hubUsd, alice, bob } = await networkHelpers.loadFixture(portFixture);
+    await usdg.mint(alice.address, usd(100));
+    await usdg.connect(alice).approve(await hubPort.getAddress(), usd(100));
+    await expect(hubPort.connect(alice).deposit(usd(100), alice.address)).to.emit(hubPort, "Deposited").withArgs(alice.address, alice.address, usd(100), ethers.ZeroHash);
+    expect(await hubUsd.balanceOf(alice.address)).to.equal(usd(100));
+    expect(await hubPort.reserve()).to.equal(usd(100));
+
+    await hubPort.connect(alice).redeem(usd(40), bob.address);
+    expect(await usdg.balanceOf(bob.address)).to.equal(usd(40));
+    expect(await hubUsd.balanceOf(alice.address)).to.equal(usd(60));
+    // faucet tdUSD has no reserve behind it on this chain
+    await hubUsd.connect(bob).drip();
+    await expect(hubPort.connect(bob).redeem(usd(61), bob.address)).to.be.revertedWithCustomError(hubPort, "InsufficientReserve");
+    await expect(hubPort.connect(alice).deposit(0, alice.address)).to.be.revertedWithCustomError(hubPort, "ZeroAmount");
+  });
+
+  it("keeps mint and burn to Ports, refuses a mismatched stablecoin, owner-only admin", async () => {
+    const { hubUsd, hubPort, alice, owner, guardian } = await networkHelpers.loadFixture(portFixture);
+    await expect(hubUsd.connect(alice).mint(alice.address, 1)).to.be.revertedWithCustomError(hubUsd, "NotMinter");
+    await expect(hubUsd.connect(alice).burn(owner.address, 1)).to.be.revertedWithCustomError(hubUsd, "NotMinter");
+    await expect(hubUsd.connect(alice).setMinter(alice.address, true)).to.be.revertedWithCustomError(hubUsd, "OwnableUnauthorizedAccount");
+    const eighteen = await (await ethers.getContractFactory("TestStable")).deploy(18);
+    await expect(
+      up.deployProxy(await ethers.getContractFactory("OmnitidePort"), [owner.address, guardian.address, await eighteen.getAddress(), await hubUsd.getAddress()], { kind: "uups" }),
+    ).to.be.revertedWithCustomError(hubPort, "DecimalsMismatch");
+    await expect(hubPort.connect(alice).upgradeToAndCall(alice.address, "0x")).to.be.revertedWithCustomError(hubPort, "OwnableUnauthorizedAccount");
+  });
+
+  it("pause stops deposits but never redemptions", async () => {
+    const { usdg, hubPort, alice, guardian } = await networkHelpers.loadFixture(portFixture);
+    await usdg.mint(alice.address, usd(50));
+    await usdg.connect(alice).approve(await hubPort.getAddress(), usd(50));
+    await hubPort.connect(alice).deposit(usd(20), alice.address);
+    await expect(hubPort.connect(alice).pause()).to.be.revertedWithCustomError(hubPort, "NotGuardian");
+    await hubPort.connect(guardian).pause();
+    await expect(hubPort.connect(alice).deposit(usd(10), alice.address)).to.be.revertedWithCustomError(hubPort, "EnforcedPause");
+    await hubPort.connect(alice).redeem(usd(20), alice.address);
+    expect(await usdg.balanceOf(alice.address)).to.equal(usd(50));
+  });
+
+  it("deposits USDC on a spoke and sends the tdUSD into the hub clearinghouse in one call", async () => {
+    const { usdc, spokePort, spokeUsd, hubUsd, ch, alice } = await networkHelpers.loadFixture(portFixture);
+    await usdc.mint(alice.address, usd(300));
+    await usdc.connect(alice).approve(await spokePort.getAddress(), usd(300));
+    const composeMsg = ethers.AbiCoder.defaultAbiCoder().encode(["address"], [alice.address]);
+    const p = { dstEid: HUB, to: ethers.zeroPadValue(await ch.getAddress(), 32), amountLD: usd(300), minAmountLD: usd(300), extraOptions: "0x", composeMsg, oftCmd: "0x" };
+    const q = await spokeUsd.quoteSend(p, false);
+    await expect(spokePort.connect(alice).depositAndSend(usd(300), { ...p, composeMsg: "0x" }, { value: q.nativeFee })).to.be.revertedWithCustomError(spokePort, "NoBeneficiary");
+    await expect(spokePort.connect(alice).depositAndSend(usd(300), p, { value: q.nativeFee })).to.emit(spokePort, "Deposited");
+    expect(await spokePort.reserve()).to.equal(usd(300));
+    expect(await spokeUsd.balanceOf(await spokePort.getAddress())).to.equal(0);
+    expect(await hubUsd.balanceOf(await ch.getAddress())).to.equal(usd(1_300));
+  });
+});
+
 async function harborFixture() {
   const ctx = await deploy();
   const { owner, guardian, ch, hubEp, spokeEp, hubUsd } = ctx;

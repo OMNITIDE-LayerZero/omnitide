@@ -22,7 +22,18 @@ export default defineConfig({
   },
   networks: {
     ...Object.fromEntries(
-      Object.entries(CHAINS).map(([key, c]) => [key, { type: "http", chainType: "generic", url: process.env[`RPC_${c.chainId}`] ?? c.rpc, accounts, chainId: c.chainId }]),
+      Object.entries(CHAINS).map(([key, c]) => [
+        key,
+        {
+          type: "http",
+          chainType: "generic",
+          url: process.env[`RPC_${c.chainId}`] ?? c.rpc,
+          accounts,
+          chainId: c.chainId,
+          // HyperEVM big blocks price far below the small-block gas price the RPC quotes; pin it with GAS_PRICE_999 (wei)
+          ...(process.env[`GAS_PRICE_${c.chainId}`] ? { gasPrice: BigInt(process.env[`GAS_PRICE_${c.chainId}`]!) } : {}),
+        },
+      ]),
     ),
     // dry-run targets: simulate deploys against live chain state before spending gas
     ...Object.fromEntries(

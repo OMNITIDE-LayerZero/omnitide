@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { HardhatEthers } from "@nomicfoundation/hardhat-ethers/types";
-import { CHAINS, type ChainKey } from "../chains.js";
+import { SCRIPT_CHAINS as CHAINS, type ChainKey } from "../chains.js";
 import type { Deployments } from "../deployments/index.js";
 
 export const DEPLOYER = "0xB58dE05CC819F7B04ca611F23e4be9E4be0C23f9";

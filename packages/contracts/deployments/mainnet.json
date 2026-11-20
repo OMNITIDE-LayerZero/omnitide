@@ -1,0 +1,48 @@
+{
+  "robinhood": {
+    "chainId": 4663,
+    "eid": 30416,
+    "OmnitideUSD": {
+      "proxy": "0xA2A9200c04B036e3003300AdA99D844C97B66075",
+      "implementation": "0x17071A6e4f2910AC39c01B1AD39eEA7d68DA5B4c",
+      "deployTx": "0xb49e173f5dbfee2d25028c4e654c0d3c01ae4a00ee2e514bd545a5d1ef09828a",
+      "block": 119274750
+    },
+    "OmnitideOracle": {
+      "proxy": "0x26BbCba2087e908721376088Df77a77e811203c5",
+      "implementation": "0xe58105a7693517f24DFf9DFf7948d9AB792E1F55",
+      "deployTx": "0x0188debf438019ae717e637e74a1ff34b72029e4f5fe30f6f155b02a31c55b82",
+      "block": 119274833
+    },
+    "OmnitideClearinghouse": {
+      "proxy": "0xA1f062B1f862c24866eAeed63f7587ab02e8f776",
+      "implementation": "0xD7f3373B8A4B7a78223376D350C87Ad51d9ad27B",
+      "deployTx": "0xbe63fc66d9e41091e1dcfd959d3b6d9da3547a32997ff14c3a32306b13ddf716",
+      "block": 119274935
+    },
+    "OmnitidePort": {
+      "proxy": "0x0415C654fe747edDeA99B44d6Ce4FD14C281a644",
+      "implementation": "0x8B1260236cC3aaf6A2A25c575FD6753D2e03C93C",
+      "deployTx": "0x96508d1e84cfb9f0008c627a3cfe700ae8310499f53ffe58fd17a52387357054",
+      "block": 119275690
+    },
+    "wired": "hyperEvm"
+  },
+  "hyperEvm": {
+    "chainId": 999,
+    "eid": 30367,
+    "OmnitideUSD": {
+      "proxy": "0xaDDA666a53c0190B3FE4fF5818B6eDadeB3Ae946",
+      "implementation": "0x1d8c1b17a222a3f912dB2b80d0dD3749a4F45e15",
+      "deployTx": "0xc72aece89cda7c9f2e452e6d201838d69efc5c11f7d84fd46cd0f352c9c367e6",
+      "block": 51792888
+    },
+    "OmnitidePort": {
+      "proxy": "0x4aa75054082c4ed4c835cf3aFAA750E03316593E",
+      "implementation": "0x3541dEC46D5e09204E78e911a766E2e9dFeaFEA0",
+      "deployTx": "0xbd5209db77c74f029c19d2a5c7ce2b48bbe569d2a548c0e7d395e1abf1a36dc1",
+      "block": 51793010
+    },
+    "wired": "robinhood"
+  }
+}

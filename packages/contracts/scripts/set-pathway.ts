@@ -1,5 +1,5 @@
 import { network } from "hardhat";
-import { CHAINS, type ChainKey } from "../chains.js";
+import { SCRIPT_CHAINS as CHAINS, type ChainKey } from "../chains.js";
 import { chainKeyById, deployerSigner, loadDeployments } from "./lib.js";
 
 // Sets an explicit LayerZero config (libraries, executor, LayerZero Labs DVN) for pathways that have no default.

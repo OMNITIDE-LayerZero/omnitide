@@ -8,7 +8,8 @@
     "test": "hardhat test",
     "typecheck": "tsc --noEmit",
     "deploy": "hardhat run scripts/deploy.ts",
-    "wire": "hardhat run scripts/wire.ts"
+    "wire": "hardhat run scripts/wire.ts",
+    "testnet:verification": "node --no-warnings scripts/verification.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.2.2",

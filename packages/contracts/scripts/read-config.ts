@@ -1,5 +1,5 @@
 import { network } from "hardhat";
-import { CHAINS, type ChainKey } from "../chains.js";
+import { SCRIPT_CHAINS as CHAINS, type ChainKey } from "../chains.js";
 import { chainKeyById, loadDeployments } from "./lib.js";
 
 // Read-only: prints the effective send/receive library and ULN config (DVNs, confirmations) per pathway.

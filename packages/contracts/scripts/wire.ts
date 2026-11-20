@@ -1,5 +1,5 @@
 import { network } from "hardhat";
-import { CHAINS, type ChainKey } from "../chains.js";
+import { SCRIPT_CHAINS as CHAINS, type ChainKey } from "../chains.js";
 import { lzReceiveAndComposeOption, lzReceiveOption, MSG_SEND, MSG_SEND_AND_CALL } from "../lz-options.js";
 import { chainKeyById, deployerSigner, loadDeployments, saveDeployments, type ChainDeployment } from "./lib.js";
 
@@ -36,6 +36,27 @@ const MESHES: Mesh[] = [
 ];
 const at = (k: ChainKey, name: Name) => (all[k] as ChainDeployment | undefined)?.[name];
 
+// Mainnet pathway defaults between these chains point at LayerZero's Dead DVN; pin the LayerZero Labs DVN, keep default confirmations (0).
+const MAINNET = !!process.env.OMNITIDE_ENV?.startsWith("mainnet");
+const ULN = "tuple(uint64 confirmations,uint8 requiredDVNCount,uint8 optionalDVNCount,uint8 optionalDVNThreshold,address[] requiredDVNs,address[] optionalDVNs)";
+const coder = ethers.AbiCoder.defaultAbiCoder();
+const endpoint = new ethers.Contract(CHAINS[key].endpoint, [
+  "function setConfig(address,address,tuple(uint32 eid,uint32 configType,bytes config)[])",
+  "function getConfig(address,address,uint32,uint32) view returns (bytes)",
+], signer);
+async function setDvns(oapp: string, peers: ChainKey[]) {
+  const { lz } = CHAINS[key];
+  const config = coder.encode([ULN], [[0, 1, 0, 0, [lz.dvn], []]]);
+  for (const lib of [lz.sendLib, lz.receiveLib]) {
+    const params = [];
+    for (const peer of peers) {
+      const [uln] = coder.decode([ULN], await endpoint.getFunction("getConfig")(oapp, lib, CHAINS[peer].eid, 2));
+      if (uln.requiredDVNs.length !== 1 || uln.requiredDVNs[0].toLowerCase() !== lz.dvn) params.push({ eid: CHAINS[peer].eid, configType: 2, config });
+    }
+    if (params.length) await (await endpoint.getFunction("setConfig")(oapp, lib, params)).wait();
+  }
+}
+
 for (const mesh of MESHES) {
   const name = mesh.name(key);
   const local = at(key, name);
@@ -57,6 +78,7 @@ for (const mesh of MESHES) {
     options.push(...mesh.options(!!hub).map((o) => ({ eid, ...o })));
   }
   if (options.length) await (await app.setEnforcedOptions(options)).wait();
+  if (MAINNET) await setDvns(local.proxy, peers);
   console.log(`wired ${name} on ${key} → ${peers.join(", ") || "none"}`);
   if (name === "OmnitideUSD") all[key]!.wired = peers.join(",");
 }

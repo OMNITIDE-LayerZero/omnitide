@@ -8,7 +8,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "testnet:verification": "pnpm --silent --filter @omnitide/contracts testnet:verification"
   },
   "devDependencies": {
     "turbo": "2.11.12",

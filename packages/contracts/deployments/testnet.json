@@ -23,7 +23,7 @@
     "wired": "hyperEvmTestnet,arbitrumSepolia,sepolia",
     "OmnitideHarbor": {
       "proxy": "0x651870e2F6472244958C92E66F6AB5881a3D3932",
-      "implementation": "0x005a647DAd4A4257684ac558F3E47a15559bcC13",
+      "implementation": "0xC746627F109155429FE578228d390B8d0219580b",
       "deployTx": "0xf945fe371f87f9602c5af8fe2ccdef8eb0747a1c2cd7d837f7a14769818f2a0f",
       "block": 155614668
     },

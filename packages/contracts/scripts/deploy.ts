@@ -1,7 +1,7 @@
 import hre, { network } from "hardhat";
 import { upgrades } from "@openzeppelin/hardhat-upgrades";
 import type { BaseContract } from "ethers";
-import { CHAINS } from "../chains.js";
+import { SCRIPT_CHAINS as CHAINS } from "../chains.js";
 import { MARKETS } from "../markets.js";
 import { OFT_UNSAFE_ALLOW } from "../lz-options.js";
 import { DEPLOYER, chainKeyById, deployerSigner, loadDeployments, saveDeployments, type ProxyRecord } from "./lib.js";
@@ -21,6 +21,10 @@ console.log(`network ${chain.name} (${chainId}) · deployer ${signer.address} ·
 const all = loadDeployments();
 const dep = (all[key] ??= { chainId: chain.chainId, eid: chain.eid });
 const isTestnet = (process.env.OMNITIDE_ENV ?? "testnet") === "testnet";
+// mainnet ships per version: OMNITIDE_VERSION=1 deploys V1.0 only, 2 adds V2 Current, 3 adds V3 Deep Water
+const VERSION = Number(process.env.OMNITIDE_VERSION ?? 3);
+// mainnet open-interest cap per market (USD), sized to the Tide Pool; testnet keeps markets.ts
+const oiCap = (usd: number) => (process.env.MAX_OI_USD ? Number(process.env.MAX_OI_USD) : usd);
 
 async function record(contract: BaseContract): Promise<ProxyRecord> {
   const proxy = await contract.getAddress();
@@ -72,7 +76,7 @@ if (chain.hub) {
   const ch = await ethers.getContractAt("OmnitideClearinghouse", dep.OmnitideClearinghouse.proxy);
   const listed = Number(await ch.marketCount());
   for (const m of MARKETS.filter((m) => m.id >= listed)) {
-    await (await ch.setMarket(m.id, ethers.encodeBytes32String(m.feed), m.initialMarginBps, m.maintenanceMarginBps, ethers.parseEther(String(m.maxOpenInterestUsd)), true)).wait();
+    await (await ch.setMarket(m.id, ethers.encodeBytes32String(m.feed), m.initialMarginBps, m.maintenanceMarginBps, ethers.parseEther(String(oiCap(m.maxOpenInterestUsd))), true)).wait();
     console.log(`market ${m.id} ${m.symbol}`);
   }
 
@@ -86,10 +90,39 @@ if (chain.hub) {
   }
 }
 
+// tdUSD backed 1:1 by this chain's stablecoin
+if (chain.stable && !dep.OmnitidePort) {
+  const port = await up.deployProxy(await ethers.getContractFactory("OmnitidePort"), [DEPLOYER, DEPLOYER, chain.stable.address, dep.OmnitideUSD!.proxy], { kind: "uups" });
+  await port.waitForDeployment();
+  dep.OmnitidePort = await record(port);
+  saveDeployments(all);
+  console.log("OmnitidePort", dep.OmnitidePort.proxy, `(${chain.stable.symbol})`);
+}
+if (dep.OmnitidePort) {
+  const usd = await ethers.getContractAt("OmnitideUSD", dep.OmnitideUSD!.proxy);
+  if (!(await usd.minters(dep.OmnitidePort.proxy))) await (await usd.setMinter(dep.OmnitidePort.proxy, true)).wait();
+}
+
+// mainnet Tide Pool seed: POOL_SEED stablecoin → Port → tdUSD → pool (once, while the pool is empty)
+if (chain.hub && dep.OmnitidePort && process.env.POOL_SEED) {
+  const ch = await ethers.getContractAt("OmnitideClearinghouse", dep.OmnitideClearinghouse!.proxy);
+  if ((await ch.poolBalance()) === 0n) {
+    const seed = ethers.parseUnits(process.env.POOL_SEED, 6);
+    const stable = new ethers.Contract(chain.stable!.address, ["function approve(address,uint256) returns (bool)"], signer);
+    const usd = await ethers.getContractAt("OmnitideUSD", dep.OmnitideUSD!.proxy);
+    const port = await ethers.getContractAt("OmnitidePort", dep.OmnitidePort.proxy);
+    await (await stable.getFunction("approve")(dep.OmnitidePort.proxy, seed)).wait();
+    await (await port.deposit(seed, DEPLOYER)).wait();
+    await (await usd.approve(dep.OmnitideClearinghouse!.proxy, seed)).wait();
+    await (await ch.fundPool(seed)).wait();
+    console.log(`Tide Pool seeded with ${process.env.POOL_SEED} ${chain.stable!.symbol}-backed tdUSD`);
+  }
+}
+
 // ───────── V2 Current: Harbor OVault on the hub, its share OFT and the lzRead Tide reader on Arbitrum ─────────
 const lzOpts = { kind: "uups" as const, constructorArgs: [chain.endpoint], unsafeAllow: [...OFT_UNSAFE_ALLOW] };
 
-if (chain.hub) {
+if (VERSION >= 2 && chain.hub) {
   const chAddr = dep.OmnitideClearinghouse!.proxy;
   const CH = await ethers.getContractFactory("OmnitideClearinghouse");
   if (dep.OmnitideClearinghouse!.implementation !== (await up.erc1967.getImplementationAddress(chAddr)) || !(await hasHarborHooks(chAddr))) {
@@ -131,7 +164,7 @@ if (chain.hub) {
     }
     console.log(`Tide Pool (${ethers.formatUnits(pool, 6)} tdUSD) now owned by Harbor`);
   }
-} else {
+} else if (VERSION >= 2) {
   if (chain.harborShares && !dep.OmnitideHarborShare) {
     const share = await up.deployProxy(await ethers.getContractFactory("OmnitideHarborShare"), [DEPLOYER], lzOpts);
     await share.waitForDeployment();
@@ -150,7 +183,7 @@ if (chain.hub) {
 }
 
 // ───────── V3 Deep Water: Sealed Orders, Deep Pool, Lighthouse, Arena Badges, TIDE + Council, copy vaults ─────────
-const BADGE_URI = process.env.BADGE_BASE_URI ?? "https://testnet.omnitide.trade/api/badge/";
+const BADGE_URI = process.env.BADGE_BASE_URI ?? (process.env.OMNITIDE_ENV?.startsWith("mainnet") ? "https://omnitide.trade/api/badge/" : "https://testnet.omnitide.trade/api/badge/");
 const VOTING_PERIOD = isTestnet ? 2 * 86_400 : 7 * 86_400;
 const PROPOSAL_THRESHOLD = ethers.parseEther("1000");
 
@@ -163,7 +196,7 @@ async function deployOnce(name: "OmnitideDeepPool" | "OmnitideToken" | "Omnitide
   console.log(name, await c.getAddress());
 }
 
-if (chain.hub || chain.deepWater) {
+if (VERSION >= 3 && (chain.hub || chain.deepWater)) {
   const F = (n: string) => ethers.getContractFactory(n);
   if (chain.hub) {
     const chAddr = dep.OmnitideClearinghouse!.proxy;

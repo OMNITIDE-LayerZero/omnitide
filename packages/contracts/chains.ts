@@ -1,5 +1,7 @@
 // Single source of chain params for deploy scripts; values verified live in the pre-flight check.
-export type ChainKey = "robinhoodTestnet" | "arbitrumSepolia" | "hyperEvmTestnet" | "sepolia";
+export type TestnetChainKey = "robinhoodTestnet" | "arbitrumSepolia" | "hyperEvmTestnet" | "sepolia";
+export type MainnetChainKey = "robinhood" | "arbitrum" | "hyperEvm";
+export type ChainKey = TestnetChainKey | MainnetChainKey;
 
 export interface ChainConfig {
   name: string;
@@ -20,9 +22,11 @@ export interface ChainConfig {
   harborShares?: boolean;
   /** Spoke carries the V3 OApps: TIDE, Council, Lighthouse and Arena Badges. */
   deepWater?: boolean;
+  /** Dollar stablecoin an OmnitidePort mints tdUSD against (mainnet only; testnet tdUSD comes from the faucet). */
+  stable?: { symbol: string; address: `0x${string}` };
 }
 
-export const CHAINS: Record<ChainKey, ChainConfig> = {
+export const TESTNET_CHAINS: Record<TestnetChainKey, ChainConfig> = {
   robinhoodTestnet: {
     name: "Robinhood Chain Testnet",
     chainId: 46630,
@@ -74,3 +78,56 @@ export const CHAINS: Record<ChainKey, ChainConfig> = {
     lz: { sendLib: "0xcc1ae8cf5d3904cef3360a9532b477529b177cce", receiveLib: "0xdaf00f5ee2158dd58e0d3857851c432e34a3a851", executor: "0x718b92b5cb0a5552039b593faf724d182a881eda", dvn: "0x8eebf8b423b73bfca51a1db4b7354aa0bfca9193" },
   },
 };
+
+// Mainnet set (LayerZero metadata-api, checked 2026-11-21): direct lanes hub ⇄ Arbitrum ⇄ HyperEVM, no relay needed.
+export const MAINNET_CHAINS: Record<MainnetChainKey, ChainConfig> = {
+  robinhood: {
+    name: "Robinhood Chain",
+    chainId: 4663,
+    eid: 30416,
+    endpoint: "0x6f475642a6e85809b1c36fa62763669b1b48dd5b",
+    rpc: process.env.RPC_ROBINHOOD ?? "https://rpc.mainnet.chain.robinhood.com",
+    explorer: "https://robinhoodchain.blockscout.com",
+    blockscout: "https://robinhoodchain.blockscout.com/api",
+    nativeSymbol: "ETH",
+    hub: true,
+    stable: { symbol: "USDG", address: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" },
+    lz: { sendLib: "0xc39161c743d0307eb9bcc9fef03eeb9dc4802de7", receiveLib: "0xe1844c5d63a9543023008d332bd3d2e6f1fe1043", executor: "0x4208d6e27538189bb48e603d6123a94b8abe0a0b", dvn: "0xd01ae6905d48315f7be10c7330aecf8360ef5b12" },
+  },
+  hyperEvm: {
+    name: "HyperEVM",
+    chainId: 999,
+    eid: 30367,
+    endpoint: "0x3a73033c0b1407574c76bdbac67f126f6b4a9aa9",
+    rpc: process.env.RPC_HYPEREVM ?? "https://rpc.hyperliquid.xyz/evm",
+    explorer: "https://hyperevmscan.io",
+    nativeSymbol: "HYPE",
+    hub: false,
+    deepWater: true,
+    stable: { symbol: "USDC", address: "0xb88339CB7199b77E23DB6E890353E22632Ba630f" },
+    lz: { sendLib: "0xfd76d9cb0bac839725ab79127e7411fe71b1e3ca", receiveLib: "0x7cacbe439ead55fa1c22790330b12835c6884a91", executor: "0x41bdb4aa4a63a5b2efc531858d3118392b1a1c3d", dvn: "0xc097ab8cd7b053326dfe9fb3e3a31a0cce3b526f" },
+  },
+  arbitrum: {
+    name: "Arbitrum One",
+    chainId: 42161,
+    eid: 30110,
+    endpoint: "0x1a44076050125825900e736c501f859c50fe728c",
+    rpc: process.env.RPC_ARBITRUM ?? "https://arb1.arbitrum.io/rpc",
+    explorer: "https://arbitrum.blockscout.com",
+    blockscout: "https://arbitrum.blockscout.com/api",
+    nativeSymbol: "ETH",
+    hub: false,
+    lzRead: ["arbitrum", "hyperEvm"],
+    harborShares: true,
+    deepWater: true,
+    stable: { symbol: "USDC", address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831" },
+    lz: { sendLib: "0x975bcd720be66659e3eb3c0e4f1866a3020e493a", receiveLib: "0x7b9e184e07a6ee1ac23eae0fe8d6be2f663f05e6", executor: "0x31cae3b7fb82d847621859fb1585353c5720660d", dvn: "0x2f55c492897526677c5b68fb199ea31e2c126416" },
+  },
+};
+
+/** Every chain OMNITIDE knows; apps show the ones with contracts in their env's deployment file. */
+export const CHAINS: Record<ChainKey, ChainConfig> = { ...TESTNET_CHAINS, ...MAINNET_CHAINS };
+
+/** Chain set the contract scripts act on: mainnet when OMNITIDE_ENV is `mainnet` or `mainnet-fork`. */
+// shortcut: typed as the full record so scripts index it freely; only the env's keys exist at runtime
+export const SCRIPT_CHAINS = (process.env.OMNITIDE_ENV?.startsWith("mainnet") ? MAINNET_CHAINS : TESTNET_CHAINS) as Record<ChainKey, ChainConfig>;

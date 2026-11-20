@@ -1,5 +1,5 @@
 import { network } from "hardhat";
-import { CHAINS, type ChainKey } from "../chains.js";
+import { SCRIPT_CHAINS as CHAINS, type ChainKey } from "../chains.js";
 import { chainKeyById, loadDeployments } from "./lib.js";
 
 // Read-only: quotes every outbound pathway (Inflow with compose to the hub, plain sends elsewhere).
@@ -7,7 +7,7 @@ const { ethers } = await network.create();
 const key = chainKeyById(Number((await ethers.provider.getNetwork()).chainId));
 const all = loadDeployments();
 const usd = await ethers.getContractAt("OmnitideUSD", all[key]!.OmnitideUSD!.proxy);
-const hub = all.robinhoodTestnet!.OmnitideClearinghouse!.proxy;
+const hub = all[(Object.keys(CHAINS) as ChainKey[]).find((k) => CHAINS[k].hub)!]!.OmnitideClearinghouse!.proxy;
 const who = "0xB58dE05CC819F7B04ca611F23e4be9E4be0C23f9";
 for (const peer of Object.keys(CHAINS) as ChainKey[]) {
   if (peer === key) continue;
