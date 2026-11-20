@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4391"),
   title: { default: "OMNITIDE — Be the tide. Not the target.", template: "%s · OMNITIDE" },
   description: `One book. Every chain. Beneath the surface. Bring collateral from ${CHAIN_COUNT} chains into one cross-margin account and trade crypto and US stock perps on Robinhood Chain.`,
-  openGraph: { images: ["/brand/og.jpg"], siteName: "OMNITIDE" },
-  twitter: { card: "summary_large_image", images: ["/brand/og.jpg"] },
+  openGraph: { images: [{ url: "/brand/link-preview.jpg", width: 1200, height: 630, alt: "OMNITIDE · Be the tide, not the target." }], siteName: "OMNITIDE" },
+  twitter: { card: "summary_large_image", images: ["/brand/link-preview.jpg"] },
 };
 
 export const viewport: Viewport = {
