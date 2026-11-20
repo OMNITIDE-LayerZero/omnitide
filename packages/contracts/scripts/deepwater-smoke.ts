@@ -7,7 +7,7 @@ import { chainKeyById, deployerSigner, loadDeployments } from "./lib.js";
 // Live V3 smoke against the deployed stack and the public site API.
 // STEP: deep | sealed | lighthouse | badge | council-arb | council | vote-arb | copy | copy-arb
 const STEP = process.env.STEP ?? "deep";
-const SITE = process.env.SITE ?? "https://omnitide-testnet.vercel.app";
+const SITE = process.env.SITE ?? "https://testnet.omnitide.trade";
 const { ethers } = await network.create();
 const signer = await deployerSigner(ethers);
 const chainId = Number((await ethers.provider.getNetwork()).chainId);

@@ -11,7 +11,7 @@ const Env = z.object({
   EXECUTE: z.enum(["0", "1"]).default("1"),
   // V2 Current
   INDEXER_URL: z.string().url().default("http://127.0.0.1:4302"),
-  SITE_URL: z.string().url().default("https://omnitide-testnet.vercel.app"),
+  SITE_URL: z.string().url().default("https://testnet.omnitide.trade"),
   ARB_RPC_URL: z.string().url().default("https://sepolia-rollup.arbitrum.io/rpc"),
   TIDE_READ_HOURS: z.coerce.number().min(0).default(12), // 0 turns scheduled lzRead off
   VAPID_PUBLIC_KEY: z.string().optional(),

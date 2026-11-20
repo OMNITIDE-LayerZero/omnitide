@@ -150,7 +150,7 @@ if (chain.hub) {
 }
 
 // ───────── V3 Deep Water: Sealed Orders, Deep Pool, Lighthouse, Arena Badges, TIDE + Council, copy vaults ─────────
-const BADGE_URI = process.env.BADGE_BASE_URI ?? "https://omnitide-testnet.vercel.app/api/badge/";
+const BADGE_URI = process.env.BADGE_BASE_URI ?? "https://testnet.omnitide.trade/api/badge/";
 const VOTING_PERIOD = isTestnet ? 2 * 86_400 : 7 * 86_400;
 const PROPOSAL_THRESHOLD = ethers.parseEther("1000");
 

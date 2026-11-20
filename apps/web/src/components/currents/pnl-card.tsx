@@ -23,7 +23,7 @@ interface Beam {
 }
 
 const GRADES = ["A", "B", "C", "D"];
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://omnitide-testnet.vercel.app";
+const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://testnet.omnitide.trade";
 
 export function useTrader(account: string | undefined) {
   return useQuery({
