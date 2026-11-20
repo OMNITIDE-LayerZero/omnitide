@@ -50,7 +50,7 @@ export default function Home() {
 
         <section className="py-24 sm:py-32">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
-            <SectionHead tag="Live now · V1 Shoreline + V2 Current" title={<>Powered by LayerZero.<br />Built for every chain.</>} aside="Fourteen pieces working as one: collateral that travels, a single margin account and a pool on the other side, plus the read on every chain, the stress tests and the alarms that keep you off the wall." />
+            <SectionHead tag="Live now · V1 Shoreline + V2 Current + V3 Deep Water" title={<>Powered by LayerZero.<br />Built for every chain.</>} aside="Twenty-three pieces working as one: collateral that travels, one margin account, the read on every chain, the alarms that keep you off the wall, and a sealed layer underneath where positions, stops and PnL stay yours." />
             <div className="mt-16">
               <Features />
             </div>

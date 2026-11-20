@@ -7,6 +7,9 @@ import { HUB } from "@/lib/chains";
 import { CLEARINGHOUSE, CH_ABI } from "@/lib/contracts";
 import { fetchReports, feedsFor, useHubAccount } from "@/lib/account";
 import { useIndexer, usePriceMap } from "@/lib/hooks";
+import { useDeepKeys } from "@/lib/deep";
+import { open as openBox } from "@omnitide/contracts/deep";
+import { Lock } from "lucide-react";
 import { accountHealth, liquidationPrice } from "@/lib/margin";
 import { ago, money, price, signedMoney, wad } from "@/lib/format";
 import { useTx } from "@/lib/tx";
@@ -31,6 +34,14 @@ export function PositionsPanel() {
   const prices = usePriceMap();
   const { send, busy } = useTx();
   const positions = acct?.positions ?? [];
+  const { data: sealedRows } = useIndexer<{ id: string; status: string; ciphertext: `0x${string}`; placedAt: number }[]>("sealed", address?.toLowerCase(), !!address);
+  const { keys } = useDeepKeys();
+  const sealed = (sealedRows ?? [])
+    .filter((o) => o.status === "open")
+    .map((o) => {
+      const text = keys ? openBox(keys.viewPrivate, o.ciphertext) : null;
+      return { ...o, plain: text ? (JSON.parse(text) as { marketId: number; kind: number; sizeDelta: string; triggerPrice: string }) : null };
+    });
   const open = (orders ?? []).filter((o) => o.status === "open");
   const h = accountHealth(acct?.collateral ?? 0, positions, prices);
 
@@ -49,7 +60,7 @@ export function PositionsPanel() {
         {(["positions", "orders"] as const).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className={`relative h-10 px-3 text-[14px] transition-colors ${tab === t ? "text-ink" : "text-ink-3 hover:text-ink-2"}`}>
             {t === "positions" ? "Positions" : "Open orders"}
-            {(t === "positions" ? positions.length : open.length) > 0 && <span className="num ml-2 text-[12px] text-ink-3">{t === "positions" ? positions.length : open.length}</span>}
+            {(t === "positions" ? positions.length : open.length + sealed.length) > 0 && <span className="num ml-2 text-[12px] text-ink-3">{t === "positions" ? positions.length : open.length + sealed.length}</span>}
             {tab === t && <span className="absolute inset-x-3 -bottom-px h-px bg-accent" />}
           </button>
         ))}
@@ -100,7 +111,7 @@ export function PositionsPanel() {
               </tbody>
             </table>
           )
-        ) : open.length === 0 ? (
+        ) : open.length + sealed.length === 0 ? (
           <p className="px-4 py-8 text-[14px] text-ink-2">No resting orders. Limit, stop-loss and take-profit orders wait here until the keeper fills them.</p>
         ) : (
           <table className="w-full min-w-[640px] text-left text-[13px]">
@@ -128,6 +139,29 @@ export function PositionsPanel() {
                     <td className="px-4 py-3 text-ink-3">{ago(o.placedAt)}</td>
                     <td className="px-4 py-3 text-right">
                       <button type="button" disabled={busy} className="btn btn-ghost btn-sm" onClick={() => void send(`Cancel order #${o.id}`, { chainId: HUB.chainId, address: CLEARINGHOUSE, abi: CH_ABI, functionName: "cancelOrder", args: [BigInt(o.id)] }).catch(() => {})}>
+                        Cancel
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              {sealed.map((o) => {
+                const m = o.plain ? MARKETS[o.plain.marketId] : undefined;
+                const size = o.plain ? wad(o.plain.sizeDelta) : 0;
+                return (
+                  <tr key={`s${o.id}`} className="border-t border-line">
+                    <td className="px-4 py-3 font-medium">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Lock size={12} strokeWidth={1.75} className="text-accent" />
+                        {m?.symbol ?? "Sealed"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">{o.plain ? <>{KIND[o.plain.kind]} <span className={size > 0 ? "text-flood" : "text-ebb"}>{size > 0 ? "buy" : "sell"}</span></> : "Stop or take-profit"}</td>
+                    <td className="num px-4 py-3">{o.plain ? Math.abs(size).toPrecision(5) : "••••"}</td>
+                    <td className="num px-4 py-3">{o.plain ? price(wad(o.plain.triggerPrice)) : "••••••"}</td>
+                    <td className="px-4 py-3 text-ink-3">{ago(o.placedAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <button type="button" disabled={busy} className="btn btn-ghost btn-sm" onClick={() => void send(`Cancel sealed order #${o.id}`, { chainId: HUB.chainId, address: CLEARINGHOUSE, abi: CH_ABI, functionName: "cancelSealedOrder", args: [BigInt(o.id)] }).catch(() => {})}>
                         Cancel
                       </button>
                     </td>

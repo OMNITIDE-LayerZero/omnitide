@@ -810,3 +810,31 @@ describe("Deep Water crypto (deep.ts)", () => {
     await expect(pool.connect(ctx.alice).requestExit(a.salt, usd(250), deep.detailHash(book))).to.emit(pool, "ExitRequested");
   });
 });
+
+describe("Deep ledger parity", () => {
+  it("applyFill reproduces the clearinghouse balance, entry and PnL fill by fill", async () => {
+    const deep = await import("../deep.js");
+    const ctx = await networkHelpers.loadFixture(deploy);
+    const { ch, alice } = ctx;
+    await depositLocal(ctx, alice, usd(1_000));
+    let book = { ...deep.emptyBook(ethers.ZeroHash as `0x${string}`), collateral: usd(1_000).toString() };
+    const fills: [bigint, bigint][] = [
+      [E18 / 10n, 60_000n * E18],
+      [E18 / 20n, 61_234n * E18],
+      [-(E18 / 8n), 59_870n * E18],
+      [-(E18 / 10n), 60_500n * E18], // flips short
+      [E18 / 20n, 58_000n * E18],
+    ];
+    for (const [delta, price] of fills) {
+      await ch.connect(alice).trade(0, delta, delta > 0n ? price : 0n, [await report(ctx, BTC, price)]);
+      book = deep.applyFill(book, 0, delta, price, deep.tradeFee(delta, price, 10n), 0).book;
+      const [size, entry] = await ch.positions(alice.address, 0);
+      expect(book.positions[0]?.size ?? "0").to.equal(size.toString());
+      expect(book.positions[0]?.entry ?? "0").to.equal(entry.toString());
+      expect(book.collateral).to.equal((await ch.balances(alice.address)).toString());
+    }
+    const m = deep.bookMargin(book, { 0: 59_000n * E18 }, { 0: { initialMarginBps: 1000, maintenanceMarginBps: 500 } });
+    const [equity, im, mm] = await ch.accountMargin(alice.address, [await report(ctx, BTC, 59_000n * E18)]);
+    expect([m.equity, m.im, m.mm]).to.deep.equal([equity, im, mm]);
+  });
+});

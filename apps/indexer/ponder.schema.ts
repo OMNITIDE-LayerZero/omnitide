@@ -153,3 +153,156 @@ export const tideRead = onchainTable("tide_read", (t) => ({
   receivedAt: t.integer(),
   receivedTx: t.hex(),
 }));
+
+// V3 Deep Water. Deep books only ever show up here as commitments and ciphertext.
+export const deepNote = onchainTable(
+  "deep_note",
+  (t) => ({
+    id: t.text().primaryKey(),
+    deepId: t.hex().notNull(),
+    kind: t.text().notNull(), // deposit | seal | withdraw | exit-request | exit
+    amount: t.bigint(),
+    eid: t.integer(),
+    nonce: t.integer(),
+    commitment: t.hex(),
+    ciphertext: t.hex(),
+    timestamp: t.integer().notNull(),
+    tx: t.hex().notNull(),
+  }),
+  (t) => ({ byDeep: index().on(t.deepId, t.timestamp) }),
+);
+
+export const sealedOrder = onchainTable(
+  "sealed_order",
+  (t) => ({
+    id: t.bigint().primaryKey(),
+    account: t.hex().notNull(),
+    commitment: t.hex().notNull(),
+    ciphertext: t.hex().notNull(),
+    status: t.text().notNull(), // open | filled | cancelled
+    marketId: t.integer(), // revealed on fill
+    kind: t.integer(),
+    sizeDelta: t.bigint(),
+    triggerPrice: t.bigint(),
+    fillPrice: t.bigint(),
+    placedAt: t.integer().notNull(),
+    closedAt: t.integer(),
+  }),
+  (t) => ({ byAccount: index().on(t.account, t.status) }),
+);
+
+export const beam = onchainTable(
+  "beam",
+  (t) => ({
+    chainId: t.integer().notNull(),
+    account: t.hex().notNull(),
+    score: t.integer().notNull(),
+    grade: t.integer().notNull(),
+    issuedAt: t.integer().notNull(),
+    expiry: t.integer().notNull(),
+    srcEid: t.integer().notNull(),
+    tx: t.hex().notNull(),
+  }),
+  (t) => ({ pk: primaryKey({ columns: [t.chainId, t.account] }) }),
+);
+
+export const beamSent = onchainTable("beam_sent", (t) => ({
+  guid: t.hex().primaryKey(),
+  account: t.hex().notNull(),
+  srcChainId: t.integer().notNull(),
+  dstEid: t.integer().notNull(),
+  timestamp: t.integer().notNull(),
+}));
+
+export const badge = onchainTable(
+  "badge",
+  (t) => ({
+    chainId: t.integer().notNull(),
+    tokenId: t.bigint().notNull(),
+    owner: t.hex().notNull(),
+    kind: t.integer(),
+    updatedAt: t.integer().notNull(),
+  }),
+  (t) => ({ pk: primaryKey({ columns: [t.chainId, t.tokenId] }), byOwner: index().on(t.owner) }),
+);
+
+export const proposal = onchainTable("proposal", (t) => ({
+  id: t.bigint().primaryKey(),
+  proposer: t.hex().notNull(),
+  title: t.text().notNull(),
+  body: t.text().notNull(),
+  start: t.integer().notNull(),
+  end: t.integer().notNull(),
+  forVotes: t.bigint().notNull(),
+  againstVotes: t.bigint().notNull(),
+  abstainVotes: t.bigint().notNull(),
+  voters: t.integer().notNull(),
+  mirroredTo: t.integer().array().notNull(), // chain ids
+  tx: t.hex().notNull(),
+}));
+
+export const vote = onchainTable(
+  "vote",
+  (t) => ({
+    id: t.text().primaryKey(), // proposal:voter
+    proposalId: t.bigint().notNull(),
+    voter: t.hex().notNull(),
+    support: t.integer().notNull(),
+    weight: t.bigint().notNull(),
+    chainId: t.integer().notNull(),
+    tallied: t.boolean().notNull(),
+    timestamp: t.integer().notNull(),
+    tx: t.hex().notNull(),
+  }),
+  (t) => ({ byProposal: index().on(t.proposalId), byVoter: index().on(t.voter) }),
+);
+
+export const stake = onchainTable(
+  "stake",
+  (t) => ({
+    chainId: t.integer().notNull(),
+    account: t.hex().notNull(),
+    amount: t.bigint().notNull(),
+    updatedAt: t.integer().notNull(),
+  }),
+  (t) => ({ pk: primaryKey({ columns: [t.chainId, t.account] }) }),
+);
+
+export const copyVault = onchainTable("copy_vault", (t) => ({
+  address: t.hex().primaryKey(),
+  leader: t.hex().notNull(),
+  name: t.text().notNull(),
+  seed: t.bigint().notNull(),
+  deposited: t.bigint().notNull(),
+  redeemed: t.bigint().notNull(),
+  deposits: t.integer().notNull(),
+  leaderTrades: t.integer().notNull(),
+  createdAt: t.integer().notNull(),
+  tx: t.hex().notNull(),
+}));
+
+export const copyFlow = onchainTable(
+  "copy_flow",
+  (t) => ({
+    id: t.text().primaryKey(),
+    vault: t.hex().notNull(),
+    account: t.hex().notNull(),
+    kind: t.text().notNull(), // deposit | queued | redeem
+    assets: t.bigint().notNull(),
+    shares: t.bigint(),
+    eid: t.integer(),
+    timestamp: t.integer().notNull(),
+    tx: t.hex().notNull(),
+  }),
+  (t) => ({ byVault: index().on(t.vault, t.timestamp), byAccount: index().on(t.account) }),
+);
+
+export const copyPending = onchainTable(
+  "copy_pending",
+  (t) => ({
+    vault: t.hex().notNull(),
+    account: t.hex().notNull(),
+    assets: t.bigint().notNull(),
+  }),
+  (t) => ({ pk: primaryKey({ columns: [t.vault, t.account] }) }),
+);

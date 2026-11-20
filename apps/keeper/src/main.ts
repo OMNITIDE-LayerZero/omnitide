@@ -12,6 +12,7 @@ import { oracleDomain, signReport } from "./reports.js";
 import { createExecutor } from "./executor.js";
 import { backfill } from "./backfill.js";
 import { createCurrent } from "./current.js";
+import { createDeepWater } from "./deepwater.js";
 
 const env = loadEnv();
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
@@ -103,6 +104,30 @@ const current = createCurrent({
 });
 let currentState: Record<string, unknown> = {};
 
+const arbDep = DEPLOYMENTS[env.OMNITIDE_ENV as "testnet"].arbitrumSepolia;
+const deepWater =
+  hub.OmnitideDeepPool && hub.OmnitideBadge && hub.OmnitideLighthouse
+    ? createDeepWater({
+        env,
+        db,
+        hub: pub,
+        wallet,
+        keeperKey: env.KEEPER_PRIVATE_KEY as `0x${string}`,
+        hubEid: CHAINS.robinhoodTestnet.eid,
+        clearinghouse: hub.OmnitideClearinghouse.proxy as Address,
+        pool: hub.OmnitideDeepPool.proxy as Address,
+        poolBlock: BigInt(hub.OmnitideDeepPool.block),
+        badge: hub.OmnitideBadge.proxy as Address,
+        lighthouses: {
+          [CHAINS.robinhoodTestnet.chainId]: hub.OmnitideLighthouse.proxy as Address,
+          ...(arbDep?.OmnitideLighthouse ? { [CHAINS.arbitrumSepolia.chainId]: arbDep.OmnitideLighthouse.proxy as Address } : {}),
+        },
+        reports: reportsFor,
+        priceOf: (f) => (fresh(f) ? Number(fresh(f)!.price) : undefined),
+        log,
+      })
+    : undefined;
+
 void backfill(db, MARKETS, log);
 every(3_000, "crypto", () => pollPrices("crypto"));
 every(10_000, "stocks", () => pollPrices("stock"));
@@ -121,6 +146,12 @@ every(10 * 60_000, "snapshots", async () => {
 every(60_000, "riptide", async () => Object.assign(currentState, await current.riptide()));
 every(20_000, "telegram", () => current.telegramLink());
 if (env.EXECUTE === "1" && env.TIDE_READ_HOURS > 0) every(3_600_000, "lzRead", async () => Object.assign(currentState, await current.tideRead(env.TIDE_READ_HOURS * 3_600_000)));
+if (env.EXECUTE === "1" && deepWater) {
+  every(10_000, "deep", async () => Object.assign(currentState, await deepWater.syncDeposits(), await deepWater.liquidateDeep()));
+  every(30_000, "seal", async () => Object.assign(currentState, await deepWater.sealDirty()));
+  every(5_000, "sealed", async () => Object.assign(currentState, await deepWater.fillSealed()));
+  every(60_000, "copy", async () => Object.assign(currentState, await deepWater.settleCopy()));
+}
 every(15_000, "heartbeat", () =>
   db.heartbeat.upsert({
     where: { service: "keeper" },
@@ -133,6 +164,15 @@ const json = (res: import("node:http").ServerResponse, status: number, body: unk
   res.writeHead(status, { "content-type": "application/json", "cache-control": "no-store" });
   res.end(JSON.stringify(body));
 };
+
+async function body(req: import("node:http").IncomingMessage) {
+  let raw = "";
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > 16_384) return null;
+  }
+  return raw;
+}
 
 createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", "http://keeper");
@@ -154,16 +194,37 @@ createServer(async (req, res) => {
     return json(res, 200, { channels: current.channels, vapidPublicKey: env.VAPID_PUBLIC_KEY ?? null, telegramBot: env.TELEGRAM_BOT_USERNAME ?? null, subscriptions: await current.listFor(account) });
   }
   if (url.pathname === "/alerts" && req.method === "POST") {
-    let raw = "";
-    for await (const chunk of req) {
-      raw += chunk;
-      if (raw.length > 8_192) return json(res, 413, { error: "too large" });
-    }
+    const raw = await body(req);
+    if (raw === null) return json(res, 413, { error: "too large" });
     try {
       const r = await current.handleRequest(JSON.parse(raw));
       return json(res, r.status, r.body);
     } catch {
       return json(res, 400, { error: "invalid alert request" });
+    }
+  }
+  if (url.pathname.startsWith("/deep") || url.pathname === "/lighthouse" || url.pathname === "/arena") {
+    if (!deepWater) return json(res, 503, { error: "Deep Water is not deployed here" });
+    try {
+      if (url.pathname === "/deep/key") return json(res, 200, { keeperKey: deepWater.keeperPublic });
+      if (url.pathname === "/deep/status") return json(res, 200, await deepWater.status(url.searchParams.get("id") ?? ""));
+      if (url.pathname === "/arena") {
+        const account = url.searchParams.get("account") ?? "";
+        if (!/^0x[0-9a-fA-F]{40}$/.test(account)) return json(res, 400, { error: "account required" });
+        return json(res, 200, { offers: await deepWater.badgeOffers(account as Address) });
+      }
+      if (req.method !== "POST") return json(res, 405, { error: "POST only" });
+      const raw = await body(req);
+      if (raw === null) return json(res, 413, { error: "too large" });
+      const input = JSON.parse(raw);
+      const handler = { "/deep/register": deepWater.register, "/deep/trade": deepWater.trade, "/deep/withdraw": deepWater.withdraw, "/lighthouse": deepWater.attestBeam }[url.pathname];
+      if (!handler) return json(res, 404, { error: "not found" });
+      const r = await handler(input);
+      return json(res, r.status, r.body);
+    } catch (e) {
+      if (e instanceof SyntaxError || (e as Error).name === "ZodError") return json(res, 400, { error: "invalid request" });
+      log(`deep water: ${(e as Error).message.split("\n")[0]}`);
+      return json(res, 503, { error: "the keeper could not finish that, try again shortly" });
     }
   }
   if (url.pathname === "/health") {

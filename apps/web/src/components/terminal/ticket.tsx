@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useAccount } from "wagmi";
+import { Lock } from "lucide-react";
+import { randomSalt, seal, sealedOrderCommitment, type SealedOrderPlain } from "@omnitide/contracts/deep";
+import type { Hex } from "viem";
 import type { MarketConfig } from "@omnitide/contracts/markets";
 import { HUB } from "@/lib/chains";
 import { CLEARINGHOUSE, CH_ABI, FEE_BPS } from "@/lib/contracts";
@@ -10,6 +13,7 @@ import { usePriceMap } from "@/lib/hooks";
 import { accountHealth, liquidationPrice } from "@/lib/margin";
 import { leverage, money, price as fmtPrice } from "@/lib/format";
 import { useTx } from "@/lib/tx";
+import { useDeepKeys } from "@/lib/deep";
 import { Connect } from "../connect";
 import { QuickFund } from "./quick-fund";
 
@@ -28,8 +32,10 @@ const toWad = (v: number) => BigInt(Math.round(v * 1e8)) * 10n ** 10n;
 const baseToWad = (v: number) => BigInt(Math.round(v * 1e12)) * 10n ** 6n;
 
 export function Ticket({ market }: { market: MarketConfig }) {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const { data: acct } = useHubAccount();
+  const deepKeys = useDeepKeys();
+  const [sealed, setSealed] = useState(false);
   const prices = usePriceMap();
   const { send, busy } = useTx();
   const [side, setSide] = useState<1 | -1>(1);
@@ -73,6 +79,17 @@ export function Ticket({ market }: { market: MarketConfig }) {
       const reports = await fetchReports(feedsFor(positions, market.feed));
       const limit = toWad(execPrice * (1 + side * SLIPPAGE));
       await send(`${side > 0 ? "Long" : "Short"} ${market.symbol} ${money(notional)}`, { chainId: HUB.chainId, address: CLEARINGHOUSE, abi: CH_ABI, functionName: "trade", args: [market.id, sizeDelta, limit, reports] });
+    } else if (sealed && reduceKinds && address && deepKeys.keys) {
+      // trigger, size and side go on-chain only as a commitment plus a box for the keeper and you
+      const plain: SealedOrderPlain = { marketId: market.id, kind: ORDER_KIND[kind], sizeDelta: sizeDelta.toString(), triggerPrice: toWad(execPrice).toString(), salt: randomSalt() };
+      const { keeperKey } = (await (await fetch("/api/keeper/deep/key")).json()) as { keeperKey: Hex };
+      await send(`Sealed ${KINDS.find((k) => k.k === kind)!.label.toLowerCase()} on ${market.symbol}`, {
+        chainId: HUB.chainId,
+        address: CLEARINGHOUSE,
+        abi: CH_ABI,
+        functionName: "placeSealedOrder",
+        args: [sealedOrderCommitment(address, plain), seal([keeperKey, deepKeys.keys.viewPublic], JSON.stringify(plain))],
+      });
     } else {
       await send(`${KINDS.find((k) => k.k === kind)!.label} ${market.symbol} at ${fmtPrice(execPrice)}`, {
         chainId: HUB.chainId,
@@ -165,6 +182,18 @@ export function Ticket({ market }: { market: MarketConfig }) {
           ))}
       </dl>
 
+      {reduceKinds && isConnected && (
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-3 text-[13px] leading-5">
+          <input type="checkbox" className="mt-0.5 accent-[var(--color-accent)]" checked={sealed} onChange={(e) => setSealed(e.target.checked)} />
+          <span>
+            <span className="flex items-center gap-1.5 font-medium text-ink">
+              <Lock size={13} strokeWidth={1.75} /> Seal it
+            </span>
+            <span className="text-ink-2">Trigger and size stay hidden on-chain until the keeper fills it. Stop hunters see a hash.</span>
+          </span>
+        </label>
+      )}
+
       {stopNeedsPosition && <p className="text-[13px] text-ink-2">Stop-loss and take-profit protect an open position. Open one in {market.symbol} first.</p>}
       {tooBig && <p className="text-[13px] text-ebb">That size needs more free margin than the account has.</p>}
 
@@ -172,6 +201,10 @@ export function Ticket({ market }: { market: MarketConfig }) {
         <Connect size="md" />
       ) : needsFunding ? (
         <QuickFund />
+      ) : sealed && reduceKinds && !deepKeys.keys ? (
+        <button type="button" className="btn btn-primary btn-lg w-full" onClick={() => void deepKeys.unlock().catch(() => {})}>
+          <Lock size={15} strokeWidth={1.75} /> Unlock Deep keys to seal
+        </button>
       ) : (
         <button type="button" disabled={!canSubmit} onClick={() => void submit().catch(() => {})} className={`btn btn-lg w-full text-white ${side > 0 ? "bg-flood hover:bg-flood/90" : "bg-ebb hover:bg-ebb/90"}`}>
           {kind === "market" ? `${side > 0 ? "Long" : "Short"} ${market.symbol}` : `Place ${KINDS.find((k) => k.k === kind)!.label.toLowerCase()}`}

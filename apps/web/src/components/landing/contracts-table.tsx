@@ -11,6 +11,12 @@ const ROLE: Record<string, string> = {
   OmnitideHarborShareAdapter: "Locks htdUSD on the hub so Harbor shares travel as an OFT",
   OmnitideHarborShare: "htdUSD on spokes, minted and burned by LayerZero",
   OmnitideTideReader: "LayerZero lzRead of tdUSD supply across chains for the Tide Chart",
+  OmnitideDeepPool: "Deep Mode pool: pooled fills, sealed book commitments, signed withdrawals, keeper-free exit",
+  OmnitideCopyVaultFactory: "Launches copy vaults behind one upgradeable beacon; vaults take omnichain deposits via lzCompose",
+  OmnitideToken: "TIDE governance token (LayerZero OFT)",
+  OmnitideCouncil: "Stake and vote from any chain; spoke votes cross to the hub tally (OApp)",
+  OmnitideLighthouse: "Lighthouse Proof: keeper-attested Book Score, readable on every chain (OApp)",
+  OmnitideBadge: "Arena Badges: keeper-attested ERC-721 that travels as an ONFT",
 };
 
 const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`;

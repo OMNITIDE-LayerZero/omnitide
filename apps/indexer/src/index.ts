@@ -1,6 +1,30 @@
 import { and, eq } from "ponder";
+import { zeroAddress } from "viem";
 import { ponder } from "ponder:registry";
-import { bridge, flow, harborFlow, liquidation, market, order, position, stats, tideRead, trade, trader } from "ponder:schema";
+import {
+  badge,
+  beam,
+  beamSent,
+  bridge,
+  copyFlow,
+  copyPending,
+  copyVault,
+  deepNote,
+  flow,
+  harborFlow,
+  liquidation,
+  market,
+  order,
+  position,
+  proposal,
+  sealedOrder,
+  stake,
+  stats,
+  tideRead,
+  trade,
+  trader,
+  vote,
+} from "ponder:schema";
 
 const HUB_EID = 40451;
 const abs = (x: bigint) => (x < 0n ? -x : x);
@@ -185,4 +209,154 @@ ponder.on("OmnitideTideReader:TideRead", async ({ event, context }) => {
   const a = event.args;
   const got = { readAt: Number(a.readAt), eids: [...a.eids], supplies: [...a.supplies], receivedAt: Number(event.block.timestamp), receivedTx: event.transaction.hash };
   await context.db.insert(tideRead).values({ guid: a.guid, ...got }).onConflictDoUpdate(got);
+});
+
+// ───────── V3 Deep Water ─────────
+
+ponder.on("OmnitideClearinghouse:SealedOrderPlaced", async ({ event, context }) => {
+  const a = event.args;
+  await context.db.insert(sealedOrder).values({ id: a.id, account: a.account, commitment: a.commitment, ciphertext: a.ciphertext, status: "open", placedAt: Number(event.block.timestamp) });
+});
+
+ponder.on("OmnitideClearinghouse:SealedOrderCancelled", async ({ event, context }) => {
+  await context.db.update(sealedOrder, { id: event.args.id }).set({ status: "cancelled", closedAt: Number(event.block.timestamp) });
+});
+
+ponder.on("OmnitideClearinghouse:SealedOrderExecuted", async ({ event, context }) => {
+  const a = event.args;
+  await context.db
+    .update(sealedOrder, { id: a.id })
+    .set({ status: "filled", marketId: a.marketId, kind: a.kind, sizeDelta: a.sizeDelta, triggerPrice: a.triggerPrice, fillPrice: a.price, closedAt: Number(event.block.timestamp) });
+  await context.db.sql.update(trade).set({ viaOrder: true }).where(and(eq(trade.tx, event.transaction.hash), eq(trade.account, a.account)));
+});
+
+const note = (event: { id: string; block: { timestamp: bigint }; transaction: { hash: `0x${string}` } }) => ({ id: event.id, timestamp: Number(event.block.timestamp), tx: event.transaction.hash });
+
+ponder.on("OmnitideDeepPool:DeepDeposit", async ({ event, context }) => {
+  await context.db.insert(deepNote).values({ ...note(event), deepId: event.args.id, kind: "deposit", amount: event.args.amount, eid: event.args.srcEid });
+});
+
+ponder.on("OmnitideDeepPool:Sealed", async ({ event, context }) => {
+  const a = event.args;
+  await context.db.insert(deepNote).values({ ...note(event), deepId: a.id, kind: "seal", nonce: Number(a.nonce), commitment: a.commitment, ciphertext: a.ciphertext });
+});
+
+ponder.on("OmnitideDeepPool:DeepWithdraw", async ({ event, context }) => {
+  await context.db.insert(deepNote).values({ ...note(event), deepId: event.args.id, kind: "withdraw", amount: event.args.amount, eid: event.args.dstEid });
+});
+
+ponder.on("OmnitideDeepPool:ExitRequested", async ({ event, context }) => {
+  await context.db.insert(deepNote).values({ ...note(event), deepId: event.args.id, kind: "exit-request", amount: event.args.amount });
+});
+
+ponder.on("OmnitideDeepPool:Exited", async ({ event, context }) => {
+  await context.db.insert(deepNote).values({ ...note(event), deepId: event.args.id, kind: "exit", amount: event.args.amount });
+});
+
+ponder.on("OmnitideLighthouse:BeamLit", async ({ event, context }) => {
+  const a = event.args;
+  const row = { score: a.score, grade: a.grade, issuedAt: Number(a.issuedAt), expiry: Number(a.expiry), srcEid: a.srcEid, tx: event.transaction.hash };
+  await context.db.insert(beam).values({ chainId: context.chain.id, account: a.account, ...row }).onConflictDoUpdate(row);
+});
+
+ponder.on("OmnitideLighthouse:BeamSent", async ({ event, context }) => {
+  const a = event.args;
+  await context.db.insert(beamSent).values({ guid: a.guid, account: a.account, srcChainId: context.chain.id, dstEid: a.dstEid, timestamp: Number(event.block.timestamp) });
+});
+
+ponder.on("OmnitideBadge:Transfer", async ({ event, context }) => {
+  const { from, to, tokenId } = event.args;
+  const key = { chainId: context.chain.id, tokenId };
+  const at = Number(event.block.timestamp);
+  if (to === zeroAddress) await context.db.delete(badge, key);
+  else if (from === zeroAddress) await context.db.insert(badge).values({ ...key, owner: to, updatedAt: at }).onConflictDoUpdate({ owner: to, updatedAt: at });
+  else await context.db.update(badge, key).set({ owner: to, updatedAt: at });
+});
+
+ponder.on("OmnitideBadge:BadgeClaimed", async ({ event, context }) => {
+  await context.db.update(badge, { chainId: context.chain.id, tokenId: event.args.tokenId }).set({ kind: event.args.kind });
+});
+
+ponder.on("OmnitideBadge:BadgeReceived", async ({ event, context }) => {
+  await context.db.update(badge, { chainId: context.chain.id, tokenId: event.args.tokenId }).set({ kind: event.args.kind });
+});
+
+ponder.on("OmnitideBadge:BadgeSent", async () => {
+  // the burn's Transfer already removed it here; the arrival mints it on the other chain
+});
+
+// chains are indexed independently, so a spoke's mirror can land before the hub's proposal
+const EMPTY_PROPOSAL = { proposer: zeroAddress, title: "", body: "", start: 0, end: 0, forVotes: 0n, againstVotes: 0n, abstainVotes: 0n, voters: 0, mirroredTo: [] as number[] };
+
+ponder.on("OmnitideCouncil:ProposalCreated", async ({ event, context }) => {
+  const a = event.args;
+  const row = { proposer: a.proposer, title: a.title, body: a.body, start: Number(a.start), end: Number(a.end), tx: event.transaction.hash };
+  await context.db.insert(proposal).values({ ...EMPTY_PROPOSAL, id: a.id, ...row }).onConflictDoUpdate(row);
+});
+
+ponder.on("OmnitideCouncil:ProposalMirrored", async ({ event, context }) => {
+  const chainId = context.chain.id;
+  await context.db
+    .insert(proposal)
+    .values({ ...EMPTY_PROPOSAL, id: event.args.id, start: Number(event.args.start), end: Number(event.args.end), mirroredTo: [chainId], tx: event.transaction.hash })
+    .onConflictDoUpdate((p) => ({ mirroredTo: p.mirroredTo.includes(chainId) ? p.mirroredTo : [...p.mirroredTo, chainId] }));
+});
+
+ponder.on("OmnitideCouncil:VoteCast", async ({ event, context }) => {
+  const a = event.args;
+  const row = { support: a.support, weight: a.weight, chainId: context.chain.id, timestamp: Number(event.block.timestamp), tx: event.transaction.hash };
+  await context.db.insert(vote).values({ id: `${a.id}:${a.voter.toLowerCase()}`, proposalId: a.id, voter: a.voter, tallied: false, ...row }).onConflictDoUpdate(row);
+});
+
+// only the hub tallies; a spoke vote counts once its message lands here
+ponder.on("OmnitideCouncil:VoteTallied", async ({ event, context }) => {
+  const a = event.args;
+  await context.db
+    .insert(vote)
+    .values({ id: `${a.id}:${a.voter.toLowerCase()}`, proposalId: a.id, voter: a.voter, support: a.support, weight: a.weight, chainId: context.chain.id, tallied: true, timestamp: Number(event.block.timestamp), tx: event.transaction.hash })
+    .onConflictDoUpdate({ tallied: true });
+  await context.db.update(proposal, { id: a.id }).set((p) => ({
+    forVotes: p.forVotes + (a.support === 1 ? a.weight : 0n),
+    againstVotes: p.againstVotes + (a.support === 0 ? a.weight : 0n),
+    abstainVotes: p.abstainVotes + (a.support === 2 ? a.weight : 0n),
+    voters: p.voters + 1,
+  }));
+});
+
+const setStake = async (context: { chain: { id: number }; db: Db }, account: `0x${string}`, amount: bigint, at: number) => {
+  await context.db.insert(stake).values({ chainId: context.chain.id, account, amount, updatedAt: at }).onConflictDoUpdate({ amount, updatedAt: at });
+};
+
+ponder.on("OmnitideCouncil:Staked", async ({ event, context }) => setStake(context, event.args.account, event.args.total, Number(event.block.timestamp)));
+ponder.on("OmnitideCouncil:Unstaked", async ({ event, context }) => setStake(context, event.args.account, event.args.total, Number(event.block.timestamp)));
+
+ponder.on("OmnitideCopyVaultFactory:VaultCreated", async ({ event, context }) => {
+  const a = event.args;
+  await context.db.insert(copyVault).values({ address: a.vault, leader: a.leader, name: a.name, seed: a.seed, deposited: 0n, redeemed: 0n, deposits: 0, leaderTrades: 0, createdAt: Number(event.block.timestamp), tx: event.transaction.hash });
+});
+
+ponder.on("OmnitideCopyVault:Deposited", async ({ event, context }) => {
+  const a = event.args;
+  const vault = event.log.address;
+  await context.db.insert(copyFlow).values({ ...note(event), vault, account: a.account, kind: "deposit", assets: a.assets, shares: a.shares, eid: a.srcEid });
+  await context.db.update(copyVault, { address: vault }).set((v) => ({ deposited: v.deposited + a.assets, deposits: v.deposits + 1 }));
+  if (a.srcEid === 0) await context.db.delete(copyPending, { vault, account: a.account }); // settle() prices queued deposits
+});
+
+ponder.on("OmnitideCopyVault:Queued", async ({ event, context }) => {
+  const a = event.args;
+  const vault = event.log.address;
+  await context.db.insert(copyFlow).values({ ...note(event), vault, account: a.account, kind: "queued", assets: a.assets, eid: a.srcEid });
+  await context.db.insert(copyPending).values({ vault, account: a.account, assets: a.assets }).onConflictDoUpdate((p) => ({ assets: p.assets + a.assets }));
+});
+
+ponder.on("OmnitideCopyVault:Redeemed", async ({ event, context }) => {
+  const a = event.args;
+  const vault = event.log.address;
+  await context.db.insert(copyFlow).values({ ...note(event), vault, account: a.account, kind: "redeem", assets: a.assets, shares: a.shares, eid: a.dstEid });
+  await context.db.update(copyVault, { address: vault }).set((v) => ({ redeemed: v.redeemed + a.assets }));
+});
+
+ponder.on("OmnitideCopyVault:LeaderTrade", async ({ event, context }) => {
+  await context.db.update(copyVault, { address: event.log.address }).set((v) => ({ leaderTrades: v.leaderTrades + 1 }));
 });

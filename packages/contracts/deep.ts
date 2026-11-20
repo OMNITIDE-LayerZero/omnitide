@@ -212,3 +212,77 @@ export const BADGES = [
   { kind: 6, name: "Council Voice", line: "Voted in the Council" },
   { kind: 7, name: "Lighthouse Keeper", line: "Shared a Lighthouse Proof across chains" },
 ] as const;
+
+// ───────── ledger math: a line-for-line mirror of OmnitideClearinghouse._applyFill / _accountMargin ─────────
+
+const TO_WAD = 10n ** 12n;
+const WAD = 10n ** 18n;
+const abs = (x: bigint) => (x < 0n ? -x : x);
+
+/** Applies one fill at `price` (1e18) with `fee` (tdUSD units); returns the new book and realized PnL in tdUSD units. */
+export function applyFill(b: DeepBook, marketId: number, sizeDelta: bigint, price: bigint, fee: bigint, at: number, tx?: string): { book: DeepBook; realized: bigint } {
+  const positions = b.positions.map((p) => ({ ...p }));
+  let p = positions.find((x) => x.marketId === marketId);
+  if (!p) positions.push((p = { marketId, size: "0", entry: "0" }));
+  const oldSize = BigInt(p.size);
+  const entry = BigInt(p.entry);
+  const newSize = oldSize + sizeDelta;
+  let pnl = 0n;
+  let nextEntry = entry;
+  if (oldSize === 0n || oldSize > 0n === sizeDelta > 0n) {
+    nextEntry = (abs(oldSize) * entry + abs(sizeDelta) * price) / abs(newSize);
+  } else {
+    const closed = abs(oldSize) < abs(sizeDelta) ? abs(oldSize) : abs(sizeDelta);
+    const move = price - entry;
+    pnl = ((oldSize > 0n ? move : -move) * closed) / WAD;
+    if (newSize !== 0n && newSize > 0n !== oldSize > 0n) nextEntry = price;
+  }
+  p.size = newSize.toString();
+  p.entry = newSize === 0n ? "0" : nextEntry.toString();
+  const realized = pnl / TO_WAD;
+  let collateral = BigInt(b.collateral) + realized - fee;
+  if (collateral < 0n) collateral = 0n; // bad debt stays with the pool
+  const fill: DeepFill = { at, kind: "trade", amount: realized.toString(), marketId, sizeDelta: sizeDelta.toString(), price: price.toString(), fee: fee.toString(), ...(tx ? { tx } : {}) };
+  return {
+    realized,
+    book: {
+      ...b,
+      collateral: collateral.toString(),
+      positions: positions.filter((x) => x.size !== "0"),
+      realized: (BigInt(b.realized) + realized).toString(),
+      fees: (BigInt(b.fees) + fee).toString(),
+      updatedAt: at,
+      history: [fill, ...b.history].slice(0, 100),
+    },
+  };
+}
+
+export interface MarginParams {
+  initialMarginBps: number;
+  maintenanceMarginBps: number;
+}
+
+/** Equity, initial and maintenance margin in 1e18 USD at `prices` (1e18 by marketId). */
+export function bookMargin(b: DeepBook, prices: Record<number, bigint>, params: Record<number, MarginParams>) {
+  let equity = BigInt(b.collateral) * TO_WAD;
+  let im = 0n;
+  let mm = 0n;
+  for (const p of b.positions) {
+    const price = prices[p.marketId];
+    if (price === undefined) throw new Error(`no price for market ${p.marketId}`);
+    const size = BigInt(p.size);
+    equity += (size * (price - BigInt(p.entry))) / WAD;
+    const notional = (abs(size) * price) / WAD;
+    im += (notional * BigInt(params[p.marketId]!.initialMarginBps)) / 10_000n;
+    mm += (notional * BigInt(params[p.marketId]!.maintenanceMarginBps)) / 10_000n;
+  }
+  return { equity, im, mm };
+}
+
+export const tradeFee = (sizeDelta: bigint, price: bigint, feeBps: bigint) => (abs(sizeDelta) * price * feeBps) / WAD / 10_000n / TO_WAD;
+
+export const emptyBook = (id: Hex): DeepBook => ({ id, nonce: 0, collateral: "0", positions: [], realized: "0", fees: "0", updatedAt: 0, history: [] });
+
+/** Plain-text request the wallet signs before the keeper attests a Lighthouse beam. */
+export const lighthouseMessage = (account: string, chainId: number, issuedAt: string) =>
+  `OMNITIDE Lighthouse\nScore my book for chain ${chainId}\nAccount: ${account.toLowerCase()}\nIssued: ${issuedAt}`;

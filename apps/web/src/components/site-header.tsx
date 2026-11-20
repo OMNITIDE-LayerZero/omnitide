@@ -9,6 +9,7 @@ import { ThemeToggle, useTheme } from "./theme";
 const LINKS = [
   { href: "/terminal/trade", label: "Terminal" },
   { href: "/#markets", label: "Markets" },
+  { href: "/terminal/deep", label: "Deep Mode" },
   { href: "/sea-wall", label: "Sea Wall" },
   { href: "/#contracts", label: "Contracts" },
 ];

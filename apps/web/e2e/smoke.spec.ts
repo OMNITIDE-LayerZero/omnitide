@@ -49,9 +49,9 @@ test("terminal views switch with number keys", async ({ page, isMobile }) => {
   test.skip(isMobile, "keyboard shortcuts are a desktop feature");
   await page.goto("/terminal/trade");
   await page.keyboard.press("7");
-  await expect(page).toHaveURL(/\/terminal\/markets/);
-  await page.keyboard.press("6");
-  await expect(page).toHaveURL(/\/terminal\/history/);
+  await expect(page).toHaveURL(/\/terminal\/currents/);
+  await page.keyboard.press("4");
+  await expect(page).toHaveURL(/\/terminal\/deep/);
 });
 
 test("harbor shows live TVL and share price", async ({ page }) => {

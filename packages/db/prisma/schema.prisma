@@ -73,3 +73,30 @@ model AlertSubscription {
 
   @@unique([account, channel])
 }
+
+/// Deep Mode sealed ledger: one private book per Deep id. Only the keeper holds plaintext; the chain holds commitments.
+model DeepBook {
+  id          String   @id // bytes32 Deep id, lowercase hex
+  owner       String? // lowercase 0x address, known once the owner registers
+  salt        String?
+  viewKey     String? // x25519 public key the book is sealed to
+  book        Json
+  intentNonce Int      @default(0)
+  dirty       Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([owner])
+}
+
+/// Chain events the keeper has already applied (txHash:logIndex), so a rescan never credits twice.
+model AppliedEvent {
+  key String   @id
+  at  DateTime @default(now()) @db.Timestamptz(3)
+}
+
+/// Block cursors for keeper log scans.
+model Cursor {
+  name  String @id
+  block BigInt
+}

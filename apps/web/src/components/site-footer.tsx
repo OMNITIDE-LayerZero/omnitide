@@ -15,6 +15,9 @@ export function SiteFooter() {
           <Link href="/terminal/portfolio" className="hover:text-ink">Portfolio</Link>
           <Link href="/terminal/markets" className="hover:text-ink">Markets</Link>
           <Link href="/terminal/history" className="hover:text-ink">History</Link>
+          <Link href="/terminal/deep" className="hover:text-ink">Deep Mode</Link>
+          <Link href="/terminal/currents" className="hover:text-ink">Currents</Link>
+          <Link href="/disclosure" className="hover:text-ink">Disclosure</Link>
           <Link href="/sea-wall" className="hover:text-ink">Sea Wall</Link>
           <Link href="/#contracts" className="hover:text-ink">Contracts</Link>
         </nav>

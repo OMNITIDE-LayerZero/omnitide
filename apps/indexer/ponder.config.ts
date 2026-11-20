@@ -1,13 +1,33 @@
-import { createConfig } from "ponder";
+import { createConfig, factory } from "ponder";
+import { getAbiItem } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
-import { omnitideUSDAbi, omnitideClearinghouseAbi, omnitideHarborAbi, omnitideTideReaderAbi } from "@omnitide/contracts/abi";
+import {
+  omnitideUSDAbi,
+  omnitideClearinghouseAbi,
+  omnitideHarborAbi,
+  omnitideTideReaderAbi,
+  omnitideDeepPoolAbi,
+  omnitideLighthouseAbi,
+  omnitideBadgeAbi,
+  omnitideCouncilAbi,
+  omnitideCopyVaultAbi,
+  omnitideCopyVaultFactoryAbi,
+} from "@omnitide/contracts/abi";
 
 const d = DEPLOYMENTS.testnet;
 const hub = d.robinhoodTestnet?.OmnitideClearinghouse;
 const harbor = d.robinhoodTestnet?.OmnitideHarbor;
 const reader = d.arbitrumSepolia?.OmnitideTideReader;
 if (!hub || !harbor || !reader) throw new Error("hub, Harbor and Tide reader contracts must be deployed");
+const rh = d.robinhoodTestnet!;
+if (!rh.OmnitideDeepPool || !rh.OmnitideCopyVaultFactory) throw new Error("Deep Water contracts must be deployed on the hub");
+// V3 OApps live on the hub and every chain with deepWater set
+const v3 = (name: "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil") =>
+  Object.fromEntries((Object.keys(CHAINS) as ChainKey[]).flatMap((k) => {
+    const c = d[k]?.[name];
+    return c ? [[k, { address: c.proxy as `0x${string}`, startBlock: c.block }]] : [];
+  }));
 // only chains with a deployed OmnitideUSD are indexed
 const LIVE = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) => (d[k]?.OmnitideUSD ? [[k, d[k].OmnitideUSD] as const] : []));
 const rpc = (key: ChainKey) => process.env[`PONDER_RPC_${CHAINS[key].chainId}`]?.split(",") ?? CHAINS[key].rpc;
@@ -46,6 +66,41 @@ export default createConfig({
       address: reader.proxy as `0x${string}`,
       startBlock: reader.block,
       filter: [{ event: "TideRequested", args: {} }, { event: "TideRead", args: {} }],
+    },
+    OmnitideDeepPool: {
+      abi: omnitideDeepPoolAbi,
+      chain: "robinhoodTestnet",
+      address: rh.OmnitideDeepPool.proxy as `0x${string}`,
+      startBlock: rh.OmnitideDeepPool.block,
+      filter: [{ event: "DeepDeposit", args: {} }, { event: "Sealed", args: {} }, { event: "DeepWithdraw", args: {} }, { event: "ExitRequested", args: {} }, { event: "Exited", args: {} }],
+    },
+    OmnitideLighthouse: { abi: omnitideLighthouseAbi, chain: v3("OmnitideLighthouse"), filter: [{ event: "BeamLit", args: {} }, { event: "BeamSent", args: {} }] },
+    OmnitideBadge: { abi: omnitideBadgeAbi, chain: v3("OmnitideBadge"), filter: [{ event: "Transfer", args: {} }, { event: "BadgeClaimed", args: {} }, { event: "BadgeReceived", args: {} }, { event: "BadgeSent", args: {} }] },
+    OmnitideCouncil: {
+      abi: omnitideCouncilAbi,
+      chain: v3("OmnitideCouncil"),
+      filter: [
+        { event: "ProposalCreated", args: {} },
+        { event: "ProposalMirrored", args: {} },
+        { event: "VoteCast", args: {} },
+        { event: "VoteTallied", args: {} },
+        { event: "Staked", args: {} },
+        { event: "Unstaked", args: {} },
+      ],
+    },
+    OmnitideCopyVaultFactory: {
+      abi: omnitideCopyVaultFactoryAbi,
+      chain: "robinhoodTestnet",
+      address: rh.OmnitideCopyVaultFactory.proxy as `0x${string}`,
+      startBlock: rh.OmnitideCopyVaultFactory.block,
+      filter: [{ event: "VaultCreated", args: {} }],
+    },
+    OmnitideCopyVault: {
+      abi: omnitideCopyVaultAbi,
+      chain: "robinhoodTestnet",
+      address: factory({ address: rh.OmnitideCopyVaultFactory.proxy as `0x${string}`, event: getAbiItem({ abi: omnitideCopyVaultFactoryAbi, name: "VaultCreated" }), parameter: "vault" }),
+      startBlock: rh.OmnitideCopyVaultFactory.block,
+      filter: [{ event: "Deposited", args: {} }, { event: "Queued", args: {} }, { event: "Redeemed", args: {} }, { event: "LeaderTrade", args: {} }],
     },
   },
 });
