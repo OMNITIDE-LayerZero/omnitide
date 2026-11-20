@@ -26,7 +26,7 @@
       "deployTx": "0x96508d1e84cfb9f0008c627a3cfe700ae8310499f53ffe58fd17a52387357054",
       "block": 119275690
     },
-    "wired": "hyperEvm"
+    "wired": "hyperEvm,arbitrum"
   },
   "hyperEvm": {
     "chainId": 999,
@@ -43,6 +43,23 @@
       "deployTx": "0xbd5209db77c74f029c19d2a5c7ce2b48bbe569d2a548c0e7d395e1abf1a36dc1",
       "block": 51793010
     },
-    "wired": "robinhood"
+    "wired": "robinhood,arbitrum"
+  },
+  "arbitrum": {
+    "chainId": 42161,
+    "eid": 30110,
+    "OmnitideUSD": {
+      "proxy": "0x36e7D5b03a86F228601840EE05Cc86eCAE6e6266",
+      "implementation": "0x9a9d0F696FF6bD4f0fC8BC0B710cC4D085b2B292",
+      "deployTx": "0x996ecf75cfe31bddff97cd83fec0fa57e2dfa88e5d765753a65011f568700ef9",
+      "block": 526023642
+    },
+    "OmnitidePort": {
+      "proxy": "0xaDDA666a53c0190B3FE4fF5818B6eDadeB3Ae946",
+      "implementation": "0x1d8c1b17a222a3f912dB2b80d0dD3749a4F45e15",
+      "deployTx": "0x199562b113218a2efe30fbadba3df25cb190173bc3bb27956af9e298326779b4",
+      "block": 526023682
+    },
+    "wired": "robinhood,hyperEvm"
   }
 }
