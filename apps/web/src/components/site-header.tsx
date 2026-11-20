@@ -20,9 +20,8 @@ const BLUR = [1, 2, 4, 8, 16, 32];
 const HAZE = 120; // px of haze under the nav
 const NAV_Y = 32; // the nav's text line
 const FADE = "linear-gradient(to bottom, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.3) 55%, transparent)";
-const COLOR = /(?:rgba?|color|oklab|oklch|lab|lch|hsla?)\([^()]*\)/g;
 
-/** The full-bleed surface painted at height y; a data-haze gradient band reports all of its stops. */
+/** The full-bleed surface painted at height y. */
 function surfaceAt(y: number, vw: number): Surface {
   const hit = document.elementsFromPoint(vw / 2, y).find((el) => !el.closest("header"));
   let box: DOMRect | null = null;
@@ -31,13 +30,11 @@ function surfaceAt(y: number, vw: number): Surface {
     if (r.width < vw - 1) continue; // cards and pills don't tint the haze
     box ??= r;
     const s = getComputedStyle(el);
-    const ends = el.hasAttribute("data-haze") ? s.backgroundImage.match(COLOR) : null;
-    if (ends && ends.length > 1) return { top: r.top, bottom: r.bottom, colors: ends };
     const c = s.backgroundColor;
-    if (c !== "transparent" && c !== "rgba(0, 0, 0, 0)") return { top: box.top, bottom: box.bottom, colors: [c] };
+    if (c !== "transparent" && c !== "rgba(0, 0, 0, 0)") return { top: box.top, bottom: box.bottom, color: c };
   }
   const c = getComputedStyle(document.body).backgroundColor;
-  return { top: -Infinity, bottom: Infinity, colors: [c] };
+  return { top: -Infinity, bottom: Infinity, color: c };
 }
 
 export function SiteHeader() {

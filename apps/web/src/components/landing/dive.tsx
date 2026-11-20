@@ -5,7 +5,6 @@ import { ExternalLink, Plus } from "lucide-react";
 import { CONTRACT_ROWS } from "@/lib/contracts";
 import { HUB_KEY, explorerAddress } from "@/lib/chains";
 import { InflowDemo, LensDemo, SealDemo } from "./dive-demos";
-import { Blend } from "./blend";
 
 const FEATURES = [
   { tag: "#01 · inflow", title: "Deposit from anywhere", body: "One signature from any spoke. LayerZero routes your tdUSD to the hub and lzCompose credits your account the moment it lands.", note: "OFT send → DVN verify → lzReceive → lzCompose → credit" },
@@ -84,10 +83,8 @@ const TIERS = [
   },
 ] as const;
 
-const BANDS = [
-  { from: "var(--bg)", to: "var(--navy-2)", engrave: "below", note: "−40 m · thermocline · sunlight gives way to the current" },
-  { from: "var(--navy-2)", to: "var(--abyss)", engrave: "above", note: "−200 m · twilight zone · opt into privacy and your book goes dark" },
-] as const;
+// depth marker at the top of each tier after the first
+const NOTES = ["−40 m · thermocline · sunlight gives way to the current", "−200 m · twilight zone · opt into privacy and your book goes dark"];
 
 const SCALE = 160; // px height of the depth scale on the dive computer
 
@@ -235,16 +232,14 @@ export function Dive() {
       <div ref={root} className="relative mt-8">
         {TIERS.map((t, i) => (
           <div key={t.id} className="contents">
-            {i > 0 && (
-              <Blend from={BANDS[i - 1]!.from} to={BANDS[i - 1]!.to} engrave={BANDS[i - 1]!.engrave} className="h-36 sm:h-48">
-                <div className="relative mx-auto flex h-full max-w-[1440px] items-center gap-4 px-4 sm:px-8 lg:pl-[248px]">
-                  <span className="tag rounded-full border border-white/15 bg-abyss/70 px-3 py-1 text-white/80 backdrop-blur-sm">{BANDS[i - 1]!.note}</span>
-                  <span className="h-px flex-1 bg-gradient-to-r from-white/30 to-transparent" />
-                </div>
-              </Blend>
-            )}
             <div id={`dive-${t.id}`} data-tier data-tone={t.dark ? "dark" : undefined} className={`relative scroll-mt-16 overflow-hidden ${t.bg} ${t.dark ? "text-white" : "text-ink"}`}>
               {t.id === "deep" && <div className="snow" aria-hidden />}
+              {i > 0 && (
+                <div className="relative mx-auto flex max-w-[1440px] items-center gap-4 px-4 pt-10 sm:px-8 lg:pl-[248px]">
+                  <span className="tag rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-white/80">{NOTES[i - 1]}</span>
+                  <span className="h-px flex-1 bg-white/15" />
+                </div>
+              )}
               <div className="relative mx-auto grid max-w-[1440px] gap-10 px-4 py-14 sm:px-8 sm:py-20 lg:grid-cols-[1.05fr_1fr] lg:pl-[248px]">
                 <div className="min-w-0">
                   <p className={`tag text-[12px] ${t.dark ? "text-white/65" : "text-ink-2"}`}>

@@ -1,8 +1,8 @@
-/** A full-bleed surface under the header haze: its extent in viewport px and its colours, evenly spaced top to bottom (one for a flat surface). */
+/** A full-bleed surface under the header haze: its extent in viewport px and its colour. */
 export interface Surface {
   top: number;
   bottom: number;
-  colors: string[];
+  color: string;
 }
 
 const SEAM = 40; // px the tint takes to cross a seam, about as far as the wave edges hang
@@ -19,14 +19,10 @@ export function lightness(c: string) {
 /** The haze tint as a gradient that tracks the surfaces beneath it, and whether the nav line at y sits on a dark one. */
 export function haze(surfaces: Surface[], y: number) {
   const seam = (a?: string, b?: string) => (a === undefined || b === undefined || a === b ? 0 : SEAM / 2);
-  const stops = surfaces.flatMap((s, i): [string, number][] => {
-    if (s.colors.length > 1) return s.colors.map((c, k) => [c, s.top + ((s.bottom - s.top) * k) / (s.colors.length - 1)]);
-    const c = s.colors[0]!;
-    return [
-      [c, s.top + seam(surfaces[i - 1]?.colors.at(-1), c)],
-      [c, s.bottom - seam(c, surfaces[i + 1]?.colors[0])],
-    ];
-  });
+  const stops = surfaces.flatMap(({ top, bottom, color: c }, i): [string, number][] => [
+    [c, top + seam(surfaces[i - 1]?.color, c)],
+    [c, bottom - seam(c, surfaces[i + 1]?.color)],
+  ]);
   if (!stops.length) return { tint: "", dark: false };
   // lightness under the nav line, linear between the stops around it
   let l = lightness(stops[0]![0]);
