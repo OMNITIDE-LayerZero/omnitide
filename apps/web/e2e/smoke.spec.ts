@@ -1,4 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
+import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
+import { DEPLOYMENTS } from "@omnitide/contracts/deployments";
+
+// the suite runs against either env; the host decides which deployments and versions it expects
+const D = DEPLOYMENTS[/\/\/(www\.)?omnitide\.trade/.test(process.env.E2E_BASE_URL ?? "") ? "mainnet" : "testnet"];
+const hub = Object.entries(D).find(([k, d]) => CHAINS[k as ChainKey]?.hub && d?.OmnitideClearinghouse)![1]!;
+const HARBOR = !!hub.OmnitideHarbor;
+const TIDE = Object.values(D).some((d) => d?.OmnitideTideReader);
+const DEEP = !!hub.OmnitideDeepPool;
 
 const DEPLOYER = /0xB58dE05CC819F7B04ca611F23e4be9E4be0C23f9/i;
 
@@ -22,7 +31,7 @@ test("landing shows live prices, the contracts and the sea wall", async ({ page 
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/be the tide/i);
   await expect(page.getByText("BTC-PERP").first()).toBeVisible();
   await expect(page.locator("text=/\\$\\d{2},\\d{3}/").first()).toBeVisible({ timeout: 20_000 });
-  await expect(page.locator(`a[href*="0x31fcb7B2DaC407ECC2AB51c1764204Bd3a882F1e" i]`).first()).toBeVisible();
+  await expect(page.locator(`a[href*="${hub.OmnitideClearinghouse!.proxy}" i]`).first()).toBeVisible();
   await expect(page.getByText(/fully backed/i)).toBeVisible({ timeout: 30_000 });
   await checkCopyRules(page);
   expect(errors).toEqual([]);
@@ -48,13 +57,14 @@ test("sea wall reads reserves and lanes from chain", async ({ page }) => {
 test("terminal views switch with number keys", async ({ page, isMobile }) => {
   test.skip(isMobile, "keyboard shortcuts are a desktop feature");
   await page.goto("/terminal/trade");
-  await page.keyboard.press("7");
-  await expect(page).toHaveURL(/\/terminal\/currents/);
-  await page.keyboard.press("4");
-  await expect(page).toHaveURL(/\/terminal\/deep/);
+  await page.keyboard.press("2");
+  await expect(page).toHaveURL(/\/terminal\/portfolio/);
+  await page.keyboard.press("3");
+  await expect(page).toHaveURL(/\/terminal\/risk/);
 });
 
 test("harbor shows live TVL and share price", async ({ page }) => {
+  test.skip(!HARBOR, "Harbor opens with V2");
   const errors = await noPageErrors(page);
   await page.goto("/terminal/harbor");
   await expect(page.getByRole("heading", { name: "Harbor", level: 1 })).toBeVisible();
@@ -65,6 +75,7 @@ test("harbor shows live TVL and share price", async ({ page }) => {
 });
 
 test("tide chart lists every chain with its lzRead reading", async ({ page }) => {
+  test.skip(!TIDE, "Tide Chart opens with V2");
   const errors = await noPageErrors(page);
   await page.goto("/terminal/tide");
   await expect(page.getByRole("heading", { name: "Tide Chart", level: 1 })).toBeVisible();
@@ -102,6 +113,7 @@ test("rpc proxy refuses methods outside the allowlist", async ({ request }) => {
 // ───────── V3 Deep Water ─────────
 
 test("deep mode explains the sealed ledger before a wallet connects", async ({ page }) => {
+  test.skip(!DEEP, "Deep Water opens with V3");
   const errors = await noPageErrors(page);
   await page.goto("/terminal/deep");
   await expect(page.getByRole("heading", { name: "Deep Mode", level: 1 })).toBeVisible();
@@ -135,6 +147,7 @@ test("currents board ranks traders without the house desk and runs a paper accou
 });
 
 test("arena shows all eight medals and council and copy render live", async ({ page }) => {
+  test.skip(!DEEP, "Deep Water opens with V3");
   const errors = await noPageErrors(page);
   await page.goto("/terminal/arena");
   await expect(page.getByRole("heading", { name: "Arena", level: 1 })).toBeVisible();
@@ -160,6 +173,7 @@ test("badge metadata and artwork are served for tokenURI", async ({ request }) =
 });
 
 test("keeper proxy only forwards the Deep Water allowlist", async ({ request }) => {
+  test.skip(!DEEP, "Deep Water opens with V3");
   expect((await request.get("/api/keeper/deep/key")).status()).toBe(200);
   expect((await request.get("/api/keeper/alerts")).status()).toBe(404);
   expect((await request.post("/api/keeper/deep/trade", { data: { nope: 1 } })).status()).toBe(400);
