@@ -32,7 +32,7 @@ function Dive({ onUnlock }: { onUnlock: () => Promise<void> }) {
     <section className="rounded-2xl border border-line bg-card p-5">
       <p className="font-medium">Dive in</p>
       <p className="mt-2 text-[13px] leading-5 text-ink-2">
-        One signature derives your Deep id and an x25519 view key on this device. A second, typed signature hands the keeper the public half so it can seal your book to you. Neither costs gas.
+        Your privacy keys come from your wallet. One signature derives your Deep id and an x25519 view key on this device. A second, typed signature hands the keeper the public half so it can seal your book to you. Neither costs gas.
       </p>
       <button
         type="button"
@@ -49,7 +49,7 @@ function Dive({ onUnlock }: { onUnlock: () => Promise<void> }) {
       </button>
       <ul className="mt-4 space-y-1.5 text-[13px] leading-5 text-ink-2">
         <li>· Same wallet, same signature, same keys on any device</li>
-        <li>· Keys stay in this tab and vanish when it closes</li>
+        <li>· View keys stay in this tab and vanish when it closes</li>
         <li>· Withdrawals still need your wallet's own signature</li>
       </ul>
     </section>
@@ -101,7 +101,7 @@ function Fund({ keys }: { keys: Unlocked }) {
         <input className="field mt-1" inputMode="decimal" placeholder="0.00" value={value} onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ""))} />
       </label>
       <p className="mt-2 text-[12px] leading-[18px] text-ink-3">
-        {remote ? "LayerZero OFT + lzCompose into OmnitideDeepPool. Lands in about a minute." : "Straight into OmnitideDeepPool on Robinhood Chain."} The deposit is public; everything after it is sealed.
+        {remote ? "LayerZero OFT + lzCompose into OmnitideDeepPool. Lands in about a minute." : "Straight into OmnitideDeepPool on Robinhood Chain."} The deposit is public; from there your balance, trades and PnL stay private.
       </p>
       <button type="button" className="btn btn-primary mt-3 w-full" disabled={busy || amount === 0n || amount > balance} onClick={() => void go().catch(() => {})}>
         {remote ? `Inflow from ${SHORT[from]}` : "Sink into Deep"}
@@ -142,7 +142,7 @@ function DeepTicket({ keys, book }: { keys: Unlocked; book: DeepBook | null }) {
     <section className="rounded-2xl border border-line bg-card p-4">
       <div className="flex items-baseline justify-between">
         <p className="font-medium">Deep order</p>
-        <span className="tag text-ink-3">EIP-712 intent · no gas</span>
+        <span className="tag text-ink-3">private fill · EIP-712 intent · no gas</span>
       </div>
       <select className="field mt-3" value={marketId} onChange={(e) => setMarketId(Number(e.target.value))} aria-label="Market">
         {MARKETS.map((x) => (
@@ -239,7 +239,7 @@ function Disclosure({ keys }: { keys: Unlocked }) {
           {shown ? <EyeOff size={15} strokeWidth={1.75} /> : <Eye size={15} strokeWidth={1.75} />}
         </button>
       </div>
-      <p className="mt-2 text-[13px] leading-5 text-ink-2">Read-only. Hand it to an auditor, a fund admin or your accountant: they replay every sealed state and check it against the chain. It can't trade or withdraw.</p>
+      <p className="mt-2 text-[13px] leading-5 text-ink-2">Selective disclosure: you pick who sees your private book. Read-only. Hand it to an auditor, a fund admin or your accountant: they replay every sealed state and check it against the chain. It can't trade or withdraw.</p>
       <code className={`mt-3 block rounded-lg bg-raised p-3 font-mono text-[11px] leading-4 break-all ${shown ? "text-ink-2" : "text-ink-3 blur-[3px] select-none"}`}>{dk}</code>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button
@@ -330,7 +330,7 @@ function SealedOrders({ keys }: { keys: Unlocked }) {
     <div className="rounded-2xl border border-line bg-card">
       <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-5">
         <h2 className="text-[20px] font-medium">Sealed orders</h2>
-        <span className="tag text-ink-3">trigger hidden until it fires</span>
+        <span className="tag text-ink-3">private · trigger hidden until it fires</span>
       </div>
       <div className="relative mt-3 overflow-x-auto">
         <table className="w-full min-w-[560px] text-left text-[13px]">
@@ -372,7 +372,7 @@ function TwoSides({ keys, book, verified, seal }: { keys: Unlocked; book: DeepBo
   return (
     <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-2">
       <div className="bg-navy p-5 text-white">
-        <p className="tag text-white/60">What the chain sees</p>
+        <p className="tag text-white/60">What the public chain sees</p>
         <dl className="mt-3 space-y-2 font-mono text-[11px] leading-4 break-all text-white/80">
           <div>
             <dt className="text-white/50">deep id</dt>
@@ -391,7 +391,7 @@ function TwoSides({ keys, book, verified, seal }: { keys: Unlocked; book: DeepBo
       </div>
       <div className="bg-card p-5">
         <p className="tag flex items-center gap-1.5 text-ink-3">
-          What your view key reveals
+          What only your view key reveals
           {verified && (
             <span className="inline-flex items-center gap-1 text-flood">
               <ShieldCheck size={13} strokeWidth={1.75} /> matches chain
@@ -455,7 +455,7 @@ function DeepDesk({ keys, lock }: { keys: Unlocked; lock: () => void }) {
         <div className="rounded-2xl border border-line bg-card p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="tag text-ink-3">x25519 · AES-256-GCM · keccak commitments on Robinhood Chain</p>
+              <p className="tag text-ink-3">Private book · x25519 · AES-256-GCM · keccak commitments on Robinhood Chain</p>
               <h1 className="display mt-2 text-[44px] text-ink">Deep Mode</h1>
             </div>
             <div className="flex items-center gap-3">
@@ -466,7 +466,7 @@ function DeepDesk({ keys, lock }: { keys: Unlocked; lock: () => void }) {
             </div>
           </div>
           <p className="mt-1 font-mono text-[12px] text-ink-3">
-            {shortHash(keys.id)} · {status?.sealing ? "sealing the latest change…" : verified ? "sealed and verified" : "standing by"}
+            {shortHash(keys.id)} · {status?.sealing ? "sealing the latest change…" : verified ? "private, sealed and verified" : "standing by"}
           </p>
           {book ? (
             <dl className="mt-5 flex flex-wrap gap-px overflow-hidden rounded-xl border border-line bg-line">
@@ -478,7 +478,7 @@ function DeepDesk({ keys, lock }: { keys: Unlocked; lock: () => void }) {
               ))}
             </dl>
           ) : (
-            <p className="mt-5 max-w-2xl text-[14px] leading-[22px] text-ink-2">Sink tdUSD from Robinhood Chain or Arbitrum to open your book. From then on, size, entries and PnL live only as ciphertext addressed to your key.</p>
+            <p className="mt-5 max-w-2xl text-[14px] leading-[22px] text-ink-2">Sink tdUSD from Robinhood Chain or Arbitrum to open your book. From then on your book is private: size, entries and PnL live only as ciphertext addressed to your key.</p>
           )}
         </div>
 
@@ -572,10 +572,10 @@ export default function DeepPage() {
     <div className="grid gap-3 lg:grid-cols-[1fr_380px]">
       <section className="flex min-w-0 flex-col gap-3">
         <div className="rounded-2xl border border-line bg-card p-5">
-          <p className="tag text-ink-3">Private positions · sealed PnL · Disclosure Key</p>
+          <p className="tag text-ink-3">Privacy layer · private positions · sealed PnL · selective disclosure</p>
           <h1 className="display mt-2 text-[44px] text-ink">Deep Mode</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-[22px] text-ink-2">
-            Below the surface, nobody reads your book. OmnitideDeepPool trades every Deep book as one pooled account, the keeper keeps the ledger, and the chain stores only a keccak commitment and a ciphertext sealed to your view key. Copy-traders, liquidation hunters and
+            Private perps on a public chain. Below the surface, nobody reads your book. OmnitideDeepPool trades every Deep book as one pooled account, the keeper keeps the ledger, and the chain stores only a keccak commitment and a ciphertext sealed to your view key. Copy-traders, liquidation hunters and
             explorer snoops see a hash.
           </p>
           {pool && pool.books > 0 && (
@@ -610,9 +610,9 @@ export default function DeepPage() {
 
         <div className="grid gap-3 md:grid-cols-3">
           {[
-            { t: "Pooled fills", b: "Every Deep trade hits the clearinghouse as OmnitideDeepPool. No id, no owner, nothing to follow." },
-            { t: "Sealed to you", b: "Each change re-seals your book: x25519 key wrap, AES-256-GCM body, keccak commitment on-chain." },
-            { t: "Yours to prove", b: "Your Disclosure Key replays every seal and checks each one against its on-chain commitment." },
+            { t: "Private fills", b: "Every Deep trade hits the clearinghouse as OmnitideDeepPool. No id, no owner, no wallet trail to follow." },
+            { t: "Encrypted to you", b: "Each change re-seals your book: x25519 key wrap, AES-256-GCM body, keccak commitment on-chain. Only your view key opens it." },
+            { t: "Selective disclosure", b: "Privacy you can still prove: your Disclosure Key replays every seal and checks each one against its on-chain commitment." },
           ].map((x) => (
             <div key={x.t} className="rounded-2xl border border-line bg-card p-4">
               <p className="font-medium">{x.t}</p>
@@ -625,14 +625,14 @@ export default function DeepPage() {
         {address ? <Dive onUnlock={unlock} /> : (
           <section className="rounded-2xl border border-line bg-card p-5">
             <p className="font-medium">Connect to dive</p>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2">Deep keys come from your wallet signature, so the same wallet opens the same book anywhere.</p>
+            <p className="mt-2 text-[13px] leading-5 text-ink-2">Deep keys come from your wallet signature, so the same wallet opens the same private book anywhere.</p>
             <div className="mt-4">
               <Connect size="md" />
             </div>
           </section>
         )}
         <div className="rounded-2xl border border-line bg-card p-4 text-[13px] leading-5 text-ink-2">
-          <p className="font-medium text-ink">Who sees what</p>
+          <p className="font-medium text-ink">Privacy map · who sees what</p>
           <ul className="mt-2 space-y-1">
             <li>· Public: deposits into the pool, withdrawals out, one commitment per seal</li>
             <li>· You and your Disclosure Key holders: the full book and every fill</li>

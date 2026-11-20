@@ -65,10 +65,10 @@ export function LighthousePanel() {
     <div className="mt-5 rounded-xl border border-line bg-raised/40 p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-medium">Lighthouse Proof</p>
-        <span className="tag text-ink-3">EIP-712 attestation · LayerZero OApp</span>
+        <span className="tag text-ink-3">privacy-first · EIP-712 attestation · LayerZero OApp</span>
       </div>
       <p className="mt-1 text-[13px] leading-5 text-ink-2">
-        Publish your grade, not your positions. The keeper signs your Book Score, OmnitideLighthouse stores it on {SHORT[HUB_KEY]} and beams it to {spokes.map((k) => SHORT[k]).join(", ")}, where any lender or protocol can call scoreOf(you).
+        Publish your grade, keep your positions private. The keeper signs your Book Score, OmnitideLighthouse stores it on {SHORT[HUB_KEY]} and beams it to {spokes.map((k) => SHORT[k]).join(", ")}, where any lender or protocol can call scoreOf(you).
       </p>
       {live.length > 0 && (
         <ul className="mt-3 flex flex-wrap gap-2">

@@ -156,7 +156,7 @@ export function PositionsPanel() {
                         {m?.symbol ?? "Sealed"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">{o.plain ? <>{KIND[o.plain.kind]} <span className={size > 0 ? "text-flood" : "text-ebb"}>{size > 0 ? "buy" : "sell"}</span></> : "Stop or take-profit"}</td>
+                    <td className="px-4 py-3">{o.plain ? <>{KIND[o.plain.kind]} <span className={size > 0 ? "text-flood" : "text-ebb"}>{size > 0 ? "buy" : "sell"}</span></> : "Private stop or take-profit"}</td>
                     <td className="num px-4 py-3">{o.plain ? Math.abs(size).toPrecision(5) : "••••"}</td>
                     <td className="num px-4 py-3">{o.plain ? price(wad(o.plain.triggerPrice)) : "••••••"}</td>
                     <td className="px-4 py-3 text-ink-3">{ago(o.placedAt)}</td>

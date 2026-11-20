@@ -8,18 +8,18 @@ import { CONTRACT_ROWS } from "@/lib/contracts";
 import { HUB_KEY, SHORT, explorerAddress } from "@/lib/chains";
 
 const ROLE: Record<string, string> = {
-  OmnitideClearinghouse: "Cross-margin book, orders, liquidations, Inflow via lzCompose",
+  OmnitideClearinghouse: "Cross-margin book, orders and private sealed orders, liquidations, Inflow via lzCompose",
   OmnitideOracle: "Verifies EIP-712 signed price reports, 120 s max age",
   OmnitideUSD: "tdUSD omnichain collateral (LayerZero OFT)",
   OmnitideHarbor: "Harbor OVault (ERC-4626) that owns the Tide Pool; composes cross-chain deposits and redemptions",
   OmnitideHarborShareAdapter: "Locks htdUSD on the hub so Harbor shares travel as an OFT",
   OmnitideHarborShare: "htdUSD on spokes, minted and burned by LayerZero",
   OmnitideTideReader: "LayerZero lzRead of tdUSD supply across chains for the Tide Chart",
-  OmnitideDeepPool: "Deep Mode pool: pooled fills, sealed book commitments, signed withdrawals, keeper-free exit",
+  OmnitideDeepPool: "Deep Mode privacy pool: pooled fills, encrypted book commitments, selective disclosure, signed withdrawals, keeper-free exit",
   OmnitideCopyVaultFactory: "Launches copy vaults behind one upgradeable beacon; vaults take omnichain deposits via lzCompose",
   OmnitideToken: "TIDE governance token (LayerZero OFT)",
   OmnitideCouncil: "Stake and vote from any chain; spoke votes cross to the hub tally (OApp)",
-  OmnitideLighthouse: "Lighthouse Proof: keeper-attested Book Score, readable on every chain (OApp)",
+  OmnitideLighthouse: "Lighthouse Proof: keeper-attested Book Score, no positions revealed, readable on every chain (OApp)",
   OmnitideBadge: "Arena Badges: keeper-attested ERC-721 that travels as an ONFT",
 };
 

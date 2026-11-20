@@ -143,7 +143,7 @@ export function DisclosureViewer() {
                 </li>
               ))}
             </ol>
-            {flows.length > 0 && <p className="mt-3 text-[12px] text-ink-3">{flows.length} public deposit and withdrawal events on this id</p>}
+            {flows.length > 0 && <p className="mt-3 text-[12px] text-ink-3">{flows.length} public deposit and withdrawal events on this id; everything between them stays private</p>}
           </div>
         ) : null}
         <div className="rounded-2xl border border-line bg-card p-4 text-[13px] leading-5 text-ink-2">

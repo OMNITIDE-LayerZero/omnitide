@@ -33,7 +33,7 @@ export default function Currents() {
           <p className="tag text-ink-3">Social leaderboard · every number summed from on-chain fills</p>
           <h1 className="display mt-2 text-[44px] text-ink">Currents</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-[22px] text-ink-2">
-            Who is riding the tide and who got dragged under. No screenshots, no self-reported PnL: the board reads OmnitideClearinghouse Traded events, so every row is a receipt. Deep Mode books never appear here.
+            Who is riding the tide and who got dragged under. No screenshots, no self-reported PnL: the board reads OmnitideClearinghouse Traded events, so every row is a receipt. Deep Mode books stay private and never appear here.
           </p>
           {leader && (
             <p className="mt-4 text-[14px] text-ink-2">

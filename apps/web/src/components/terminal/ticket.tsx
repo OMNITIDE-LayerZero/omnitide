@@ -189,7 +189,7 @@ export function Ticket({ market }: { market: MarketConfig }) {
             <span className="flex items-center gap-1.5 font-medium text-ink">
               <Lock size={13} strokeWidth={1.75} /> Seal it
             </span>
-            <span className="text-ink-2">Trigger and size stay hidden on-chain until the keeper fills it. Stop hunters see a hash.</span>
+            <span className="text-ink-2">Private order: trigger and size stay encrypted on-chain until the keeper fills it. Stop hunters see a hash.</span>
           </span>
         </label>
       )}
