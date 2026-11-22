@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useAccount } from "wagmi";
 import { Logo } from "../logo";
@@ -60,14 +60,16 @@ function AccountStrip() {
   );
 }
 
-function Tab({ slug, label, hint }: { slug: string; label: string; hint?: number }) {
+function Tab({ slug, label, hint, cut }: { slug: string; label: string; hint?: number; cut?: boolean }) {
   const path = usePathname();
   const active = path?.startsWith(`/terminal/${slug}`);
   return (
     <Link
       href={`/terminal/${slug}`}
       aria-current={active ? "page" : undefined}
-      className={`flex h-8 shrink-0 items-center gap-2 rounded-lg px-3 text-[14px] transition-colors ${active ? "bg-raised text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]" : "text-ink-2 hover:text-ink"}`}
+      aria-hidden={cut || undefined}
+      tabIndex={cut ? -1 : undefined}
+      className={`flex h-8 shrink-0 items-center gap-2 rounded-lg px-3 text-[14px] transition-colors ${cut ? "invisible" : ""} ${active ? "bg-raised text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]" : "text-ink-2 hover:text-ink"}`}
     >
       {label}
       {hint !== undefined && <span className="kbd hidden xl:inline-flex">{hint}</span>}
@@ -75,9 +77,9 @@ function Tab({ slug, label, hint }: { slug: string; label: string; hint?: number
   );
 }
 
-function More() {
+function More({ views }: { views: readonly (typeof VIEWS)[number][] }) {
   const path = usePathname();
-  const active = MORE.find((v) => path?.startsWith(`/terminal/${v.slug}`));
+  const active = views.find((v) => path?.startsWith(`/terminal/${v.slug}`));
   return (
     // keyed by path so it folds shut after every navigation
     <details key={path} className="group relative shrink-0">
@@ -86,7 +88,7 @@ function More() {
         <ChevronDown size={14} strokeWidth={1.75} className="transition-transform group-open:rotate-180" />
       </summary>
       <div className="absolute top-10 right-0 z-40 min-w-44 rounded-xl border border-line bg-card p-1 shadow-lg">
-        {MORE.map((v) => (
+        {views.map((v) => (
           <Link key={v.slug} href={`/terminal/${v.slug}`} className="block rounded-lg px-3 py-2 text-[14px] text-ink-2 hover:bg-raised hover:text-ink">
             {v.label}
           </Link>
@@ -96,13 +98,41 @@ function More() {
   );
 }
 
-function ViewTabs({ className, all }: { className: string; all?: boolean }) {
+/** Desktop row: tabs that don't fit beside the account strip and wallet fold into More. */
+function DeskTabs() {
+  const nav = useRef<HTMLElement>(null);
+  const [fit, setFit] = useState<number>(KEYED.length);
+  useLayoutEffect(() => {
+    const el = nav.current;
+    if (!el) return;
+    // folded tabs stay in layout (invisible), so every edge stays measurable
+    const measure = () => {
+      const n = [...el.children].findIndex((t) => (t as HTMLElement).offsetLeft + (t as HTMLElement).offsetWidth > el.clientWidth);
+      setFit(n < 0 ? KEYED.length : n);
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const folded = [...KEYED.slice(fit), ...MORE];
   return (
-    <nav className={`relative items-center gap-1 ${all ? "overflow-x-auto" : ""} ${className}`} aria-label="Terminal views">
-      {(all ? VIEWS : KEYED).map((v, i) => (
-        <Tab key={v.slug} slug={v.slug} label={v.label} hint={all ? undefined : i + 1} />
+    <div className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
+      <nav ref={nav} className="relative flex min-w-0 items-center gap-1 overflow-hidden" aria-label="Terminal views">
+        {KEYED.map((v, i) => (
+          <Tab key={v.slug} slug={v.slug} label={v.label} hint={i + 1} cut={i >= fit} />
+        ))}
+      </nav>
+      {folded.length > 0 && <More views={folded} />}
+    </div>
+  );
+}
+
+function AllTabs() {
+  return (
+    <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 py-1 lg:hidden" aria-label="Terminal views">
+      {VIEWS.map((v) => (
+        <Tab key={v.slug} slug={v.slug} label={v.label} />
       ))}
-      {!all && <More />}
     </nav>
   );
 }
@@ -128,13 +158,13 @@ export function TerminalShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 border-b border-line bg-bg/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-[1680px] items-center gap-4 px-4 sm:gap-6">
           <Logo href="/" />
-          <ViewTabs className="hidden min-w-0 flex-1 lg:flex" />
+          <DeskTabs />
           <div className="flex-1 lg:hidden" />
           <AccountStrip />
           <ThemeToggle />
           <Connect />
         </div>
-        <ViewTabs all className="flex border-t border-line px-2 py-1 lg:hidden" />
+        <AllTabs />
       </header>
       <main className="mx-auto w-full max-w-[1680px] flex-1 p-3 sm:p-4">
         {/* portfolio shows its own, always-on Lifeline */}

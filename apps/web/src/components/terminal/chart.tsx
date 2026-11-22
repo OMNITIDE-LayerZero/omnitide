@@ -33,7 +33,7 @@ export function PriceChart({ feed, interval, lines = [] }: { feed: string; inter
       layout: { background: { type: ColorType.Solid, color: "transparent" }, fontFamily: "var(--font-geist-mono), monospace", fontSize: 11, attributionLogo: false },
       rightPriceScale: { borderVisible: false },
       timeScale: { borderVisible: false, timeVisible: true, secondsVisible: false },
-      crosshair: { horzLine: { labelBackgroundColor: "#1f3dff" }, vertLine: { labelBackgroundColor: "#1f3dff" } },
+      crosshair: { horzLine: { labelBackgroundColor: "#5671ff" }, vertLine: { labelBackgroundColor: "#5671ff" } },
     });
     series.current = c.addSeries(CandlestickSeries, { priceLineVisible: true, lastValueVisible: true });
     chart.current = c;

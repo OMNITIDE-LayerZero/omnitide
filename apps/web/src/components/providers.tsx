@@ -24,7 +24,7 @@ function makeConfig() {
 }
 
 function brandTheme(dark: boolean): Theme {
-  const base = (dark ? darkTheme : lightTheme)({ accentColor: dark ? "#5671ff" : "#1f3dff", borderRadius: "small", fontStack: "system", overlayBlur: "small" });
+  const base = (dark ? darkTheme : lightTheme)({ accentColor: "#5671ff", borderRadius: "small", fontStack: "system", overlayBlur: "small" });
   return {
     ...base,
     fonts: { body: "var(--font-geist), system-ui, sans-serif" },

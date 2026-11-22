@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { ThemeToggle, useTheme } from "./theme";
 import { haze, type Surface } from "@/lib/haze";
@@ -84,8 +84,9 @@ export function SiteHeader() {
         <Logo />
         <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="btn btn-ghost btn-sm">
+            <Link key={l.href} href={l.href} className="group btn btn-ghost btn-sm gap-1">
               {l.label}
+              <ArrowUpRight aria-hidden size={14} strokeWidth={1.75} className="opacity-60 transition-[transform,opacity] duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
             </Link>
           ))}
         </nav>
@@ -102,8 +103,9 @@ export function SiteHeader() {
       {open && (
         <nav className="rise mx-4 rounded-xl border border-line bg-card p-2 shadow-md md:hidden" aria-label="Mobile">
           {[...LINKS, { href: "/terminal/trade", label: "Open terminal" }].map((l) => (
-            <Link key={l.label} href={l.href} onClick={() => setOpen(false)} className="flex h-10 items-center rounded-lg px-3 text-ink-2 hover:bg-raised hover:text-ink">
+            <Link key={l.label} href={l.href} onClick={() => setOpen(false)} className="flex h-10 items-center justify-between rounded-lg px-3 text-ink-2 hover:bg-raised hover:text-ink">
               {l.label}
+              <ArrowUpRight aria-hidden size={14} strokeWidth={1.75} className="opacity-60" />
             </Link>
           ))}
         </nav>
