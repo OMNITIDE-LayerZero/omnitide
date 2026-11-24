@@ -8,6 +8,7 @@ import { useAccount } from "wagmi";
 import { Logo } from "../logo";
 import { ThemeToggle } from "../theme";
 import { Connect } from "../connect";
+import { EnvToggle, XLink } from "../header-extras";
 import { Toasts } from "../toasts";
 import { TideGauge } from "../tide-gauge";
 import { Lifeline } from "./lifeline";
@@ -173,7 +174,9 @@ export function TerminalShell({ children }: { children: React.ReactNode }) {
           <DeskTabs />
           <div className="flex-1 lg:hidden" />
           <AccountStrip />
+          <XLink className="hidden sm:inline-flex" />
           <ThemeToggle />
+          <EnvToggle />
           <Connect />
         </div>
         <AllTabs />

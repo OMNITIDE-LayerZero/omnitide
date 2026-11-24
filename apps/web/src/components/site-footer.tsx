@@ -3,6 +3,7 @@ import { Logo } from "./logo";
 import { NetworkStatus } from "./network-status";
 import { IS_MAINNET } from "@/lib/chains";
 import { FEATURES } from "@/lib/contracts";
+import { X_URL } from "./header-extras";
 
 export function SiteFooter() {
   return (
@@ -23,6 +24,7 @@ export function SiteFooter() {
           <Link href="/disclosure" className="hover:text-ink">Disclosure</Link>
           <Link href="/sea-wall" className="hover:text-ink">Sea Wall</Link>
           <Link href="/#contracts" className="hover:text-ink">Contracts</Link>
+          <a href={X_URL} target="_blank" rel="noopener noreferrer" className="hover:text-ink">X / Twitter</a>
         </nav>
       </div>
       <div className="border-t border-line">

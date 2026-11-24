@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { ThemeToggle, useTheme } from "./theme";
+import { EnvToggle, XLink } from "./header-extras";
 import { haze, type Surface } from "@/lib/haze";
 import { FEATURES } from "@/lib/contracts";
 
@@ -91,7 +92,9 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <XLink />
           <ThemeToggle />
+          <EnvToggle />
           <Link href="/terminal/trade" className="btn btn-primary btn-sm hidden sm:inline-flex">
             Open terminal
           </Link>
