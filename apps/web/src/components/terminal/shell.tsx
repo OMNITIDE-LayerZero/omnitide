@@ -100,24 +100,36 @@ function More({ views }: { views: readonly (typeof VIEWS)[number][] }) {
 
 /** Desktop row: tabs that don't fit beside the account strip and wallet fold into More. */
 function DeskTabs() {
+  const box = useRef<HTMLDivElement>(null);
   const nav = useRef<HTMLElement>(null);
+  const path = usePathname();
   const [fit, setFit] = useState<number>(KEYED.length);
+  const [edge, setEdge] = useState<number>();
   useLayoutEffect(() => {
+    const wrap = box.current;
     const el = nav.current;
-    if (!el) return;
-    // folded tabs stay in layout (invisible), so every edge stays measurable
+    if (!wrap || !el) return;
+    // folded tabs stay in layout (invisible), so every edge stays measurable; the nav is then cut at the last visible tab so More sits right after it
     const measure = () => {
-      const n = [...el.children].findIndex((t) => (t as HTMLElement).offsetLeft + (t as HTMLElement).offsetWidth > el.clientWidth);
-      setFit(n < 0 ? KEYED.length : n);
+      const tabs = [...el.children] as HTMLElement[];
+      const over = (room: number) => tabs.findIndex((t) => t.offsetLeft + t.offsetWidth > room);
+      const more = MORE.length > 0 || over(wrap.clientWidth) >= 0 ? (wrap.querySelector("details")?.offsetWidth ?? 96) + 4 : 0;
+      const n = over(wrap.clientWidth - more);
+      const k = n < 0 ? tabs.length : n;
+      setFit(k);
+      const last = tabs[k - 1];
+      setEdge(last ? last.offsetLeft + last.offsetWidth : 0);
     };
     const ro = new ResizeObserver(measure);
-    ro.observe(el);
+    ro.observe(wrap);
+    const more = wrap.querySelector("details");
+    if (more) ro.observe(more);
     return () => ro.disconnect();
-  }, []);
+  }, [path]);
   const folded = [...KEYED.slice(fit), ...MORE];
   return (
-    <div className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
-      <nav ref={nav} className="relative flex min-w-0 items-center gap-1 overflow-hidden" aria-label="Terminal views">
+    <div ref={box} className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
+      <nav ref={nav} style={{ width: edge }} className="relative flex min-w-0 items-center gap-1 overflow-hidden" aria-label="Terminal views">
         {KEYED.map((v, i) => (
           <Tab key={v.slug} slug={v.slug} label={v.label} hint={i + 1} cut={i >= fit} />
         ))}
