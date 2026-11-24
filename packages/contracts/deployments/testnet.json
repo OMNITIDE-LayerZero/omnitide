@@ -16,7 +16,7 @@
     },
     "OmnitideClearinghouse": {
       "proxy": "0x31fcb7B2DaC407ECC2AB51c1764204Bd3a882F1e",
-      "implementation": "0x580AEE04D1C41787e1ED6518dD35a06857628c77",
+      "implementation": "0x4a010551B0CB4B9ED7fd7DFc079A7d9831E77D09",
       "deployTx": "0x4bdeeb24632469a43c8e10f66e09108cc82571be9baf226f5c1ea30754f31707",
       "block": 154985732
     },
@@ -41,11 +41,11 @@
     },
     "OmnitideCopyVaultFactory": {
       "proxy": "0xee937F9eBe5f5ebC3AC82516efE3Cd792a117549",
-      "implementation": "0x28285647f1f14632D3DcfA1D6248690B7Ec2F6a5",
+      "implementation": "0x1DBfcb83Fddf01cE3b25eb1f9b0023fB3D16636f",
       "deployTx": "0xfd29a56459bce6bb16011db9447accd0d5af64550661600f522694c5002f9487",
       "block": 155631957,
       "beacon": "0x906024b11079026040FeE872C91AA37118337171",
-      "vaultImplementation": "0xA2fD1EFbdbD010F2606788d6Cc908BF17897a256"
+      "vaultImplementation": "0xBB396a8cB7d3085cfa5e5DED95d49DA456F89A5f"
     },
     "OmnitideToken": {
       "proxy": "0x6ddbC6B3B1EcE4c460b50545D78FE0362982AC00",

@@ -807,7 +807,7 @@ describe("OmnitideBadge (Arena, ONFT)", () => {
 describe("OmnitideCouncil (cross-chain governance)", () => {
   async function councilFixture() {
     const ctx = await deploy();
-    const t = await oappPair(ctx, "OmnitideToken", [ctx.owner.address, true], [ctx.owner.address, true]);
+    const t = await oappPair(ctx, "OmnitideToken", [ctx.owner.address, "TIDE", true], [ctx.owner.address, "TIDE", true]);
     const c = await oappPair(ctx, "OmnitideCouncil", [ctx.owner.address, t.hub, HUB, 86_400, 1_000n * E18], [ctx.owner.address, t.spoke, HUB, 86_400, 1_000n * E18], [1, 2]);
     const [hubTide, spokeTide] = await Promise.all([t.hub, t.spoke].map((a) => ethers.getContractAt("OmnitideToken", a)));
     const [hub, spoke] = await Promise.all([c.hub, c.spoke].map((a) => ethers.getContractAt("OmnitideCouncil", a)));
@@ -850,6 +850,70 @@ describe("OmnitideCouncil (cross-chain governance)", () => {
   });
 });
 
+describe("OmnitideTokenAdapter ($OMNITIDE mesh)", () => {
+  it("locks the launched token on the hub, mints its OFT on a spoke, and the hub Council stakes the original", async () => {
+    const ctx = await networkHelpers.loadFixture(deploy);
+    const { owner, alice, hubEp, spokeEp } = ctx;
+    const launched = await (await ethers.getContractFactory("TestStable")).deploy(18);
+    await launched.mint(alice.address, 5_000n * E18);
+    const adapter = await up.deployProxy(await ethers.getContractFactory("OmnitideTokenAdapter"), [owner.address], { ...lzOpts, constructorArgs: [await launched.getAddress(), await hubEp.getAddress()] });
+    const spokeOft = await up.deployProxy(await ethers.getContractFactory("OmnitideToken"), [owner.address, "OMNITIDE", false], { ...lzOpts, constructorArgs: [await spokeEp.getAddress()] });
+    const [a, o] = [await adapter.getAddress(), await spokeOft.getAddress()];
+    await hubEp.setDestLzEndpoint(o, await spokeEp.getAddress());
+    await spokeEp.setDestLzEndpoint(a, await hubEp.getAddress());
+    await adapter.setPeer(SPOKE, ethers.zeroPadValue(o, 32));
+    await spokeOft.setPeer(HUB, ethers.zeroPadValue(a, 32));
+    await adapter.setEnforcedOptions([{ eid: SPOKE, msgType: MSG_SEND, options: lzReceiveOption(200_000n) }]);
+    await spokeOft.setEnforcedOptions([{ eid: HUB, msgType: MSG_SEND, options: lzReceiveOption(200_000n) }]);
+    expect(await spokeOft.symbol()).to.equal("OMNITIDE");
+    await expect(spokeOft.connect(alice).drip()).to.be.revertedWithCustomError(spokeOft, "FaucetClosed");
+
+    await launched.connect(alice).approve(a, 2_000n * E18);
+    const p = { dstEid: SPOKE, to: ethers.zeroPadValue(alice.address, 32), amountLD: 2_000n * E18, minAmountLD: 2_000n * E18, extraOptions: "0x", composeMsg: "0x", oftCmd: "0x" };
+    const q = await adapter.quoteSend(p, false);
+    await adapter.connect(alice).send(p, { nativeFee: q.nativeFee, lzTokenFee: 0 }, alice.address, { value: q.nativeFee });
+    expect(await launched.balanceOf(a)).to.equal(2_000n * E18);
+    expect(await spokeOft.balanceOf(alice.address)).to.equal(2_000n * E18);
+
+    const back = { ...p, dstEid: HUB, amountLD: 500n * E18, minAmountLD: 500n * E18 };
+    const qb = await spokeOft.quoteSend(back, false);
+    await spokeOft.connect(alice).send(back, { nativeFee: qb.nativeFee, lzTokenFee: 0 }, alice.address, { value: qb.nativeFee });
+    expect(await launched.balanceOf(alice.address)).to.equal(3_500n * E18);
+    expect(await spokeOft.totalSupply()).to.equal(1_500n * E18);
+
+    const council = await up.deployProxy(await ethers.getContractFactory("OmnitideCouncil"), [owner.address, await launched.getAddress(), HUB, 86_400, 1_000n * E18], { ...lzOpts, constructorArgs: [await hubEp.getAddress()] });
+    await launched.connect(alice).approve(await council.getAddress(), 1_000n * E18);
+    await council.connect(alice).stake(1_000n * E18);
+    expect(await council.staked(alice.address)).to.equal(1_000n * E18);
+  });
+});
+
+describe("Deep pool position cap", () => {
+  it("lets only the account the owner names hold more than eight markets, up to the hard ceiling", async () => {
+    const ctx = await networkHelpers.loadFixture(deploy);
+    const { ch, owner, alice, bob } = ctx;
+    const feeds = Array.from({ length: 10 }, (_, i) => feed(`M${i}`));
+    for (let i = 0; i < 10; i++) await ch.setMarket(2 + i, feeds[i]!, 1000, 500, 10n ** 24n, true);
+    await expect(ch.connect(alice).setPositionCap(alice.address, 18)).to.be.revertedWithCustomError(ch, "OwnableUnauthorizedAccount");
+    await expect(ch.connect(owner).setPositionCap(alice.address, 33)).to.be.revertedWithCustomError(ch, "TooManyPositions");
+    await expect(ch.connect(owner).setPositionCap(alice.address, 18)).to.emit(ch, "PositionCapSet").withArgs(alice.address, 18);
+    for (const who of [alice, bob]) await depositLocal(ctx, who, usd(1_000));
+    const open = async (who: typeof alice, i: number) => {
+      const reports = [];
+      for (let j = 0; j <= i; j++) reports.push(await report(ctx, feeds[j]!, 10n * E18));
+      return ch.connect(who).trade(2 + i, E18, 11n * E18, reports);
+    };
+    for (let i = 0; i < 8; i++) {
+      await open(alice, i);
+      await open(bob, i);
+    }
+    await expect(open(bob, 8)).to.be.revertedWithCustomError(ch, "TooManyPositions");
+    await open(alice, 8);
+    await open(alice, 9);
+    expect((await ch.openMarkets(alice.address)).length).to.equal(10);
+  });
+});
+
 describe("OmnitideCopyVault", () => {
   async function copyFixture() {
     const ctx = await deploy();
@@ -858,7 +922,7 @@ describe("OmnitideCopyVault", () => {
     const { alice, hubUsd } = ctx;
     await hubUsd.connect(alice).drip();
     await hubUsd.connect(alice).approve(await factory.getAddress(), usd(500));
-    await factory.connect(alice).createVault("Alice Momentum", "cALICE", usd(500), []);
+    await factory.connect(alice).createVault("Alice Momentum", "cALICE", 0, usd(500), []);
     const vault = await ethers.getContractAt("OmnitideCopyVault", await factory.vaults(0));
     const endpoint = await networkHelpers.impersonateAccount(await ctx.hubEp.getAddress()).then(() => ethers.getSigner(ctx.hubEp.target as string));
     await networkHelpers.setBalance(await ctx.hubEp.getAddress(), E18);
@@ -868,7 +932,7 @@ describe("OmnitideCopyVault", () => {
   it("seeds at creation, lets followers ride the leader's PnL and redeem at NAV", async () => {
     const ctx = await networkHelpers.loadFixture(copyFixture);
     const { factory, vault, hubUsd, ch, alice, bob } = ctx;
-    await expect(factory.connect(bob).createVault("x", "x", usd(10), [])).to.be.revertedWithCustomError(factory, "SeedTooSmall");
+    await expect(factory.connect(bob).createVault("x", "x", 0, usd(10), [])).to.be.revertedWithCustomError(factory, "SeedTooSmall");
     expect(await vault.leader()).to.equal(alice.address);
     expect(await vault.balanceOf(alice.address)).to.equal(usd(500));
 
@@ -898,6 +962,42 @@ describe("OmnitideCopyVault", () => {
     await vault.settle([bob.address], []);
     expect(await vault.balanceOf(bob.address)).to.equal(usd(250));
     await expect(vault.settle([bob.address], [])).to.be.revertedWithCustomError(vault, "NothingPending");
+  });
+
+  it("pays the leader a cut of gains above the high-water mark, once, in new shares", async () => {
+    const ctx = await networkHelpers.loadFixture(copyFixture);
+    const { factory, hubUsd, alice, bob } = ctx;
+    await hubUsd.connect(bob).drip();
+    await hubUsd.connect(bob).approve(await factory.getAddress(), usd(1_000));
+    const vaultAbi = await ethers.getContractAt("OmnitideCopyVault", ethers.ZeroAddress);
+    await expect(factory.connect(bob).createVault("Too greedy", "cX", 2_001, usd(100), [])).to.be.revertedWithCustomError(vaultAbi, "FeeLocked");
+    await factory.connect(bob).createVault("Bob Carry", "cBOB", 1_000, usd(500), []);
+    const vault = await ethers.getContractAt("OmnitideCopyVault", await factory.vaults(1));
+    expect(await vault.feeBps()).to.equal(1_000);
+    expect(await vault.highWaterMark()).to.equal(E18);
+    await expect(vault.connect(bob).setFee(1_500)).to.be.revertedWithCustomError(vault, "FeeLocked");
+    await expect(vault.connect(alice).setFee(500)).to.be.revertedWithCustomError(vault, "FeeLocked");
+
+    await hubUsd.connect(alice).approve(await vault.getAddress(), usd(500));
+    await vault.connect(alice).deposit(usd(500), alice.address, []); // at 1.0, no fee
+    expect(await vault.balanceOf(bob.address)).to.equal(usd(500));
+
+    await vault.connect(bob).trade(0, E18 / 10n, 61_000n * E18, [await report(ctx, BTC, 60_000n * E18)]);
+    await vault.connect(bob).trade(0, -E18 / 10n, 0, [await report(ctx, BTC, 62_000n * E18)]);
+    const value = await vault.nav([]); // 1187.8
+    const [feeShares] = await vault.pendingFee(value);
+    const gain = ((value * E18) / usd(1_000) - E18) * usd(1_000) / E18; // assets above the mark
+    expect(feeShares).to.equal((gain / 10n) * usd(1_000) / (value - gain / 10n));
+
+    const before = await hubUsd.balanceOf(alice.address);
+    await expect(vault.connect(alice).redeem(usd(500), HUB, alice.address, [])).to.emit(vault, "FeeCharged");
+    expect(await vault.balanceOf(bob.address)).to.equal(usd(500) + feeShares);
+    expect((await hubUsd.balanceOf(alice.address)) - before).to.equal((usd(500) * value) / (usd(1_000) + feeShares));
+    const [again] = await vault.pendingFee(await vault.nav([]));
+    expect(again).to.equal(0n); // same NAV per share: nothing twice
+
+    await vault.connect(bob).setFee(500);
+    expect(await vault.feeBps()).to.equal(500);
   });
 });
 

@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { BaseError, ContractFunctionRevertedError, type Abi } from "viem";
 import { toast } from "@/components/toasts";
 import { chainKeyOf, explorerTx } from "./chains";
+import { GOV } from "./contracts";
 
 const FRIENDLY: Record<string, string> = {
   InsufficientMargin: "Not enough free margin for that size",
@@ -18,7 +19,7 @@ const FRIENDLY: Record<string, string> = {
   DripCooldown: "Faucet refills once a day per address",
   RateLimitExceeded: "This lane's hourly limit is used up, try a smaller amount",
   DepositCapReached: "Deposit cap reached for now",
-  TooManyPositions: "Eight positions is the most one account can hold",
+  TooManyPositions: "Eight open markets is the most one account can hold",
   TooManyOrders: "Sixteen open orders is the limit, cancel one first",
   OpenInterestCap: "This market's open-interest cap is full on that side",
   PausedIncrease: "The guardian paused new risk; closing still works",
@@ -29,17 +30,18 @@ const FRIENDLY: Record<string, string> = {
   BadAttestation: "The keeper's attestation didn't verify, ask for a fresh one",
   Expired: "That signature expired, try again",
   Stale: "A newer Lighthouse beam already shines for this account",
-  NoWeight: "Stake TIDE before the proposal opens to vote on it",
+  NoWeight: `Stake ${GOV} before the proposal opens to vote on it`,
   AlreadyVoted: "This wallet already voted on that proposal",
   VotingClosed: "Voting on that proposal is closed",
-  BelowThreshold: "Proposing needs 1,000 staked TIDE on Robinhood Chain",
+  BelowThreshold: `Proposing needs 1,000 staked ${GOV} on Robinhood Chain`,
   Locked: "Stake stays locked until the proposals you voted on close",
-  SeedTooSmall: "A copy vault opens with at least 100 tdUSD of your own",
+  SeedTooSmall: "Seed the vault with at least the factory minimum of your own tdUSD",
+  FeeLocked: "Leader fees top out at 20% and can only go down once a vault opens",
   NotLeader: "Only the vault's leader can trade it",
   NothingPending: "No queued deposits left to settle",
   ExitNotReady: "The 24h exit window hasn't passed yet",
   BadPreimage: "That isn't the latest sealed state of this book",
-  FaucetClosed: "The TIDE faucet is closed",
+  FaucetClosed: `The ${GOV} faucet is closed`,
   FeeTooLow: "The LayerZero fee moved, try again",
 };
 

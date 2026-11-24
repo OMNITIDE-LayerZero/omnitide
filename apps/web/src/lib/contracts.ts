@@ -50,7 +50,15 @@ export const portOf = (k: ChainKey) => {
 };
 /** Chains carrying the V3 OApps (TIDE, Council, Lighthouse, Arena Badges): the hub plus every deepWater spoke. */
 export const V3_CHAINS = (Object.keys(CHAINS) as ChainKey[]).filter((k) => D[k]?.OmnitideCouncil);
-export const v3Address = (k: ChainKey, name: "OmnitideToken" | "OmnitideCouncil" | "OmnitideLighthouse" | "OmnitideBadge") => D[k]![name]!.proxy as Address;
+export const v3Address = (k: ChainKey, name: "OmnitideCouncil" | "OmnitideLighthouse" | "OmnitideBadge") => D[k]![name]!.proxy as Address;
+/** Governance token: mainnet wraps the launched $OMNITIDE (adapter on the hub, OFT on spokes); testnet runs TIDE with a faucet. */
+const govAdapter = hub.OmnitideTokenAdapter;
+export const GOV = govAdapter ? "OMNITIDE" : "TIDE";
+export const GOV_FAUCET = !govAdapter;
+/** ERC-20 people hold and stake on chain k. */
+export const govToken = (k: ChainKey) => ((CHAINS[k].hub && govAdapter ? govAdapter.token : D[k]!.OmnitideToken!.proxy) as Address);
+/** LayerZero OFT endpoint for moving it between chains (the adapter on the mainnet hub). */
+export const govOft = (k: ChainKey) => ((CHAINS[k].hub && govAdapter ? govAdapter.proxy : D[k]!.OmnitideToken!.proxy) as Address);
 /** Chains that hold Harbor shares besides the hub (direct lanes both ways). */
 export const SHARE_CHAINS = (Object.keys(CHAINS) as ChainKey[]).filter((k) => D[k]?.OmnitideHarborShare);
 export const shareAddress = (k: ChainKey) => (CHAINS[k].hub ? HARBOR : (D[k]!.OmnitideHarborShare!.proxy as Address));
@@ -70,6 +78,7 @@ export const CONTRACT_ROWS = (Object.keys(CHAINS) as ChainKey[]).flatMap((k) =>
       "OmnitideDeepPool",
       "OmnitideCopyVaultFactory",
       "OmnitideToken",
+      "OmnitideTokenAdapter",
       "OmnitideCouncil",
       "OmnitideLighthouse",
       "OmnitideBadge",

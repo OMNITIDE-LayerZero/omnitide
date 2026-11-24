@@ -24,6 +24,7 @@ export interface ChainDeployment {
   OmnitideLighthouse?: ProxyRecord;
   OmnitideBadge?: ProxyRecord;
   OmnitideToken?: ProxyRecord;
+  OmnitideTokenAdapter?: ProxyRecord & { token: string };
   OmnitideCouncil?: ProxyRecord;
   OmnitideCopyVaultFactory?: ProxyRecord & { beacon: string; vaultImplementation: string };
   wired?: string;

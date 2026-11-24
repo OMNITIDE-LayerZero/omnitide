@@ -35,7 +35,8 @@ interface VaultDetail {
   pending: { account: string; assets: string }[];
 }
 
-const MIN_SEED = 100;
+const DEFAULT_FEE = 10; // % of gains above the high-water mark
+const MAX_FEE = 20;
 const toWad = (v: number) => BigInt(Math.round(v * 1e8)) * 10n ** 10n;
 const baseToWad = (v: number) => BigInt(Math.round(v * 1e12)) * 10n ** 6n;
 
@@ -50,11 +51,13 @@ function useVaultState(vault: Address | undefined) {
     queryFn: async () => {
       const hub = getPublicClient(config, { chainId: HUB.chainId })!;
       const ch = <T,>(functionName: string, args: unknown[]) => hub.readContract({ address: CLEARINGHOUSE, abi: omnitideClearinghouseAbi, functionName: functionName as never, args: args as never }) as Promise<T>;
-      const [bal, open, supply, mine] = await Promise.all([
+      const [bal, open, supply, mine, feeBps, hwm] = await Promise.all([
         ch<bigint>("balances", [vault]),
         ch<readonly number[]>("openMarkets", [vault]),
         hub.readContract({ address: vault!, abi: omnitideCopyVaultAbi, functionName: "totalSupply" }),
         address ? hub.readContract({ address: vault!, abi: omnitideCopyVaultAbi, functionName: "balanceOf", args: [address] }) : Promise.resolve(0n),
+        hub.readContract({ address: vault!, abi: omnitideCopyVaultAbi, functionName: "feeBps" }),
+        hub.readContract({ address: vault!, abi: omnitideCopyVaultAbi, functionName: "highWaterMark" }),
       ]);
       const positions = await Promise.all(
         open.map(async (id) => {
@@ -62,36 +65,52 @@ function useVaultState(vault: Address | undefined) {
           return { marketId: Number(id), size: Number(size) / 1e18, entry: Number(entry) / 1e18 };
         }),
       );
-      return { collateral: Number(bal) / 1e6, positions: positions.filter((p) => p.size !== 0), supply, mine };
+      return { collateral: Number(bal) / 1e6, positions: positions.filter((p) => p.size !== 0), supply, mine, feeBps: Number(feeBps), hwm: Number(hwm) / 1e18 };
     },
   });
 }
 
 function CreateVault() {
   const { address } = useAccount();
+  const config = useConfig();
   const { send, busy } = useTx();
+  const { data: minSeed } = useQuery({
+    queryKey: ["copy-min-seed"],
+    staleTime: Infinity,
+    queryFn: async () => units6(await getPublicClient(config, { chainId: HUB.chainId })!.readContract({ address: COPY_FACTORY, abi: omnitideCopyVaultFactoryAbi, functionName: "minSeed" })),
+  });
   const [name, setName] = useState("");
-  const [seed, setSeed] = useState(String(MIN_SEED));
-  const amount = amountUnits(seed);
+  const [seed, setSeed] = useState("");
+  const [fee, setFee] = useState(String(DEFAULT_FEE));
+  const amount = amountUnits(seed || String(minSeed ?? ""));
+  const feePct = Number(fee);
+  const feeOk = fee !== "" && feePct >= 0 && feePct <= MAX_FEE;
   if (!address) return null;
 
   async function go() {
-    await send(`Approve ${seed} tdUSD seed`, { chainId: HUB.chainId, address: usdAddress(HUB_KEY), abi: omnitideUSDAbi, functionName: "approve", args: [COPY_FACTORY, amount] });
+    await send(`Approve ${units6(amount)} tdUSD seed`, { chainId: HUB.chainId, address: usdAddress(HUB_KEY), abi: omnitideUSDAbi, functionName: "approve", args: [COPY_FACTORY, amount] });
     const symbol = `c${name.replace(/[^A-Za-z]/g, "").slice(0, 6).toUpperCase() || "TIDE"}`;
-    await send(`Launch ${name}`, { chainId: HUB.chainId, address: COPY_FACTORY, abi: omnitideCopyVaultFactoryAbi, functionName: "createVault", args: [name.trim(), symbol, amount, []] });
+    await send(`Launch ${name}`, { chainId: HUB.chainId, address: COPY_FACTORY, abi: omnitideCopyVaultFactoryAbi, functionName: "createVault", args: [name.trim(), symbol, Math.round(feePct * 100), amount, []] });
     setName("");
   }
 
   return (
     <section className="rounded-2xl border border-line bg-card p-4">
       <p className="font-medium">Lead a vault</p>
-      <p className="mt-1 text-[12px] leading-[18px] text-ink-3">Seed it with at least {MIN_SEED} tdUSD of your own. Followers buy shares at live NAV; only you can trade the book.</p>
+      <p className="mt-1 text-[12px] leading-[18px] text-ink-3">
+        Seed it with {minSeed ? `at least ${minSeed.toLocaleString("en-US")}` : "your own"} tdUSD. Followers buy shares at live NAV; only you can trade the book, and you earn your fee only on new highs.
+      </p>
       <input className="field mt-3" placeholder="Vault name" maxLength={32} value={name} onChange={(e) => setName(e.target.value)} />
       <div className="relative mt-2">
-        <input className="field pr-16" inputMode="decimal" value={seed} onChange={(e) => setSeed(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="Seed in tdUSD" />
+        <input className="field pr-16" inputMode="decimal" placeholder={minSeed ? String(minSeed) : "Seed"} value={seed} onChange={(e) => setSeed(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="Seed in tdUSD" />
         <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[13px] text-ink-3">tdUSD</span>
       </div>
-      <button type="button" className="btn btn-primary mt-3 w-full" disabled={busy || name.trim().length < 3 || Number(seed) < MIN_SEED} onClick={() => void go().catch(() => {})}>
+      <div className="relative mt-2">
+        <input className="field pr-40" inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value.replace(/[^0-9.]/g, ""))} aria-label="Leader fee in percent" />
+        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-[13px] text-ink-3">% fee on new highs</span>
+      </div>
+      {!feeOk && <p className="mt-1 text-[12px] text-warn">Pick a fee from 0 to {MAX_FEE}%. It can only go down after launch.</p>}
+      <button type="button" className="btn btn-primary mt-3 w-full" disabled={busy || name.trim().length < 3 || !minSeed || units6(amount) < minSeed || !feeOk} onClick={() => void go().catch(() => {})}>
         Launch vault
       </button>
     </section>
@@ -234,6 +253,7 @@ function VaultView({ v }: { v: VaultRow }) {
               ["NAV", h ? money(nav) : "…"],
               ["Share price", `${sharePrice.toFixed(6)}`],
               ["Since seed", h ? `${sharePrice >= 1 ? "+" : "−"}${Math.abs((sharePrice - 1) * 100).toFixed(2)}%` : "…"],
+              ["Leader fee", s ? (s.feeBps > 0 ? `${s.feeBps / 100}% above ${s.hwm.toFixed(4)}` : "Fee-free") : "…"],
               ...(s && s.mine > 0n ? [["Your stake", money(units6(s.mine) * sharePrice)]] : []),
             ].map(([k, val]) => (
               <div key={k} className="min-w-[130px] flex-1 bg-card p-4">

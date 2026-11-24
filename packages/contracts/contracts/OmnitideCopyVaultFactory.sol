@@ -41,10 +41,17 @@ contract OmnitideCopyVaultFactory is Ownable2StepUpgradeable, UUPSUpgradeable {
         minSeed = minSeed_;
     }
 
-    function createVault(string calldata name, string calldata symbol, uint256 seed, OmnitideOracle.PriceReport[] calldata reports) external returns (address vault) {
+    function createVault(
+        string calldata name,
+        string calldata symbol,
+        uint16 feeBps,
+        uint256 seed,
+        OmnitideOracle.PriceReport[] calldata reports
+    ) external returns (address vault) {
         if (seed < minSeed) revert SeedTooSmall(minSeed);
         vault = address(new BeaconProxy(address(beacon), abi.encodeCall(OmnitideCopyVault.initialize, (msg.sender, name, symbol, clearinghouse))));
         vaults.push(vault);
+        OmnitideCopyVault(payable(vault)).setFee(feeBps);
         IERC20 token = clearinghouse.token();
         token.safeTransferFrom(msg.sender, address(this), seed);
         token.forceApprove(vault, seed);

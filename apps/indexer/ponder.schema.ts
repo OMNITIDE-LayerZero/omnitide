@@ -288,7 +288,7 @@ export const copyFlow = onchainTable(
     id: t.text().primaryKey(),
     vault: t.hex().notNull(),
     account: t.hex().notNull(),
-    kind: t.text().notNull(), // deposit | queued | redeem
+    kind: t.text().notNull(), // deposit | queued | redeem | fee (leader, high-water mark)
     assets: t.bigint().notNull(),
     shares: t.bigint(),
     eid: t.integer(),

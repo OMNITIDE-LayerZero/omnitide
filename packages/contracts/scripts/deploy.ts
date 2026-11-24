@@ -200,29 +200,62 @@ if (VERSION >= 3 && (chain.hub || chain.deepWater)) {
   const F = (n: string) => ethers.getContractFactory(n);
   if (chain.hub) {
     const chAddr = dep.OmnitideClearinghouse!.proxy;
-    const hasSealed = await ethers.provider.call({ to: chAddr, data: ethers.id("nextSealedId()").slice(0, 10) }).then(() => true, () => false);
-    if (!hasSealed) {
+    // positionCap(address) arrived with the Deep pool cap; older builds lack Sealed Orders and/or it
+    if (!(await hasFn(chAddr, "positionCap(address)", ethers.ZeroHash))) {
       await up.upgradeProxy(chAddr, await F("OmnitideClearinghouse"), { kind: "uups" });
       dep.OmnitideClearinghouse!.implementation = await up.erc1967.getImplementationAddress(chAddr);
       saveDeployments(all);
-      console.log("OmnitideClearinghouse upgraded (Sealed Orders) →", dep.OmnitideClearinghouse!.implementation);
+      console.log("OmnitideClearinghouse upgraded (Sealed Orders, position caps) →", dep.OmnitideClearinghouse!.implementation);
     }
     await deployOnce("OmnitideDeepPool", async () => up.deployProxy(await F("OmnitideDeepPool"), [DEPLOYER, DEPLOYER, DEPLOYER, chAddr], { kind: "uups" }));
+    const ch = await ethers.getContractAt("OmnitideClearinghouse", chAddr);
+    const cap = await ch.marketCount(); // the Deep pool is one account for every Deep book: let it hold every listed market
+    if ((await ch.positionCap(dep.OmnitideDeepPool!.proxy)) !== cap) {
+      await (await ch.setPositionCap(dep.OmnitideDeepPool!.proxy, cap)).wait();
+      console.log("Deep pool position cap →", cap);
+    }
+    if (dep.OmnitideCopyVaultFactory && !(await hasFn(dep.OmnitideCopyVaultFactory.vaultImplementation, "feeBps()"))) {
+      const impl = await (await F("OmnitideCopyVault")).deploy();
+      await impl.waitForDeployment();
+      const beacon = await ethers.getContractAt(["function upgradeTo(address)"], dep.OmnitideCopyVaultFactory.beacon);
+      await (await beacon.getFunction("upgradeTo")(await impl.getAddress())).wait();
+      await up.upgradeProxy(dep.OmnitideCopyVaultFactory.proxy, await F("OmnitideCopyVaultFactory"), { kind: "uups" });
+      dep.OmnitideCopyVaultFactory = {
+        ...dep.OmnitideCopyVaultFactory,
+        implementation: await up.erc1967.getImplementationAddress(dep.OmnitideCopyVaultFactory.proxy),
+        vaultImplementation: await impl.getAddress(),
+      };
+      saveDeployments(all);
+      console.log("copy vaults upgraded (leader fee) → vault impl", dep.OmnitideCopyVaultFactory.vaultImplementation);
+    }
     if (!dep.OmnitideCopyVaultFactory) {
       const impl = await (await F("OmnitideCopyVault")).deploy();
       await impl.waitForDeployment();
-      const factory = await up.deployProxy(await F("OmnitideCopyVaultFactory"), [DEPLOYER, chAddr, await impl.getAddress(), ethers.parseUnits("100", 6)], { kind: "uups" });
+      const minSeed = ethers.parseUnits(isTestnet ? "100" : "10", 6);
+      const factory = await up.deployProxy(await F("OmnitideCopyVaultFactory"), [DEPLOYER, chAddr, await impl.getAddress(), minSeed], { kind: "uups" });
       await factory.waitForDeployment();
       dep.OmnitideCopyVaultFactory = { ...(await record(factory)), beacon: await (await ethers.getContractAt("OmnitideCopyVaultFactory", await factory.getAddress())).beacon(), vaultImplementation: await impl.getAddress() };
       saveDeployments(all);
       console.log("OmnitideCopyVaultFactory", dep.OmnitideCopyVaultFactory.proxy);
     }
   }
-  await deployOnce("OmnitideToken", async () => up.deployProxy(await F("OmnitideToken"), [DEPLOYER, isTestnet], lzOpts));
+  if (chain.govToken) {
+    if (!dep.OmnitideTokenAdapter) {
+      const adapter = await up.deployProxy(await F("OmnitideTokenAdapter"), [DEPLOYER], { ...lzOpts, constructorArgs: [chain.govToken, chain.endpoint] });
+      await adapter.waitForDeployment();
+      dep.OmnitideTokenAdapter = { ...(await record(adapter)), token: chain.govToken };
+      saveDeployments(all);
+      console.log("OmnitideTokenAdapter", dep.OmnitideTokenAdapter.proxy);
+    }
+  } else await deployOnce("OmnitideToken", async () => up.deployProxy(await F("OmnitideToken"), [DEPLOYER, isTestnet ? "TIDE" : "OMNITIDE", isTestnet], lzOpts));
   await deployOnce("OmnitideLighthouse", async () => up.deployProxy(await F("OmnitideLighthouse"), [DEPLOYER, DEPLOYER], lzOpts));
   await deployOnce("OmnitideBadge", async () => up.deployProxy(await F("OmnitideBadge"), [DEPLOYER, DEPLOYER, !!chain.hub, BADGE_URI], lzOpts));
   const hubEid = Object.values(CHAINS).find((c) => c.hub)!.eid;
-  await deployOnce("OmnitideCouncil", async () => up.deployProxy(await F("OmnitideCouncil"), [DEPLOYER, dep.OmnitideToken!.proxy, hubEid, VOTING_PERIOD, PROPOSAL_THRESHOLD], lzOpts));
+  await deployOnce("OmnitideCouncil", async () => up.deployProxy(await F("OmnitideCouncil"), [DEPLOYER, chain.govToken ?? dep.OmnitideToken!.proxy, hubEid, VOTING_PERIOD, PROPOSAL_THRESHOLD], lzOpts));
+}
+
+async function hasFn(addr: string, sig: string, args = "0x") {
+  return ethers.provider.call({ to: addr, data: ethers.id(sig).slice(0, 10) + args.slice(2) }).then(() => true, () => false);
 }
 
 // the Harbor build that reserves open trader PnL; older implementations lack poolAvailable()

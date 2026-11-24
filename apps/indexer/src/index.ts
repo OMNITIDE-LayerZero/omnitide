@@ -365,6 +365,12 @@ ponder.on("OmnitideCopyVault:Redeemed", async ({ event, context }) => {
   await touchVault(context.db, vault, { redeemed: a.assets }, (v) => ({ redeemed: v.redeemed + a.assets }));
 });
 
+ponder.on("OmnitideCopyVault:FeeCharged", async ({ event, context }) => {
+  const vault = event.log.address;
+  const v = await context.db.find(copyVault, { address: vault });
+  await context.db.insert(copyFlow).values({ ...note(event), vault, account: v?.leader ?? vault, kind: "fee", assets: event.args.assets, shares: event.args.shares });
+});
+
 ponder.on("OmnitideCopyVault:LeaderTrade", async ({ event, context }) => {
   await touchVault(context.db, event.log.address, { leaderTrades: 1 }, (v) => ({ leaderTrades: v.leaderTrades + 1 }));
 });

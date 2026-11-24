@@ -214,7 +214,8 @@ export function createDeepWater(d: DeepWaterDeps) {
       if (t.nonce <= row.intentNonce) return { status: 409, body: { error: "intent already used" } };
       const book = loadBook(row);
       const poolOpen = await openMarketsOf(d.pool);
-      if (!poolOpen.includes(t.marketId) && poolOpen.length >= 8) return { status: 409, body: { error: "the Deep pool already holds eight markets; pick an open one" } };
+      const cap = Number(await ch<number>("positionCap", [d.pool])) || 8;
+      if (!poolOpen.includes(t.marketId) && poolOpen.length >= cap) return { status: 409, body: { error: `the Deep pool already holds ${cap} markets; pick an open one` } };
       const rs = await reportsFor([...poolOpen, t.marketId, ...book.positions.map((p) => p.marketId)]);
       const prices = pricesWad(rs);
       const price = prices[t.marketId]!;

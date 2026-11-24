@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Plus } from "lucide-react";
-import { CONTRACT_ROWS } from "@/lib/contracts";
-import { HUB_KEY, IS_MAINNET, explorerAddress } from "@/lib/chains";
+import { CONTRACT_ROWS, GOV, V3_CHAINS } from "@/lib/contracts";
+import { HUB_KEY, IS_MAINNET, SHORT, explorerAddress } from "@/lib/chains";
 import { InflowDemo, LensDemo, SealDemo } from "./dive-demos";
 
 const FEATURES = [
@@ -28,9 +28,9 @@ const FEATURES = [
   { tag: "#19 · sealed orders", title: "Private stops nobody can hunt", body: "Your exits stay your business. Seal a stop-loss or take-profit and only its hash goes on-chain: trigger, size and side stay encrypted until the keeper fills it at the signed price, so stop hunters have nothing to aim at.", note: "private orders · commit · encrypted to keeper + you · reveal on fill" },
   { tag: "#20 · currents", title: "A leaderboard of receipts", body: "Rank by realized PnL or volume straight from on-chain fills, mint a verified PnL card, warm up in a paper account and post the card to X. Deep Mode books stay private and off the board.", note: "summed from Traded events · zero self-reporting" },
   { tag: "#21 · arena", title: "Medals that travel", body: "Eight engraved Arena Badges for first fills, Inflows, Grade A books and more. Claim on Robinhood Chain, sail them to Arbitrum as an ONFT.", note: "ERC-721 · keeper-signed claim · LayerZero ONFT" },
-  { tag: "#22 · council", title: "Vote from where you stand", body: "Stake TIDE on Robinhood Chain or Arbitrum. Proposals mirror to every chain and spoke votes ride LayerZero back into one tally on the hub.", note: "stake lock until the vote closes · no double votes" },
+  { tag: "#22 · council", title: "Vote from where you stand", body: `Stake ${GOV} on ${(V3_CHAINS.length ? V3_CHAINS : [HUB_KEY]).map((k) => (k === HUB_KEY ? "Robinhood Chain" : SHORT[k])).join(", ").replace(/, ([^,]*)$/, " or $1")}. Proposals mirror to every chain and spoke votes ride LayerZero back into one tally on the hub.`, note: GOV === "OMNITIDE" ? "$OMNITIDE as an OFT · stake lock until the vote closes · no double votes" : "stake lock until the vote closes · no double votes" },
   { tag: "#23 · lighthouse", title: "Show the grade, keep the book", body: "Privacy-first reputation. Publish a keeper-signed Book Score with not a single position attached. Any protocol on any chain can call scoreOf(you) and read your grade, never your trades.", note: "score only, no positions · EIP-712 Beam · OApp broadcast · 7-day expiry" },
-  { tag: "#24 · copy vaults", title: "Back the trader, not the screenshot", body: "Leaders trade a vault, followers hold shares priced at live NAV, and deposits can come straight from Arbitrum in one transaction.", note: "BeaconProxy vault · lzCompose queue · keeper settle" },
+  { tag: "#24 · copy vaults", title: "Back the trader, not the screenshot", body: "Leaders trade a vault, followers hold shares priced at live NAV, and deposits can come straight from Arbitrum in one transaction. Leaders earn only on new highs: a performance fee above the high-water mark, paid in shares.", note: "BeaconProxy vault · lzCompose queue · high-water-mark fee ≤ 20%" },
 ];
 
 type Feature = (typeof FEATURES)[number];
@@ -75,7 +75,7 @@ const TIERS = [
     title: "Trade below the surface.",
     blurb: "The privacy layer. Sealed positions, private stops and private inflows, with selective disclosure when you choose it, plus grades, medals and vaults anyone can verify without seeing a single position.",
     features: FEATURES.slice(15),
-    contracts: ["OmnitideDeepPool", "OmnitideLighthouse", "OmnitideBadge", "OmnitideCouncil", "OmnitideCopyVaultFactory", "OmnitideToken"],
+    contracts: ["OmnitideDeepPool", "OmnitideLighthouse", "OmnitideBadge", "OmnitideCouncil", "OmnitideCopyVaultFactory", "OmnitideToken", "OmnitideTokenAdapter"],
     primitives: ["OApp", "ONFT", "x25519 + AES-256-GCM", "keccak commitments", "selective disclosure", "beacon proxies"],
     Demo: SealDemo,
     dark: true,

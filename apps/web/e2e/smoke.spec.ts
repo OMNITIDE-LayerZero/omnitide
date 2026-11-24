@@ -154,10 +154,12 @@ test("arena shows all eight medals and council and copy render live", async ({ p
   await expect(page.locator("article")).toHaveCount(8);
   await page.goto("/terminal/council");
   await expect(page.getByRole("heading", { name: "Council", level: 1 })).toBeVisible();
-  await expect(page.getByText(/TIP-\d+/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/TIP-\d+|The floor is open/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(D.robinhood ? /OMNITIDE holders steer/ : /TIDE holders steer/)).toBeVisible();
   await page.goto("/terminal/copy");
   await expect(page.getByRole("heading", { name: "Copy", level: 1 })).toBeVisible();
   await expect(page.getByText(/Leader fills/)).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Leader fee", { exact: true })).toBeVisible();
   await checkCopyRules(page);
   expect(errors).toEqual([]);
 });

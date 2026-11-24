@@ -16,7 +16,7 @@
     },
     "OmnitideClearinghouse": {
       "proxy": "0xA1f062B1f862c24866eAeed63f7587ab02e8f776",
-      "implementation": "0x8F42Ab06Cd3db012E51967C882eE887E742447E2",
+      "implementation": "0x055d7bd71B3380c8E349e9B049d7062f84cbd454",
       "deployTx": "0xbe63fc66d9e41091e1dcfd959d3b6d9da3547a32997ff14c3a32306b13ddf716",
       "block": 119274935
     },
@@ -38,6 +38,45 @@
       "implementation": "0x9005f0950143F9565Bdf59871b556D37871cE53B",
       "deployTx": "0xd405163f54966387710b4164924a3fa8aa69c82e65b49e933249130a038e8cc9",
       "block": 122478182
+    },
+    "OmnitideDeepPool": {
+      "proxy": "0xE14ED21eb0576cAD39af1dB74340AbB4F261A77b",
+      "implementation": "0x952e43aB3D52911FC2f7BacD0E35C9f8f531c4D4",
+      "deployTx": "0x640e4503fe29d65cfc4010e18147f90ba3fdfaa45e37c571bda55bb1bf5f4610",
+      "block": 122564174
+    },
+    "OmnitideCopyVaultFactory": {
+      "proxy": "0x18582b9Ad9903A7181f85721Fa0BBf28c1A581a8",
+      "implementation": "0x1F083121c874623F8648502Ce58A4eE57100115D",
+      "deployTx": "0xc99f03ddce18f500b860d2f8279d6715794a0d95b57057ff283ddbbae34fd8f2",
+      "block": 122564325,
+      "beacon": "0x5Cb4BDB6eB06590a214dC25705422773eeB1e780",
+      "vaultImplementation": "0x5490cE152bDC18f5B46b0895B84a3E8Cb866Fecc"
+    },
+    "OmnitideTokenAdapter": {
+      "proxy": "0x105CCf8a86eB974b780408960696E39E3DD3a36D",
+      "implementation": "0x2B024979da65799005482dad81F31ABD74CB9E0c",
+      "deployTx": "0x55fd0da0a7aef028dea6503b4c0db384d5e6fad3bf0c7d7f6ca53b0afc586f0c",
+      "block": 122564416,
+      "token": "0x9e3e0595376894875901b5082b135b13e9fc1fa2"
+    },
+    "OmnitideLighthouse": {
+      "proxy": "0x734Fbb094527fb9417Ea80E8D845DAe963F583a2",
+      "implementation": "0x619A202057C580a80a73812355E40F6fD5060D71",
+      "deployTx": "0x0fd908efa7213e52521929e9de5f4f5253c25b56089b82e181a8e0ec3f882672",
+      "block": 122564495
+    },
+    "OmnitideBadge": {
+      "proxy": "0xA2a7EB2b0EE48Dad1c8DB51b0f09513e3B824Aa9",
+      "implementation": "0xC746627F109155429FE578228d390B8d0219580b",
+      "deployTx": "0x0e9cf00b2d9fe138f7881aa4c7dc58d7e1ff2fbf04110b105706d1a64ace7535",
+      "block": 122564594
+    },
+    "OmnitideCouncil": {
+      "proxy": "0xBb546198E92880B8371C7aE73283562D0A1b4682",
+      "implementation": "0x11B51deeB6Bfa9b3BB7C22F6B9aC3Aff3E6eD811",
+      "deployTx": "0xc47596e288f314d6fc2e153abcb6ef7b52cbdc1e9eaeb9e48eb332748ed95f06",
+      "block": 122564689
     }
   },
   "hyperEvm": {
@@ -55,7 +94,31 @@
       "deployTx": "0xbd5209db77c74f029c19d2a5c7ce2b48bbe569d2a548c0e7d395e1abf1a36dc1",
       "block": 51793010
     },
-    "wired": "robinhood,arbitrum"
+    "wired": "robinhood,arbitrum",
+    "OmnitideLighthouse": {
+      "proxy": "0x82c80FA2974365FDE60466f6b09B0b2d242A8Ca2",
+      "implementation": "0x08d6c4858d62c87B9a1ADf7D9929109236d22964",
+      "deployTx": "0xffa7434a7a0f48486d46db5eeae6d08bde2883bacd34f53d48462823b9107b44",
+      "block": 52156754
+    },
+    "OmnitideBadge": {
+      "proxy": "0x8c1986E60B599874AB4d96b72Ea1a454382C479e",
+      "implementation": "0x7e6Bd938cbDE2D598230f45C747E319a858369A8",
+      "deployTx": "0xd50a909b6cadbb4bd4d3d05ed434bd4cbc7aeb3f55d888cdeb0652e90a7f548d",
+      "block": 52156876
+    },
+    "OmnitideToken": {
+      "proxy": "0xe2b4fE4EF5d805D3F06F95704c9A3a2f19BA06AF",
+      "implementation": "0x007998b8f1bdea1ab3f5fcf2C837d8b9A13A56e3",
+      "deployTx": "0xc96f1e0ddf3775301543db2082ceec9c8dfa130b05d1594be28e1ae928723c52",
+      "block": 52157181
+    },
+    "OmnitideCouncil": {
+      "proxy": "0xF516044237Ce7486c17A228688d5A5A069a0a795",
+      "implementation": "0x764E195a20b33eC05FE449F394B0Fe3fd66AC358",
+      "deployTx": "0x91a8ce09f6c68ba5a2dba0a92d46e05c43a8de37a986e238593a00e0791ba385",
+      "block": 52157242
+    }
   },
   "arbitrum": {
     "chainId": 42161,
@@ -84,6 +147,30 @@
       "implementation": "0xB38706716FB5ac3A08A7570819eafFd22d8801F7",
       "deployTx": "0x236c876721f61d30f01a6e2c18bb0f5d8f8cb120d411e25e7ed4193ec73c069d",
       "block": 527213367
+    },
+    "OmnitideLighthouse": {
+      "proxy": "0xe2b4fE4EF5d805D3F06F95704c9A3a2f19BA06AF",
+      "implementation": "0x007998b8f1bdea1ab3f5fcf2C837d8b9A13A56e3",
+      "deployTx": "0xed19bc9d0706cfb745a14607425e2bc4394bd6641100722775edc0520d2cac27",
+      "block": 527243592
+    },
+    "OmnitideBadge": {
+      "proxy": "0xAFc36c0CFb84404CC50e07425B66c9C2b16bDCB7",
+      "implementation": "0xF516044237Ce7486c17A228688d5A5A069a0a795",
+      "deployTx": "0xb4ef183344a50dfce4e8fb8821518737cc013925a95b9e2c40ef186144fa9002",
+      "block": 527243632
+    },
+    "OmnitideToken": {
+      "proxy": "0xD0A876e47738BE35F64F78972BEE5f8FbB855820",
+      "implementation": "0x8c1986E60B599874AB4d96b72Ea1a454382C479e",
+      "deployTx": "0x855ec2ffc5fdeddbe4f50eed6aa5a9cecabb6cd393d09a78ebf489cab60a3a0f",
+      "block": 527245353
+    },
+    "OmnitideCouncil": {
+      "proxy": "0x4E50AeB021057703a2EC6cc7bC23192Ce335474D",
+      "implementation": "0xf67aFdA52C0924E15886d429DD7B7DB69d0D0937",
+      "deployTx": "0xb19f85d866a1e257487a0d3ac5db8ad45a20f09df9f037dcdcbaa91604709a2e",
+      "block": 527245376
     }
   }
 }

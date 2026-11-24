@@ -4,8 +4,9 @@ pragma solidity ^0.8.28;
 import { OFTUpgradeable } from "@layerzerolabs/oft-evm-upgradeable/contracts/oft/OFTUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-/// @title OmnitideToken (TIDE)
-/// @notice Governance token with one supply across chains (LayerZero OFT). The testnet faucet drips 1,000 TIDE a day.
+/// @title OmnitideToken
+/// @notice Governance token with one supply across chains (LayerZero OFT): TIDE on testnet (faucet drips 1,000 a day),
+///         the $OMNITIDE OFT on mainnet spokes, paired with OmnitideTokenAdapter on the hub.
 contract OmnitideToken is OFTUpgradeable, UUPSUpgradeable {
     uint256 public constant DRIP_AMOUNT = 1_000e18;
     uint256 public constant DRIP_COOLDOWN = 1 days;
@@ -23,9 +24,9 @@ contract OmnitideToken is OFTUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function initialize(address owner_, bool faucetEnabled_) external initializer {
+    function initialize(address owner_, string calldata symbol_, bool faucetEnabled_) external initializer {
         __Ownable_init(owner_);
-        __OFT_init("OMNITIDE", "TIDE", owner_);
+        __OFT_init("OMNITIDE", symbol_, owner_);
         faucetEnabled = faucetEnabled_;
     }
 

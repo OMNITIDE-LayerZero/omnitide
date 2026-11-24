@@ -24,6 +24,8 @@ export interface ChainConfig {
   deepWater?: boolean;
   /** Dollar stablecoin an OmnitidePort mints tdUSD against (mainnet only; testnet tdUSD comes from the faucet). */
   stable?: { symbol: string; address: `0x${string}` };
+  /** Hub only: launched governance token that OmnitideTokenAdapter wraps into an OFT (mainnet $OMNITIDE); else TIDE is deployed. */
+  govToken?: `0x${string}`;
 }
 
 export const TESTNET_CHAINS: Record<TestnetChainKey, ChainConfig> = {
@@ -92,6 +94,7 @@ export const MAINNET_CHAINS: Record<MainnetChainKey, ChainConfig> = {
     nativeSymbol: "ETH",
     hub: true,
     stable: { symbol: "USDG", address: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" },
+    govToken: "0x9e3e0595376894875901b5082b135b13e9fc1fa2",
     lz: { sendLib: "0xc39161c743d0307eb9bcc9fef03eeb9dc4802de7", receiveLib: "0xe1844c5d63a9543023008d332bd3d2e6f1fe1043", executor: "0x4208d6e27538189bb48e603d6123a94b8abe0a0b", dvn: "0xd01ae6905d48315f7be10c7330aecf8360ef5b12" },
   },
   hyperEvm: {

@@ -94,7 +94,7 @@ export default createConfig({
             },
           }
         : {},
-      filter: [{ event: "Deposited", args: {} }, { event: "Queued", args: {} }, { event: "Redeemed", args: {} }, { event: "LeaderTrade", args: {} }],
+      filter: [{ event: "Deposited", args: {} }, { event: "Queued", args: {} }, { event: "Redeemed", args: {} }, { event: "LeaderTrade", args: {} }, { event: "FeeCharged", args: {} }],
     },
   },
 });

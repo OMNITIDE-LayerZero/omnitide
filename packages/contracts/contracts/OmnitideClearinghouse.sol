@@ -67,6 +67,7 @@ contract OmnitideClearinghouse is
 
     uint256 private constant TO_WAD = 1e12; // tdUSD has 6 decimals
     uint256 public constant MAX_POSITIONS = 8;
+    uint256 public constant MAX_POOL_POSITIONS = 32;
     uint256 public constant MAX_ORDERS = 16;
     uint256 public constant LIQUIDATION_PENALTY_BPS = 100;
     uint256 public constant LIQUIDATOR_SHARE_BPS = 2_000;
@@ -108,6 +109,8 @@ contract OmnitideClearinghouse is
     mapping(uint8 => int256) public costBasis; // sum of size * entryPrice over every open position
     mapping(uint8 => uint256) public markPrice; // last verified price used on this market
 
+    mapping(address => uint8) public positionCap; // per-account override of MAX_POSITIONS (the Deep pool trades every market)
+
     event Deposited(address indexed account, uint256 amount, uint32 srcEid, bytes32 guid);
     event Withdrawn(address indexed account, uint256 amount, uint32 dstEid, address receiver, bytes32 guid);
     event Traded(
@@ -136,6 +139,7 @@ contract OmnitideClearinghouse is
     event MarketSet(uint8 indexed id, bytes32 feed, uint16 initialMarginBps, uint16 maintenanceMarginBps, uint256 maxOpenInterestUsd, bool active);
     event ParamsSet(uint16 feeBps, uint256 depositCap, address guardian);
     event HarborSet(address harbor);
+    event PositionCapSet(address indexed account, uint8 cap);
     event Marked(uint8 indexed marketId, uint256 price);
     event SealedOrderPlaced(uint256 indexed id, address indexed account, bytes32 commitment, bytes ciphertext);
     event SealedOrderCancelled(uint256 indexed id, address indexed account);
@@ -251,6 +255,13 @@ contract OmnitideClearinghouse is
         if (harbor_ == address(0)) revert ZeroAddress();
         harbor = harbor_;
         emit HarborSet(harbor_);
+    }
+
+    /// @notice Lets one pooled account (the Deep pool) hold more markets; 0 restores MAX_POSITIONS.
+    function setPositionCap(address account, uint8 cap) external onlyOwner {
+        if (cap > MAX_POOL_POSITIONS) revert TooManyPositions();
+        positionCap[account] = cap;
+        emit PositionCapSet(account, cap);
     }
 
     /// @notice Harbor redemptions are paid out of the Tide Pool.
@@ -550,7 +561,8 @@ contract OmnitideClearinghouse is
         uint256 fee = _abs(sizeDelta) * price * feeBps / 1e18 / 10_000 / TO_WAD;
         _applyFill(account, marketId, sizeDelta, price, fee);
         if (increases) {
-            if (_openMarkets[account].length > MAX_POSITIONS) revert TooManyPositions();
+            uint256 cap = positionCap[account];
+            if (_openMarkets[account].length > (cap == 0 ? MAX_POSITIONS : cap)) revert TooManyPositions();
             if ((m.longSize > m.shortSize ? m.longSize : m.shortSize) * price / 1e18 > m.maxOpenInterestUsd) revert OpenInterestCap(marketId);
             _requireMargin(account, reports, true);
         }

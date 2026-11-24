@@ -15,7 +15,7 @@ const all = loadDeployments();
 const start = await ethers.provider.getBalance(signer.address);
 
 // each mesh is one app spread over chains: tdUSD, Harbor shares (adapter on the hub), TIDE, and the V3 OApps
-type Name = "OmnitideUSD" | "OmnitideHarborShareAdapter" | "OmnitideHarborShare" | "OmnitideToken" | "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil";
+type Name = "OmnitideUSD" | "OmnitideHarborShareAdapter" | "OmnitideHarborShare" | "OmnitideToken" | "OmnitideTokenAdapter" | "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil";
 interface Mesh {
   name: (k: ChainKey) => Name;
   /** enforced options toward a peer; compose only toward the hub, where lzCompose runs */
@@ -29,7 +29,7 @@ const oft = (peerIsHub: boolean) => [
 const MESHES: Mesh[] = [
   { name: () => "OmnitideUSD", options: oft },
   { name: (k) => (CHAINS[k].hub ? "OmnitideHarborShareAdapter" : "OmnitideHarborShare"), options: oft },
-  { name: () => "OmnitideToken", options: plain(MSG_SEND) },
+  { name: (k) => (CHAINS[k].govToken ? "OmnitideTokenAdapter" : "OmnitideToken"), options: plain(MSG_SEND) },
   { name: () => "OmnitideLighthouse", options: plain(1) },
   { name: () => "OmnitideBadge", options: plain(1) },
   { name: () => "OmnitideCouncil", options: plain(1, 2) }, // 1 = proposal mirror, 2 = vote

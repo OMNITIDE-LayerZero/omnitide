@@ -7,7 +7,8 @@ import { getPublicClient } from "wagmi/actions";
 import { formatUnits, parseUnits, type Address } from "viem";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { HUB_KEY, SHORT } from "@/lib/chains";
-import { V3_CHAINS, omnitideCouncilAbi, omnitideTokenAbi, v3Address } from "@/lib/contracts";
+import { GOV, GOV_FAUCET, V3_CHAINS, govOft, govToken, omnitideCouncilAbi, omnitideTokenAbi, v3Address } from "@/lib/contracts";
+import { sendParam } from "@/components/terminal/collateral";
 import { ago, who } from "@/lib/format";
 import { useTx } from "@/lib/tx";
 import { Connect } from "@/components/connect";
@@ -58,11 +59,11 @@ function useWallet() {
           const c = getPublicClient(config, { chainId: CHAINS[k].chainId })!;
           const a = address as Address;
           const [balance, staked, stakedAt, lockedUntil, lastDrip] = await Promise.all([
-            c.readContract({ address: v3Address(k, "OmnitideToken"), abi: omnitideTokenAbi, functionName: "balanceOf", args: [a] }),
+            c.readContract({ address: govToken(k), abi: omnitideTokenAbi, functionName: "balanceOf", args: [a] }),
             c.readContract({ address: v3Address(k, "OmnitideCouncil"), abi: omnitideCouncilAbi, functionName: "staked", args: [a] }),
             c.readContract({ address: v3Address(k, "OmnitideCouncil"), abi: omnitideCouncilAbi, functionName: "stakedAt", args: [a] }),
             c.readContract({ address: v3Address(k, "OmnitideCouncil"), abi: omnitideCouncilAbi, functionName: "lockedUntil", args: [a] }),
-            c.readContract({ address: v3Address(k, "OmnitideToken"), abi: omnitideTokenAbi, functionName: "lastDrip", args: [a] }).catch(() => 0n),
+            GOV_FAUCET ? c.readContract({ address: govToken(k), abi: omnitideTokenAbi, functionName: "lastDrip", args: [a] }).catch(() => 0n) : Promise.resolve(0n),
           ]);
           return [k, { balance, staked, stakedAt: Number(stakedAt), lockedUntil: Number(lockedUntil), nextDrip: Number(lastDrip) + 86_400 }] as const;
         }),
@@ -87,10 +88,10 @@ function StakePanel({ chain }: { chain: ChainKey }) {
 
   async function go() {
     if (mode === "stake") {
-      await send(`Approve ${value} TIDE`, { chainId, address: v3Address(chain, "OmnitideToken"), abi: omnitideTokenAbi, functionName: "approve", args: [v3Address(chain, "OmnitideCouncil"), amount] });
-      await send(`Stake ${value} TIDE on ${SHORT[chain]}`, { chainId, address: v3Address(chain, "OmnitideCouncil"), abi: omnitideCouncilAbi, functionName: "stake", args: [amount] });
+      await send(`Approve ${value} ${GOV}`, { chainId, address: govToken(chain), abi: omnitideTokenAbi, functionName: "approve", args: [v3Address(chain, "OmnitideCouncil"), amount] });
+      await send(`Stake ${value} ${GOV} on ${SHORT[chain]}`, { chainId, address: v3Address(chain, "OmnitideCouncil"), abi: omnitideCouncilAbi, functionName: "stake", args: [amount] });
     } else {
-      await send(`Unstake ${value} TIDE`, { chainId, address: v3Address(chain, "OmnitideCouncil"), abi: omnitideCouncilAbi, functionName: "unstake", args: [amount] });
+      await send(`Unstake ${value} ${GOV}`, { chainId, address: v3Address(chain, "OmnitideCouncil"), abi: omnitideCouncilAbi, functionName: "unstake", args: [amount] });
     }
     setValue("");
   }
@@ -99,10 +100,14 @@ function StakePanel({ chain }: { chain: ChainKey }) {
   return (
     <section className="rounded-2xl border border-line bg-card p-4">
       <div className="flex items-baseline justify-between">
-        <p className="font-medium">TIDE on {SHORT[chain]}</p>
-        <button type="button" className="text-[12px] text-accent hover:underline disabled:text-ink-3 disabled:no-underline" disabled={busy || !canDrip} onClick={() => void send("Drip 1,000 TIDE", { chainId, address: v3Address(chain, "OmnitideToken"), abi: omnitideTokenAbi, functionName: "drip" }).catch(() => {})}>
-          {canDrip ? "Drip 1,000 TIDE" : `Next drip in ${Math.ceil((here!.nextDrip - Date.now() / 1000) / 3600)}h`}
-        </button>
+        <p className="font-medium">
+          {GOV} on {SHORT[chain]}
+        </p>
+        {GOV_FAUCET && (
+          <button type="button" className="text-[12px] text-accent hover:underline disabled:text-ink-3 disabled:no-underline" disabled={busy || !canDrip} onClick={() => void send(`Drip 1,000 ${GOV}`, { chainId, address: govToken(chain), abi: omnitideTokenAbi, functionName: "drip" }).catch(() => {})}>
+            {canDrip ? `Drip 1,000 ${GOV}` : `Next drip in ${Math.ceil((here!.nextDrip - Date.now() / 1000) / 3600)}h`}
+          </button>
+        )}
       </div>
       <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line text-[13px]">
         <div className="bg-card p-3">
@@ -123,7 +128,7 @@ function StakePanel({ chain }: { chain: ChainKey }) {
       </div>
       <label className="mt-2 block">
         <span className="flex justify-between text-[13px] text-ink-2">
-          <span>TIDE</span>
+          <span>{GOV}</span>
           {max > 0n && (
             <button type="button" className="num text-ink-3 hover:text-ink" onClick={() => setValue(formatUnits(max, 18))}>
               max {fmtTide(max)}
@@ -136,7 +141,63 @@ function StakePanel({ chain }: { chain: ChainKey }) {
       <button type="button" className="btn btn-primary mt-3 w-full" disabled={busy || amount === 0n || amount > max || (mode === "unstake" && locked)} onClick={() => void go().catch(() => {})}>
         {mode === "stake" ? `Stake on ${SHORT[chain]}` : "Unstake"}
       </button>
-      <p className="mt-2 text-[12px] leading-[18px] text-ink-3">Stake counts on proposals opened after it lands. Voting locks it until that vote closes, so the same TIDE can't vote twice across chains.</p>
+      <p className="mt-2 text-[12px] leading-[18px] text-ink-3">Stake counts on proposals opened after it lands. Voting locks it until that vote closes, so the same {GOV} can&apos;t vote twice across chains.</p>
+    </section>
+  );
+}
+
+const DUST = 10n ** 12n; // OFT shared decimals are 6: amounts move in whole 1e-6 steps
+
+/** Moves the governance token to another Council chain over LayerZero (lock on the hub adapter, mint on the spoke). */
+function MovePanel({ chain }: { chain: ChainKey }) {
+  const { address } = useAccount();
+  const config = useConfig();
+  const { data: w } = useWallet();
+  const { send, busy } = useTx();
+  const others = V3_CHAINS.filter((k) => k !== chain);
+  const [pick, setPick] = useState<ChainKey | undefined>();
+  const dst = pick && others.includes(pick) ? pick : others[0];
+  const [value, setValue] = useState("");
+  const amount = Number(value) > 0 ? (parseUnits(value, 18) / DUST) * DUST : 0n;
+  const balance = w?.[chain]?.balance ?? 0n;
+  if (!address || !dst) return null;
+  const chainId = CHAINS[chain].chainId;
+
+  async function go() {
+    const c = getPublicClient(config, { chainId })!;
+    const oft = govOft(chain);
+    const p = sendParam(dst!, address as Address, amount, null);
+    if (oft !== govToken(chain)) await send(`Approve ${value} ${GOV}`, { chainId, address: govToken(chain), abi: omnitideTokenAbi, functionName: "approve", args: [oft, amount] });
+    const q = await c.readContract({ address: oft, abi: omnitideTokenAbi, functionName: "quoteSend", args: [p, false] });
+    await send(`Move ${value} ${GOV} to ${SHORT[dst!]}`, { chainId, address: oft, abi: omnitideTokenAbi, functionName: "send", args: [p, { nativeFee: q.nativeFee, lzTokenFee: 0n }, address as Address], value: q.nativeFee });
+    setValue("");
+  }
+
+  return (
+    <section className="rounded-2xl border border-line bg-card p-4">
+      <p className="font-medium">Move {GOV} across chains</p>
+      <p className="mt-1 text-[12px] leading-[18px] text-ink-3">One supply over LayerZero OFT: it leaves {SHORT[chain]} and lands on {SHORT[dst]} in about a minute, ready to stake and vote there.</p>
+      <div className="mt-3 flex gap-1" role="radiogroup" aria-label="Destination chain">
+        {others.map((k) => (
+          <button key={k} type="button" role="radio" aria-checked={dst === k} onClick={() => setPick(k)} className={`btn btn-sm flex-1 ${dst === k ? "bg-raised text-ink" : "btn-ghost"}`}>
+            to {SHORT[k]}
+          </button>
+        ))}
+      </div>
+      <label className="mt-2 block">
+        <span className="flex justify-between text-[13px] text-ink-2">
+          <span>{GOV}</span>
+          {balance > 0n && (
+            <button type="button" className="num text-ink-3 hover:text-ink" onClick={() => setValue(formatUnits((balance / DUST) * DUST, 18))}>
+              max {fmtTide(balance)}
+            </button>
+          )}
+        </span>
+        <input className="field mt-1" inputMode="decimal" placeholder="0" value={value} onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ""))} />
+      </label>
+      <button type="button" className="btn btn-secondary mt-3 w-full" disabled={busy || amount === 0n || amount > balance} onClick={() => void go().catch(() => {})}>
+        Move to {SHORT[dst]}
+      </button>
     </section>
   );
 }
@@ -165,7 +226,7 @@ function Propose() {
     <section className="rounded-2xl border border-line bg-card p-4">
       <p className="font-medium">Open a proposal</p>
       <p className="mt-1 text-[12px] leading-[18px] text-ink-3">
-        Needs {THRESHOLD.toLocaleString("en-US")} TIDE staked on {SHORT[HUB_KEY]} · you have {stake.toLocaleString("en-US", { maximumFractionDigits: 0 })}. Mirrored to {spokes.map((k) => SHORT[k]).join(", ")} over LayerZero.
+        Needs {THRESHOLD.toLocaleString("en-US")} {GOV} staked on {SHORT[HUB_KEY]} · you have {stake.toLocaleString("en-US", { maximumFractionDigits: 0 })}. Mirrored to {spokes.map((k) => SHORT[k]).join(", ")} over LayerZero.
       </p>
       <input className="field mt-3" placeholder="Title" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} />
       <textarea className="field mt-2 h-24 resize-none py-2.5 leading-5" placeholder="What should change, and why" maxLength={2000} value={body} onChange={(e) => setBody(e.target.value)} />
@@ -211,7 +272,7 @@ function ProposalCard({ p, mine, chain }: { p: Proposal; mine?: Vote; chain: Cha
               <div className="flex justify-between text-[13px]">
                 <span>{SUPPORT[s]}</span>
                 <span className="num text-ink-2">
-                  {fmtTide(totals[s]!)} TIDE · {share.toFixed(1)}%
+                  {fmtTide(totals[s]!)} {GOV} · {share.toFixed(1)}%
                 </span>
               </div>
               <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-raised">
@@ -227,7 +288,7 @@ function ProposalCard({ p, mine, chain }: { p: Proposal; mine?: Vote; chain: Cha
       {address &&
         (mine ? (
           <p className="mt-3 text-[13px] text-ink-2">
-            Your {SHORT[chain]} stake voted {SUPPORT[mine.support]} with {fmtTide(mine.weight)} TIDE
+            Your {SHORT[chain]} stake voted {SUPPORT[mine.support]} with {fmtTide(mine.weight)} {GOV}
             {!mine.tallied && " · crossing to the hub"}
           </p>
         ) : open && reachable ? (
@@ -262,12 +323,12 @@ export default function Council() {
           <p className="tag text-ink-3">LayerZero OApp · stake and vote from any chain · tallied on {SHORT[HUB_KEY]}</p>
           <h1 className="display mt-2 text-[44px] text-ink">Council</h1>
           <p className="mt-2 max-w-2xl text-[14px] leading-[22px] text-ink-2">
-            TIDE holders steer the tide wherever their TIDE sits. Proposals open on {SHORT[HUB_KEY]} and mirror to every chain; votes cast on Arbitrum ride LayerZero back to the hub and land in the same tally. No bridging, no wrapping.
+            {GOV} holders steer the tide from wherever their {GOV} sits. Proposals open on {SHORT[HUB_KEY]} and mirror to every chain; votes cast on {V3_CHAINS.filter((k) => k !== HUB_KEY).map((k) => SHORT[k]).join(" or ")} ride LayerZero back to the hub and land in the same tally.
           </p>
           {data && total > 0n && (
             <dl className="mt-6 flex flex-wrap gap-px overflow-hidden rounded-xl border border-line bg-line">
               <div className="min-w-[140px] flex-1 bg-card p-4">
-                <dt className="text-[13px] text-ink-3">TIDE staked</dt>
+                <dt className="text-[13px] text-ink-3">{GOV} staked</dt>
                 <dd className="num mt-1 text-[22px] leading-8 font-medium">{fmtTide(total)}</dd>
               </div>
               {V3_CHAINS.filter((k) => data.staked[CHAINS[k].chainId]).map((k) => (
@@ -287,7 +348,7 @@ export default function Council() {
         {data && data.proposals.length > 0 ? (
           data.proposals.map((p) => <ProposalCard key={p.id} p={p} chain={chain} mine={data.votes.find((v) => v.proposalId === p.id && v.eid === CHAINS[chain].eid)} />)
         ) : (
-          <div className="rounded-2xl border border-line bg-card p-5 text-[14px] leading-[22px] text-ink-2">The floor is open. Stake 1,000 TIDE on {SHORT[HUB_KEY]} and table the first proposal; it reaches every chain within a minute.</div>
+          <div className="rounded-2xl border border-line bg-card p-5 text-[14px] leading-[22px] text-ink-2">The floor is open. Stake 1,000 {GOV} on {SHORT[HUB_KEY]} and table the first proposal; it reaches every chain within a minute.</div>
         )}
       </section>
 
@@ -295,7 +356,7 @@ export default function Council() {
         {!address ? (
           <section className="rounded-2xl border border-line bg-card p-5">
             <p className="font-medium">Take a seat</p>
-            <p className="mt-2 text-[13px] leading-5 text-ink-2">Drip test TIDE once a day on any Council chain, stake it, and your voice counts on every proposal after.</p>
+            <p className="mt-2 text-[13px] leading-5 text-ink-2">{GOV_FAUCET ? `Drip test ${GOV} once a day on any Council chain, stake it, and your voice counts on every proposal after.` : `Stake ${GOV} on any Council chain and your voice counts on every proposal after, tallied on ${SHORT[HUB_KEY]}.`}</p>
             <div className="mt-4">
               <Connect size="md" />
             </div>
@@ -310,6 +371,7 @@ export default function Council() {
               ))}
             </div>
             <StakePanel chain={chain} />
+            <MovePanel chain={chain} />
             <Propose />
           </>
         )}
