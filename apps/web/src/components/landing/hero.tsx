@@ -9,6 +9,7 @@ import { CHAIN_COUNT, SPOKE_LIST } from "@/lib/chains";
 import { LivePrice } from "../live-price";
 import { Change } from "../change";
 import { FlowTicker } from "./flow-ticker";
+import { TokenCa } from "./token-ca";
 
 const WaveField = dynamic(() => import("../wave-field").then((m) => m.WaveField), { ssr: false });
 
@@ -34,7 +35,7 @@ export function Hero() {
             Not the target.
           </h1>
           <p className="mt-6 max-w-xl text-[18px] leading-7 text-ink-2">
-            Fund from {SPOKE_LIST}. LayerZero lands it in a single margin account on Robinhood Chain, where BTC, ETH, NVDA and BABA perps all trade off the same balance.
+            Fund from {SPOKE_LIST}. LayerZero brings your collateral into one shared margin account on Robinhood Chain. Start with crypto and stock perps across markets like BTC, ETH, NVDA and BABA. One book, with room for more.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link href="/terminal/trade" className="btn btn-primary btn-lg">
@@ -45,6 +46,7 @@ export function Hero() {
               Inspect the Sea Wall
             </Link>
           </div>
+          <TokenCa />
           <FlowTicker />
         </div>
 

@@ -27,7 +27,7 @@ const ROLE: Record<string, string> = {
 const short = (a: string) => `${a.slice(0, 8)}…${a.slice(-6)}`;
 const TABS = [...new Set(CONTRACT_ROWS.map((r) => r.chain))].sort((a, b) => Number(b === HUB_KEY) - Number(a === HUB_KEY));
 
-function CopyButton({ text, label }: { text: string; label: string }) {
+export function CopyButton({ text, label }: { text: string; label: string }) {
   const [ok, setOk] = useState(false);
   return (
     <button
