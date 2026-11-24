@@ -143,6 +143,8 @@ function DeskTabs() {
 function AllTabs() {
   return (
     <nav className="flex items-center gap-1 overflow-x-auto border-t border-line px-2 py-1 lg:hidden" aria-label="Terminal views">
+      <EnvToggle className="sm:hidden" />
+      <XLink className="shrink-0 sm:hidden" />
       {VIEWS.map((v) => (
         <Tab key={v.slug} slug={v.slug} label={v.label} />
       ))}
@@ -176,7 +178,7 @@ export function TerminalShell({ children }: { children: React.ReactNode }) {
           <AccountStrip />
           <XLink className="hidden sm:inline-flex" />
           <ThemeToggle />
-          <EnvToggle />
+          <EnvToggle className="hidden sm:inline-flex" />
           <Connect />
         </div>
         <AllTabs />
