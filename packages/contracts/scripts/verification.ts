@@ -1,5 +1,6 @@
-// Interactive registry of every OMNITIDE testnet contract: name, address, explorer link and live verification status.
-// Run from the repo root: pnpm testnet:verification   (--list prints a plain report, --no-anim keeps the tide still)
+// Interactive registry of every OMNITIDE contract in one env: name, address, explorer link and live verification status.
+// Run from the repo root: pnpm testnet:verification | pnpm mainnet:verification | pnpm mainnet:v2:verification
+// (--list prints a plain report, --no-anim keeps the tide still; OMNITIDE_VERSION=1|2|3 keeps only the contracts that version shipped)
 import { spawn, spawnSync } from "node:child_process";
 import { emitKeypressEvents } from "node:readline";
 import { fileURLToPath } from "node:url";
@@ -20,6 +21,14 @@ interface Row {
   source?: string;
 }
 
+// SCRIPT_CHAINS follows the same switch, so chains and deployments always match
+const ENV = process.env.OMNITIDE_ENV?.startsWith("mainnet") ? "mainnet" : "testnet";
+// same version split as deploy.ts: V1.0 Shoreline, V2 Current, V3 Deep Water
+const V1 = ["OmnitideUSD", "OmnitidePort", "OmnitideOracle", "OmnitideClearinghouse"];
+const V2 = ["OmnitideHarbor", "OmnitideHarborShareAdapter", "OmnitideHarborShare", "OmnitideTideReader"];
+const VERSION = Number(process.env.OMNITIDE_VERSION) || 0;
+const versionOf = (name: string) => (V1.includes(name) ? 1 : V2.includes(name) ? 2 : 3);
+const LABEL = VERSION ? ` ${["", "V1.0 Shoreline", "V2 Current", "V3 Deep Water"][VERSION]}` : "";
 const args = new Set(process.argv.slice(2));
 const out = process.stdout;
 const live = !!out.isTTY && !!process.stdin.isTTY && !args.has("--list");
@@ -52,8 +61,8 @@ const KEYS = Object.keys(CHAINS) as ChainKey[];
 const explorerLink = (k: ChainKey, a: string) => (CHAINS[k].blockscout ? `${CHAINS[k].explorer}/address/${a}?tab=contract` : `https://repo.sourcify.dev/${CHAINS[k].chainId}/${a}`);
 
 const rows: Row[] = KEYS.flatMap((chain) =>
-  Object.entries(DEPLOYMENTS.testnet[chain] ?? {}).flatMap(([name, rec]) =>
-    typeof rec !== "object"
+  Object.entries(DEPLOYMENTS[ENV][chain] ?? {}).flatMap(([name, rec]) =>
+    typeof rec !== "object" || (VERSION && versionOf(name) !== VERSION)
       ? []
       : PARTS.flatMap(([field, alias, kind]) => {
           const address = (rec as Record<string, unknown>)[field];
@@ -111,7 +120,7 @@ const fixable = (r: Row) => r.status === "partial" || r.status === "missing";
 
 async function report() {
   await soundAll();
-  out.write(`\n${C.bold(C.tide("OMNITIDE"))} ${C.dim("· testnet contract registry")}\n`);
+  out.write(`\n${C.bold(C.tide("OMNITIDE"))} ${C.dim(`· ${ENV}${LABEL} contract registry`)}\n`);
   for (const k of KEYS) {
     const list = rows.filter((r) => r.chain === k);
     if (!list.length) continue;
@@ -190,7 +199,7 @@ function view(): string {
   if (H >= 36) L.push(...wordmark().map((l) => `  ${l}`), "");
   else L.push(`  ${C.bold(C.tide("OMNITIDE"))}`);
   L.push(`  ${swell(W - 4)}`);
-  L.push(`  ${C.dim(cut("Testnet contract registry · Robinhood Chain hub · LayerZero spokes · every address checked live against its explorer", W - 4))}`);
+  L.push(`  ${C.dim(cut(`${ENV === "mainnet" ? "Mainnet" : "Testnet"}${LABEL} contract registry · Robinhood Chain hub · LayerZero spokes · every address checked live against its explorer`, W - 4))}`);
   L.push(`  ${gauge(W)}`, "");
 
   // chain tabs

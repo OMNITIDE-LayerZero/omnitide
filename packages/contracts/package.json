@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "deploy": "hardhat run scripts/deploy.ts",
     "wire": "hardhat run scripts/wire.ts",
-    "testnet:verification": "node --no-warnings scripts/verification.ts"
+    "testnet:verification": "node --no-warnings scripts/verification.ts",
+    "mainnet:verification": "OMNITIDE_ENV=mainnet node --no-warnings scripts/verification.ts",
+    "mainnet:v2:verification": "OMNITIDE_ENV=mainnet OMNITIDE_VERSION=2 node --no-warnings scripts/verification.ts"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.2.2",
