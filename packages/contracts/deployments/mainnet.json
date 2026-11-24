@@ -16,7 +16,7 @@
     },
     "OmnitideClearinghouse": {
       "proxy": "0xA1f062B1f862c24866eAeed63f7587ab02e8f776",
-      "implementation": "0xD7f3373B8A4B7a78223376D350C87Ad51d9ad27B",
+      "implementation": "0x8F42Ab06Cd3db012E51967C882eE887E742447E2",
       "deployTx": "0xbe63fc66d9e41091e1dcfd959d3b6d9da3547a32997ff14c3a32306b13ddf716",
       "block": 119274935
     },
@@ -26,7 +26,19 @@
       "deployTx": "0x96508d1e84cfb9f0008c627a3cfe700ae8310499f53ffe58fd17a52387357054",
       "block": 119275690
     },
-    "wired": "hyperEvm,arbitrum"
+    "wired": "hyperEvm,arbitrum",
+    "OmnitideHarbor": {
+      "proxy": "0x3063fe76a842B206c5E7EBb35B786195bF66d064",
+      "implementation": "0xAd6492974095662cC2Abc0f7da8c871F13587d32",
+      "deployTx": "0xa591bea4d8239d664df314036c721169f6a57cb0b6a310a65dd830cd10e111c3",
+      "block": 122478084
+    },
+    "OmnitideHarborShareAdapter": {
+      "proxy": "0xC3af9f88aB647223f19082B6bA878Ca70622Cb35",
+      "implementation": "0x9005f0950143F9565Bdf59871b556D37871cE53B",
+      "deployTx": "0xd405163f54966387710b4164924a3fa8aa69c82e65b49e933249130a038e8cc9",
+      "block": 122478182
+    }
   },
   "hyperEvm": {
     "chainId": 999,
@@ -60,6 +72,18 @@
       "deployTx": "0x199562b113218a2efe30fbadba3df25cb190173bc3bb27956af9e298326779b4",
       "block": 526023682
     },
-    "wired": "robinhood,hyperEvm"
+    "wired": "robinhood,hyperEvm",
+    "OmnitideHarborShare": {
+      "proxy": "0x2aB12F893661973Fafc94B5c9df6Ec4336B34b5e",
+      "implementation": "0x6bEaC01213A965d915283b048589a905c11C9a81",
+      "deployTx": "0x064f489fb44540c7766464698d8914073f5c981a4293683b75004d10610d4b67",
+      "block": 527213336
+    },
+    "OmnitideTideReader": {
+      "proxy": "0xad5a1449b3d181bA0F8aB7bF03e3CD86B6Fc1A22",
+      "implementation": "0xB38706716FB5ac3A08A7570819eafFd22d8801F7",
+      "deployTx": "0x236c876721f61d30f01a6e2c18bb0f5d8f8cb120d411e25e7ed4193ec73c069d",
+      "block": 527213367
+    }
   }
 }
