@@ -178,7 +178,9 @@ export function TerminalShell({ children }: { children: React.ReactNode }) {
           <AccountStrip />
           <XLink className="hidden sm:inline-flex" />
           <ThemeToggle />
-          <EnvToggle className="hidden sm:inline-flex" />
+          <div className="hidden sm:block">
+            <EnvToggle />
+          </div>
           <Connect />
         </div>
         <AllTabs />
