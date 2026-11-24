@@ -125,7 +125,7 @@ const lzOpts = { kind: "uups" as const, constructorArgs: [chain.endpoint], unsaf
 if (VERSION >= 2 && chain.hub) {
   const chAddr = dep.OmnitideClearinghouse!.proxy;
   const CH = await ethers.getContractFactory("OmnitideClearinghouse");
-  if (dep.OmnitideClearinghouse!.implementation !== (await up.erc1967.getImplementationAddress(chAddr)) || !(await hasHarborHooks(chAddr))) {
+  if (dep.OmnitideClearinghouse!.implementation !== (await up.erc1967.getImplementationAddress(chAddr)) || !(await hasHarborReserve(chAddr))) {
     await up.upgradeProxy(chAddr, CH, { kind: "uups" });
     dep.OmnitideClearinghouse!.implementation = await up.erc1967.getImplementationAddress(chAddr);
     saveDeployments(all);
@@ -225,8 +225,9 @@ if (VERSION >= 3 && (chain.hub || chain.deepWater)) {
   await deployOnce("OmnitideCouncil", async () => up.deployProxy(await F("OmnitideCouncil"), [DEPLOYER, dep.OmnitideToken!.proxy, hubEid, VOTING_PERIOD, PROPOSAL_THRESHOLD], lzOpts));
 }
 
-async function hasHarborHooks(addr: string) {
-  return ethers.provider.call({ to: addr, data: ethers.id("harbor()").slice(0, 10) }).then(() => true, () => false);
+// the Harbor build that reserves open trader PnL; older implementations lack poolAvailable()
+async function hasHarborReserve(addr: string) {
+  return ethers.provider.call({ to: addr, data: ethers.id("poolAvailable()").slice(0, 10) }).then(() => true, () => false);
 }
 
 const spent = startBalance - (await ethers.provider.getBalance(signer.address));

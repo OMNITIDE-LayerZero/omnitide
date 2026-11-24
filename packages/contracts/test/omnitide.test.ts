@@ -435,6 +435,51 @@ describe("OmnitideHarbor (OVault)", () => {
     expect((await hubUsd.balanceOf(bob.address)) - before).to.equal(out);
   });
 
+  it("keeps open trader profit in the pool when LPs exit", async () => {
+    const ctx = await networkHelpers.loadFixture(harborFixture);
+    const { harbor, ch, owner, alice, bob } = ctx;
+    await depositLocal(ctx, alice, usd(1_000));
+    await depositLocal(ctx, bob, usd(1_000));
+    const size = E18 / 10n;
+    await ch.connect(alice).trade(0, size, 60_100n * E18, [await report(ctx, BTC, 60_000n * E18)]);
+    await ch.connect(bob).trade(0, -size / 2n, 0, [await report(ctx, BTC, 60_000n * E18)]);
+    expect(await ch.traderPnl()).to.equal(0);
+    const pool = BigInt(await ch.poolBalance());
+
+    // BTC +3,000: alice +300, bob −150 → traders net +150 owed by the pool
+    await ch.markPrices([await report(ctx, BTC, 63_000n * E18)]);
+    expect(await ch.markPrice(0)).to.equal(63_000n * E18);
+    expect(await ch.traderPnl()).to.equal(usd(150));
+    expect(await harbor.totalAssets()).to.equal(pool - usd(150));
+
+    // the whole LP book exits; the 150 stays for the traders
+    await harbor.redeem(await harbor.balanceOf(owner.address), owner.address, owner.address);
+    expect(BigInt(await ch.poolBalance())).to.equal(usd(150));
+    await expect(harbor.withdraw(1, owner.address, owner.address)).to.be.revertedWithCustomError(harbor, "ERC4626ExceededMaxWithdraw");
+
+    const before = await ch.balances(alice.address);
+    await ch.connect(alice).trade(0, -size, 0, [await report(ctx, BTC, 63_000n * E18)]);
+    expect((await ch.balances(alice.address)) - before).to.equal(usd(300) - 6_300_000n);
+    await ch.connect(bob).trade(0, size / 2n, 70_000n * E18, [await report(ctx, BTC, 63_000n * E18)]);
+    expect(await ch.costBasis(0)).to.equal(0);
+    expect(await ch.traderPnl()).to.equal(0);
+    expect(BigInt(await ch.poolBalance())).to.be.greaterThan(0n);
+  });
+
+  it("syncs a market's cost basis only from a complete position list", async () => {
+    const ctx = await networkHelpers.loadFixture(harborFixture);
+    const { ch, alice, bob, owner } = ctx;
+    await depositLocal(ctx, alice, usd(1_000));
+    await depositLocal(ctx, bob, usd(1_000));
+    await ch.connect(alice).trade(0, E18 / 10n, 60_100n * E18, [await report(ctx, BTC, 60_000n * E18)]);
+    await ch.connect(bob).trade(0, -E18 / 20n, 0, [await report(ctx, BTC, 61_000n * E18)]);
+    const basis = await ch.costBasis(0);
+    await expect(ch.syncCostBasis(0, [alice.address])).to.be.revertedWithCustomError(ch, "IncompleteSync");
+    await expect(ch.connect(alice).syncCostBasis(0, [alice.address, bob.address])).to.be.revertedWithCustomError(ch, "OwnableUnauthorizedAccount");
+    await ch.syncCostBasis(0, [alice.address, bob.address, owner.address]);
+    expect(await ch.costBasis(0)).to.equal(basis);
+  });
+
   it("pause stops deposits but never redemptions", async () => {
     const { harbor, hubUsd, guardian, owner } = await networkHelpers.loadFixture(harborFixture);
     await harbor.connect(guardian).pause();

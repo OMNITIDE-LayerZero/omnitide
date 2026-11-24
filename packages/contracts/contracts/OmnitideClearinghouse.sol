@@ -104,6 +104,10 @@ contract OmnitideClearinghouse is
     uint256 public nextSealedId;
     mapping(uint256 => SealedOrder) public sealedOrders;
 
+    // Harbor reserve: open trader PnL per market = netSize * markPrice - costBasis (all 1e36 USD)
+    mapping(uint8 => int256) public costBasis; // sum of size * entryPrice over every open position
+    mapping(uint8 => uint256) public markPrice; // last verified price used on this market
+
     event Deposited(address indexed account, uint256 amount, uint32 srcEid, bytes32 guid);
     event Withdrawn(address indexed account, uint256 amount, uint32 dstEid, address receiver, bytes32 guid);
     event Traded(
@@ -132,6 +136,7 @@ contract OmnitideClearinghouse is
     event MarketSet(uint8 indexed id, bytes32 feed, uint16 initialMarginBps, uint16 maintenanceMarginBps, uint256 maxOpenInterestUsd, bool active);
     event ParamsSet(uint16 feeBps, uint256 depositCap, address guardian);
     event HarborSet(address harbor);
+    event Marked(uint8 indexed marketId, uint256 price);
     event SealedOrderPlaced(uint256 indexed id, address indexed account, bytes32 commitment, bytes ciphertext);
     event SealedOrderCancelled(uint256 indexed id, address indexed account);
     event SealedOrderExecuted(
@@ -168,6 +173,8 @@ contract OmnitideClearinghouse is
     error HarborActive();
     error BadReveal(uint256 id);
     error LimitNotSealable();
+    error PoolReserved(uint256 available, uint256 amount);
+    error IncompleteSync(uint8 id);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -252,8 +259,55 @@ contract OmnitideClearinghouse is
         _drawPool(amount, to);
     }
 
+    /// @notice Owner rebuilds a market's cost basis after the upgrade; the list must cover every open position.
+    function syncCostBasis(uint8 marketId, address[] calldata accounts) external onlyOwner {
+        Market storage m = _market(marketId);
+        int256 basis;
+        uint256 longs;
+        uint256 shorts;
+        for (uint256 i; i < accounts.length; ++i) {
+            Position memory p = positions[accounts[i]][marketId];
+            basis += p.size * p.entryPrice.toInt256();
+            if (p.size > 0) longs += uint256(p.size);
+            else shorts += uint256(-p.size);
+        }
+        if (longs != m.longSize || shorts != m.shortSize) revert IncompleteSync(marketId);
+        costBasis[marketId] = basis;
+    }
+
+    /// @notice Anyone may refresh marks with signed reports so the Harbor reserve follows the market.
+    function markPrices(OmnitideOracle.PriceReport[] calldata reports) external {
+        for (uint8 id; id < marketCount; ++id) {
+            bytes32 feed = markets[id].feed;
+            for (uint256 i; i < reports.length; ++i) {
+                if (reports[i].feed == feed) {
+                    _mark(id, oracle.verify(reports[i]));
+                    break;
+                }
+            }
+        }
+    }
+
+    /// @notice Unrealized PnL of every open trader at the last marks, tdUSD units (positive = owed to traders).
+    function traderPnl() public view returns (int256 pnl) {
+        for (uint8 id; id < marketCount; ++id) {
+            Market storage m = markets[id];
+            int256 net = m.longSize.toInt256() - m.shortSize.toInt256();
+            pnl += net * markPrice[id].toInt256() - costBasis[id];
+        }
+        pnl = pnl / 1e18 / int256(TO_WAD);
+    }
+
+    /// @notice Pool liquidity Harbor can hand out without touching what open traders are owed.
+    function poolAvailable() public view returns (uint256) {
+        int256 owed = traderPnl();
+        int256 free = poolBalance - (owed > 0 ? owed : int256(0));
+        return free > 0 ? uint256(free) : 0;
+    }
+
     function _drawPool(uint256 amount, address to) private {
-        require(poolBalance >= amount.toInt256(), "pool");
+        uint256 available = poolAvailable();
+        if (amount > available) revert PoolReserved(available, amount);
         poolBalance -= amount.toInt256();
         token.safeTransfer(to, amount);
         emit PoolFunded(to, -amount.toInt256());
@@ -508,6 +562,7 @@ contract OmnitideClearinghouse is
         int256 oldSize = p.size;
         int256 newSize = oldSize + sizeDelta;
         int256 pnl;
+        costBasis[marketId] -= oldSize * p.entryPrice.toInt256();
 
         if (oldSize == 0 || (oldSize > 0) == (sizeDelta > 0)) {
             p.entryPrice = (_abs(oldSize) * p.entryPrice + _abs(sizeDelta) * price) / _abs(newSize);
@@ -525,6 +580,8 @@ contract OmnitideClearinghouse is
             _removeOpen(account, marketId);
         }
         p.size = newSize;
+        costBasis[marketId] += newSize * p.entryPrice.toInt256();
+        _mark(marketId, price);
 
         int256 pnlUnits = pnl / int256(TO_WAD);
         int256 delta = pnlUnits - fee.toInt256();
@@ -533,6 +590,11 @@ contract OmnitideClearinghouse is
         else totalCollateral -= _min(totalCollateral, uint256(-delta));
         poolBalance -= delta;
         emit Traded(account, marketId, sizeDelta, price, newSize, p.entryPrice, pnlUnits, fee);
+    }
+
+    function _mark(uint8 marketId, uint256 price) private {
+        markPrice[marketId] = price;
+        emit Marked(marketId, price);
     }
 
     function _updateOpenInterest(Market storage m, int256 oldSize, int256 newSize) private {

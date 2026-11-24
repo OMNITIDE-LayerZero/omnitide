@@ -8,7 +8,7 @@ import { loadEnv } from "./env.js";
 import { cleanNumber } from "./prices.js";
 import { bucketStart } from "./candles.js";
 import { oracleDomain, REPORT_TYPES, signReport } from "./reports.js";
-import { orderTriggered } from "./executor.js";
+import { needsMark, orderTriggered, traderPnlUnits } from "./executor.js";
 import { aggregate, nasdaqPointToUtc } from "./backfill.js";
 
 describe("keeper", () => {
@@ -95,5 +95,17 @@ describe("Riptide Alerts subscriptions", () => {
     expect((await current.handleRequest({ ...req, target: { email: "a@b.co" }, signature: await signer.signMessage({ message: riptideMessage(req) }) })).status).toBe(400);
     const email = { ...req, channel: "email" as const };
     expect((await current.handleRequest({ ...email, target: { email: "a@b.co" }, signature: await signer.signMessage({ message: riptideMessage(email) }) })).status).toBe(400); // email channel off
+  });
+});
+
+describe("Harbor marks", () => {
+  const E18 = 10n ** 18n;
+  it("prices open trader PnL like the clearinghouse and re-marks only on real drift", () => {
+    // 0.1 BTC long at 60k, 0.05 short at 60k → net 0.05, basis 0.05·60k
+    const legs = [{ net: E18 / 20n, costBasis: (E18 / 10n) * 60_000n * E18 - (E18 / 20n) * 60_000n * E18, price: 63_000n * E18 }];
+    expect(traderPnlUnits(legs)).toBe(150_000_000n);
+    expect(needsMark(150_000_000n, 0n, 2_000_000_000n)).toBe(true);
+    expect(needsMark(150_000_000n, 140_000_000n, 2_000_000_000n)).toBe(false); // within 1% of the pool
+    expect(needsMark(5_000n, 0n, 0n)).toBe(false); // under the 0.01 floor
   });
 });

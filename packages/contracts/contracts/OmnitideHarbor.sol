@@ -77,10 +77,9 @@ contract OmnitideHarbor is
 
     // ───────────────────────── vault ─────────────────────────
 
-    /// @notice Everything Harbor owns sits in the Tide Pool, so its assets are the pool balance.
+    /// @notice Harbor owns the Tide Pool minus what open traders are owed, so exits never draw on trader profit.
     function totalAssets() public view override returns (uint256) {
-        int256 pool = clearinghouse.poolBalance();
-        return pool > 0 ? uint256(pool) : 0;
+        return clearinghouse.poolAvailable();
     }
 
     function maxDeposit(address receiver) public view override returns (uint256) {
