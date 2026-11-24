@@ -11,7 +11,7 @@ import { CLEARINGHOUSE, CH_ABI, FEE_BPS } from "@/lib/contracts";
 import { fetchReports, feedsFor, useHubAccount } from "@/lib/account";
 import { usePriceMap } from "@/lib/hooks";
 import { accountHealth, liquidationPrice } from "@/lib/margin";
-import { leverage, money, price as fmtPrice } from "@/lib/format";
+import { leverage, money, price as fmtPrice, fee as feeText } from "@/lib/format";
 import { useTx } from "@/lib/tx";
 import { useDeepKeys } from "@/lib/deep";
 import { Connect } from "../connect";
@@ -169,7 +169,7 @@ export function Ticket({ market }: { market: MarketConfig }) {
           ["Price", execPrice ? fmtPrice(execPrice) : null],
           ["Size", base > 0 ? `${base.toPrecision(5)} ${market.symbol}` : null],
           ["Margin used", notional > 0 ? money((notional * market.initialMarginBps) / 10_000) : null],
-          ["Fee", fee > 0 ? money(fee) : null],
+          ["Fee", fee > 0 ? feeText(fee) : null],
           ["Liquidation", preview?.liq ? fmtPrice(preview.liq) : null],
           ["Max leverage", leverage(market.initialMarginBps)],
         ]

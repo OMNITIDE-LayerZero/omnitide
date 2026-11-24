@@ -7,7 +7,7 @@ import { HUB_KEY, explorerTx } from "@/lib/chains";
 import { MARKETS } from "@/lib/contracts";
 import { openSeals, useDeepNotes } from "@/lib/deep";
 import { csv, download } from "@/lib/report";
-import { ago, money, price as fmtPrice, realized, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { ago, money, price as fmtPrice, realized, shortHash, signedMoney, units6, wad, fee } from "@/lib/format";
 
 export function DisclosureViewer() {
   const [input, setInput] = useState("");
@@ -63,7 +63,7 @@ export function DisclosureViewer() {
                 {[
                   ["Collateral", money(units6(latest.collateral))],
                   ["Realized PnL", realized(units6(latest.realized))],
-                  ...(latest.fees !== "0" ? [["Fees paid", money(units6(latest.fees))]] : []),
+                  ...(latest.fees !== "0" ? [["Fees paid", fee(units6(latest.fees))]] : []),
                   ["Open positions", String(latest.positions.length || "flat")],
                 ].map(([k, v]) => (
                   <div key={k} className="min-w-[140px] flex-1 bg-card p-4">

@@ -79,7 +79,7 @@ test("tide chart lists every chain with its lzRead reading", async ({ page }) =>
   const errors = await noPageErrors(page);
   await page.goto("/terminal/tide");
   await expect(page.getByRole("heading", { name: "Tide Chart", level: 1 })).toBeVisible();
-  await expect(page.getByText(/lzRead attested/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/lzRead (attested|verified)/).first()).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText("BTC-PERP").first()).toBeVisible();
   await checkCopyRules(page);
   expect(errors).toEqual([]);

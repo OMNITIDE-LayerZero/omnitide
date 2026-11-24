@@ -14,7 +14,7 @@ import { useDeepActions, useDeepBook, useDeepKeys, type DeepNote, type Unlocked 
 import { fetchReports, feedsFor, useLocalToken } from "@/lib/account";
 import { useIndexer, usePriceMap } from "@/lib/hooks";
 import { accountHealth } from "@/lib/margin";
-import { ago, money, price as fmtPrice, shortHash, signedMoney, realized, units6, upnl, wad } from "@/lib/format";
+import { ago, money, price as fmtPrice, shortHash, signedMoney, realized, units6, upnl, wad, fee } from "@/lib/format";
 import { explain, useTx } from "@/lib/tx";
 import { toast } from "@/components/toasts";
 import { amountUnits } from "@/components/terminal/collateral";
@@ -417,7 +417,7 @@ function TwoSides({ keys, book, verified, seal }: { keys: Unlocked; book: DeepBo
             {book.fees !== "0" && (
               <div className="flex justify-between">
                 <dt className="text-ink-3">Fees paid</dt>
-                <dd className="num">{money(units6(book.fees))}</dd>
+                <dd className="num">{fee(units6(book.fees))}</dd>
               </div>
             )}
             <div className="flex justify-between">

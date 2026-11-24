@@ -48,3 +48,5 @@ export const realized = (v: number) => (Math.abs(v) < 0.005 ? "Position open" : 
 
 /** Unrealized PnL for display; a position that hasn't moved reads "at entry". */
 export const upnl = (v: number) => (Math.abs(v) < 0.005 ? "at entry" : signedMoney(v));
+/** Sub-cent fees read "<$0.01", never "$0.00". */
+export const fee = (v: number) => (v < 0.01 ? "<$0.01" : money(v));

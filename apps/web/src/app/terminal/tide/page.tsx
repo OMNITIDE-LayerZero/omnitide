@@ -122,13 +122,13 @@ export default function TideChart() {
                       {SHORT[k]}
                       <span className="tag ml-2 text-ink-3">eid {CHAINS[k].eid}</span>
                     </span>
-                    <span className="num text-[14px]">{v !== null ? `${v.toLocaleString("en-US", { maximumFractionDigits: 0 })} tdUSD` : "reading…"}</span>
+                    <span className="num text-[14px]">{v === null ? "reading…" : v >= 1 ? `${v.toLocaleString("en-US", { maximumFractionDigits: 0 })} tdUSD` : "Lane open"}</span>
                   </div>
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-raised">
                     <div className="h-full rounded-full bg-accent transition-[width] duration-700" style={{ width: `${Math.max(2, share * 100)}%` }} />
                   </div>
                   <p className="tag mt-1.5 text-ink-3">
-                    {read !== undefined ? `lzRead attested ${read.toLocaleString("en-US", { maximumFractionDigits: 0 })}${v !== null && Math.abs(v - read) >= 1 ? ` · moved ${v > read ? "+" : "−"}${Math.abs(v - read).toLocaleString("en-US", { maximumFractionDigits: 0 })} since` : " · matches live"}` : k === HUB_KEY ? "hub · read live on Robinhood Chain" : "read live · outside lzRead DVN coverage on testnet"}
+                    {read !== undefined && read < 1 && (v ?? 0) < 1 ? "lzRead verified · ready for the first Inflow" : read !== undefined ? `lzRead attested ${read.toLocaleString("en-US", { maximumFractionDigits: 0 })}${v !== null && Math.abs(v - read) >= 1 ? ` · moved ${v > read ? "+" : "−"}${Math.abs(v - read).toLocaleString("en-US", { maximumFractionDigits: 0 })} since` : " · matches live"}` : k === HUB_KEY ? "hub · read live on Robinhood Chain" : "read live · outside lzRead DVN coverage on testnet"}
                     {htd && units6(htd) > 0 ? ` · ${units6(htd).toLocaleString("en-US", { maximumFractionDigits: 2 })} htdUSD` : ""}
                   </p>
                 </li>

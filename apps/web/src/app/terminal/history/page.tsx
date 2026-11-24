@@ -8,7 +8,7 @@ import { MARKETS } from "@omnitide/contracts/markets";
 import { CHAINS, type ChainKey } from "@omnitide/contracts/chains";
 import { useIndexer } from "@/lib/hooks";
 import { CHAIN_COUNT, HUB_KEY, LZ_SCAN, SHORT, explorerTx } from "@/lib/chains";
-import { ago, money, price, shortHash, signedMoney, units6, wad } from "@/lib/format";
+import { ago, fee, money, price, shortHash, signedMoney, units6, wad } from "@/lib/format";
 import { LineChart } from "@/components/terminal/line-chart";
 import { csv, download, pnlReport } from "@/lib/report";
 
@@ -101,7 +101,7 @@ export default function History() {
                   <td className="num px-4 py-3">{price(wad(t.price))}</td>
                   <td className="num px-4 py-3">{money(wad(t.notionalUsd))}</td>
                   <td className={`num px-4 py-3 ${pnl > 0 ? "text-flood" : pnl < 0 ? "text-ebb" : "text-ink-3"}`}>{pnl !== 0 ? signedMoney(pnl) : "Opened"}</td>
-                  <td className="num px-4 py-3 text-ink-2">{money(units6(t.fee))}</td>
+                  <td className="num px-4 py-3 text-ink-2">{fee(units6(t.fee))}</td>
                   <td className="px-4 py-3 text-ink-3">{ago(t.timestamp)}</td>
                   <td className="px-4 py-3">
                     <TxLink hash={t.tx} href={explorerTx(HUB_KEY, t.tx)} />
@@ -143,7 +143,7 @@ export default function History() {
             <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
               {[
                 { label: "Realized PnL", value: signedMoney(report.realized), tone: report.realized >= 0 ? "text-flood" : "text-ebb" },
-                { label: "Fees paid", value: money(report.fees) },
+                { label: "Fees paid", value: fee(report.fees) },
                 { label: "Net after fees", value: signedMoney(report.realized - report.fees), tone: report.realized - report.fees >= 0 ? "text-flood" : "text-ebb" },
                 { label: "Fills", value: String(report.fills) },
               ].map((f) => (

@@ -192,7 +192,7 @@ export default function Risk() {
         <p className="mt-2 max-w-2xl text-[14px] leading-[22px] text-ink-2">Every number here is computed from your live positions on the hub and the keeper's signed prices, the same math the clearinghouse uses for maintenance margin.</p>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         <section className="rounded-2xl border border-line bg-card p-5">
           <p className="tag text-ink-3">Book Rank</p>
           {!isConnected ? (
@@ -274,7 +274,7 @@ export default function Risk() {
         </section>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         {priced ? <Simulator key={seed ? "mine" : "example"} prices={prices} seed={seed} /> : <div className="h-80 animate-pulse rounded-2xl border border-line bg-card" />}
         <RiptidePanel />
       </div>

@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Share2, ShieldCheck } from "lucide-react";
-import { money, moneyCompact, realized, signedMoney, units6, wad, who } from "@/lib/format";
+import { money, moneyCompact, realized, signedMoney, units6, wad, who, fee } from "@/lib/format";
 
 export interface TraderRow {
   account: string;
@@ -100,7 +100,7 @@ export function PnlCard({ account, compact = false }: { account: string; compact
         </dl>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-white/15 pt-4">
           <span className="inline-flex items-center gap-1.5 text-[12px] text-white/60">
-            <ShieldCheck size={13} strokeWidth={1.75} /> summed from OmnitideClearinghouse events · fees {money(units6(t.fees))}
+            <ShieldCheck size={13} strokeWidth={1.75} /> summed from OmnitideClearinghouse events · fees {fee(units6(t.fees))}
           </span>
           <button type="button" className="btn btn-sm bg-white text-navy hover:bg-white/90" onClick={() => shareOnX(t.account, pnl, data?.rank)}>
             <Share2 size={14} strokeWidth={1.75} /> Share to X

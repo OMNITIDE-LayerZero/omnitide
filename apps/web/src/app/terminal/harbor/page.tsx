@@ -292,9 +292,10 @@ export default function Harbor() {
             <li>tdUSD crosses to the hub as an OFT with a compose message naming you and your chain.</li>
             <li>OmnitideHarbor deposits it into the Tide Pool and mints htdUSD at the live share price.</li>
             <li>OmnitideHarborShareAdapter locks the shares and LayerZero mints them on your chain.</li>
-            <li>Redeeming runs the same path backwards, paid out of the pool.</li>
+            <li>Redeeming runs the same path backwards, paid out of the pool. Profit still owed to open traders stays in the pool until they close.</li>
           </ol>
           {live && <p className="num mt-3 text-ink-3">Tide Pool balance {moneyCompact(units6(live.harbor.pool))}</p>}
+          {live && units6(live.harbor.pool) - assets >= 0.01 && <p className="num mt-1 text-ink-3">Held for open trader profit {moneyCompact(units6(live.harbor.pool) - assets)}, released as positions close</p>}
         </div>
       </aside>
     </div>
