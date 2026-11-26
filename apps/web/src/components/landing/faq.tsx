@@ -1,4 +1,5 @@
 import { Plus } from "lucide-react";
+import { ChartGrid } from "./backdrops";
 import { MARKETS } from "@omnitide/contracts/markets";
 import { FEE_BPS, GOV } from "@/lib/contracts";
 import { IS_MAINNET, SPOKE_LIST } from "@/lib/chains";
@@ -53,7 +54,8 @@ const SPEC = [
 /** Straight answers in native details, so they work by keyboard and find-in-page. */
 export function Faq() {
   return (
-    <section id="faq" className="relative scroll-mt-16 border-t border-line bg-shelf py-12 sm:py-16">
+    <section id="faq" className="relative isolate scroll-mt-16 overflow-hidden border-t border-line bg-shelf py-12 sm:py-16">
+      <ChartGrid seed="faq" rose="left" />
       <div className="mx-auto grid max-w-[1440px] gap-10 px-4 sm:px-8 lg:grid-cols-[1fr_1.4fr]">
         <div>
           <p className="tag text-[12px] text-ink-2">Questions · straight answers</p>

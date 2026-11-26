@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { StarChart } from "./backdrops";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { GOV, V3_CHAINS, govToken } from "@/lib/contracts";
 import { HUB_KEY, NETWORK, explorerAddress } from "@/lib/chains";
@@ -15,7 +16,8 @@ const USES = [
 /** The governance token: what it does and its address on every chain it sails. */
 export function TokenBand() {
   return (
-    <section id="token" data-tone="dark" className="engrave relative scroll-mt-16 overflow-hidden bg-navy py-12 text-white sm:py-16">
+    <section id="token" data-tone="dark" className="engrave relative isolate scroll-mt-16 overflow-hidden bg-navy py-12 text-white sm:py-16">
+      <StarChart />
       <div className="mx-auto grid max-w-[1440px] gap-12 px-4 sm:px-8 lg:grid-cols-[1fr_1.1fr] lg:items-start">
         <div>
           <p className="tag text-[12px] text-white/70">${GOV} · LayerZero OFT · {V3_CHAINS.length} chains</p>

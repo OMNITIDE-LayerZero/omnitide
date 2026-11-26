@@ -82,7 +82,7 @@ export function MarketsBoard({ compact = false, landing = false }: { compact?: b
               const p = data?.[m.feed];
               const v = vol.get(m.id);
               return (
-                <tr key={m.feed} className="group border-t border-line transition-colors hover:bg-raised/60">
+                <tr key={m.feed} data-market={m.symbol} className="group border-t border-line transition-colors hover:bg-raised/60">
                   <td className="py-3 pr-4">
                     <span className="font-medium">{m.symbol}</span>
                     <span className="ml-2 text-[13px] text-ink-3">{m.name}</span>

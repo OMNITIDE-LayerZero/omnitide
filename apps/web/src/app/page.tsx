@@ -11,6 +11,7 @@ import { Surface } from "@/components/landing/surface";
 import { Soundings } from "@/components/landing/soundings";
 import { TokenBand } from "@/components/landing/token-band";
 import { Faq } from "@/components/landing/faq";
+import { Bathymetry, ChartGrid } from "@/components/landing/backdrops";
 import { MARKETS } from "@omnitide/contracts/markets";
 
 function SectionHead({ tag, title, aside }: { tag: string; title: React.ReactNode; aside?: string }) {
@@ -57,7 +58,8 @@ export default function Home() {
 
         <Dive />
 
-        <section id="markets" className="relative scroll-mt-16 bg-shelf py-8 sm:py-12">
+        <section id="markets" className="relative isolate scroll-mt-16 overflow-hidden bg-shelf py-8 sm:py-12">
+          <Bathymetry />
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
             {/* the ascent: out of deep water and back up to the book */}
             <div className="mb-10 flex items-center gap-4">
@@ -65,7 +67,7 @@ export default function Home() {
               <span className="h-px flex-1 bg-line" />
             </div>
             <SectionHead tag={`${MARKETS.length} markets · crypto, US and China stocks`} title={<>Bitcoin to<br />Alibaba, one margin</>} aside="Crypto majors at up to 10×, US and China stocks at up to 5×, priced live from Coinbase and Nasdaq and settled in tdUSD, the dollar that moves with you across chains." />
-            <div className="mt-12 rounded-2xl border border-line bg-card p-4 sm:p-6">
+            <div className="mt-12 rounded-2xl border border-line bg-card/85 p-4 sm:p-6">
               <MarketsBoard landing />
             </div>
             <div className="mt-6">
@@ -74,7 +76,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section data-tone="dark" className="engrave relative bg-accent py-8 sm:py-12" style={{ backgroundColor: "#1f3dff" }}>
+        <section data-tone="dark" className="engrave relative isolate overflow-hidden bg-accent py-8 sm:py-12" style={{ backgroundColor: "#1f3dff" }}>
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
             <SeaWallBand />
           </div>
@@ -82,7 +84,8 @@ export default function Home() {
 
         <TokenBand />
 
-        <section id="contracts" className="relative scroll-mt-16 py-8 sm:py-12">
+        <section id="contracts" className="relative isolate scroll-mt-16 overflow-hidden py-8 sm:py-12">
+          <ChartGrid seed="contracts" rose="right" />
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
             <SectionHead tag="Upgradeable proxies · source verified" title={<>The contracts<br />behind the tide</>} aside="Every OMNITIDE contract sits behind a UUPS proxy with its source published on the chain's explorer. These are the addresses the terminal talks to." />
             <div className="mt-12">

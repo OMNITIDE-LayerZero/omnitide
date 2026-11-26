@@ -9,6 +9,7 @@ import { shortHash } from "@/lib/format";
 import { useReceipts, type Receipt } from "@/lib/hooks";
 import { InflowDemo, LensDemo, SealDemo } from "./dive-demos";
 import { FEATURE_LIST, featureId, type Feature } from "./features";
+import { CurrentDrift, DeepGlow, ShorelineLight } from "./backdrops";
 
 
 const TIERS = [
@@ -250,8 +251,15 @@ export function Dive() {
       <div ref={root} className="relative mt-8">
         {TIERS.map((t, i) => (
           <div key={t.id} className="contents">
-            <div id={`dive-${t.id}`} data-tier data-tone={t.dark ? "dark" : undefined} className={`relative scroll-mt-16 overflow-hidden ${t.bg} ${t.dark ? "text-white" : "text-ink"}`}>
-              {t.id === "deep" && <div className="snow" aria-hidden />}
+            <div id={`dive-${t.id}`} data-tier data-tone={t.dark ? "dark" : undefined} className={`relative isolate scroll-mt-16 overflow-hidden ${t.bg} ${t.dark ? "text-white" : "text-ink"}`}>
+              {t.id === "shoreline" && <ShorelineLight />}
+              {t.id === "current" && <CurrentDrift />}
+              {t.id === "deep" && (
+                <>
+                  <div className="snow" aria-hidden />
+                  <DeepGlow />
+                </>
+              )}
               {i > 0 && (
                 <div className="relative mx-auto flex max-w-[1440px] items-center gap-4 px-4 pt-10 sm:px-8 lg:pl-[248px]">
                   <span className="tag rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 text-white/80">{NOTES[i - 1]}</span>

@@ -8,7 +8,7 @@ import { CONTRACT_ROWS } from "@/lib/contracts";
 import { IS_MAINNET, SPOKE_LIST } from "@/lib/chains";
 import { laneRows } from "@/lib/landing";
 import { useHubBlock } from "../network-status";
-import { SwellLines } from "./swell-lines";
+import { SurfaceOcean } from "./backdrops";
 
 /** Closing band: back at the surface, one move left. */
 export function Surface() {
@@ -24,7 +24,7 @@ export function Surface() {
 
   return (
     <section data-tone="dark" className="relative isolate overflow-hidden bg-navy text-white">
-      <SwellLines className="absolute inset-0 -z-10" />
+      <SurfaceOcean />
       <div className="absolute inset-x-0 top-0 -z-10 h-2/5 bg-gradient-to-b from-navy to-transparent" />
       <div className="mx-auto max-w-[1440px] px-4 pt-12 pb-16 sm:px-8 sm:pt-16 sm:pb-24">
         <p className="tag text-[12px] text-white/75">Surface · {IS_MAINNET ? "live on mainnet" : "testnet season is live"}</p>

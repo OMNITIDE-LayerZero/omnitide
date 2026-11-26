@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SeaWallWater } from "./backdrops";
 import { useRef } from "react";
 import { ArrowRight, Check } from "lucide-react";
 import { useSeaWall } from "@/lib/hooks";
@@ -55,6 +56,7 @@ export function SeaWallBand() {
 
   return (
     <div className="grid gap-12 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+      <SeaWallWater cover={cover} />
       <div>
         <p className="tag text-[12px] text-white/75">Sea Wall · proof of reserves</p>
         <h2 className="display mt-4 text-[clamp(44px,6vw,80px)] text-white">
