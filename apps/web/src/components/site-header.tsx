@@ -14,7 +14,7 @@ const LINKS = [
   { href: "/#markets", label: "Markets" },
   ...(FEATURES.deepWater ? [{ href: "/terminal/deep", label: "Deep Mode" }] : []),
   { href: "/sea-wall", label: "Sea Wall" },
-  { href: "/#contracts", label: "Contracts" },
+  { href: "/proof", label: "Proof" },
 ];
 
 // blur strength per band, weakest at the bottom edge of the haze

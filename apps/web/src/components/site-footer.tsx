@@ -23,6 +23,7 @@ export function SiteFooter() {
           <Link href="/terminal/currents" className="hover:text-ink">Currents</Link>
           <Link href="/disclosure" className="hover:text-ink">Disclosure</Link>
           <Link href="/sea-wall" className="hover:text-ink">Sea Wall</Link>
+          <Link href="/proof" className="hover:text-ink">Proof</Link>
           <Link href="/#contracts" className="hover:text-ink">Contracts</Link>
           <a href={X_URL} target="_blank" rel="noopener noreferrer" className="hover:text-ink">X / Twitter</a>
         </nav>

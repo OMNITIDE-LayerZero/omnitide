@@ -73,6 +73,19 @@ export function useIndexer<T>(path: "trades" | "positions" | "orders" | "flows" 
   });
 }
 
+/** A feature's latest on-chain transaction: chain short name, hash, unix time, explorer or LayerZero Scan link. */
+export interface Receipt {
+  chain: string;
+  tx: string;
+  at: number;
+  url: string;
+}
+
+/** Feature id ("inflow", "harbor"…) → its latest receipt; features with none are absent. */
+export function useReceipts() {
+  return useQuery({ queryKey: ["receipts"], queryFn: () => get<{ receipts: Record<string, Receipt> }>("/api/receipts"), refetchInterval: 60_000, select: (d) => d.receipts });
+}
+
 export interface SeaWall {
   at: number;
   reserves: { held: string; collateral: string; pool: string; depositCap: string; paused: boolean };
