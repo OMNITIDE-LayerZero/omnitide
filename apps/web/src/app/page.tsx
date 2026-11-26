@@ -8,6 +8,9 @@ import { Pulse } from "@/components/landing/pulse";
 import { SeaWallBand } from "@/components/landing/sea-wall-band";
 import { ContractsTable } from "@/components/landing/contracts-table";
 import { Surface } from "@/components/landing/surface";
+import { Soundings } from "@/components/landing/soundings";
+import { TokenBand } from "@/components/landing/token-band";
+import { Faq } from "@/components/landing/faq";
 import { MARKETS } from "@omnitide/contracts/markets";
 
 function SectionHead({ tag, title, aside }: { tag: string; title: React.ReactNode; aside?: string }) {
@@ -28,6 +31,7 @@ export default function Home() {
       <SiteHeader />
       <main>
         <Hero />
+        <Soundings />
 
         <section data-tone="dark" className="engrave relative bg-navy py-8 text-white sm:py-12">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
@@ -76,6 +80,8 @@ export default function Home() {
           </div>
         </section>
 
+        <TokenBand />
+
         <section id="contracts" className="relative scroll-mt-16 py-8 sm:py-12">
           <div className="mx-auto max-w-[1440px] px-4 sm:px-8">
             <SectionHead tag="Upgradeable proxies · source verified" title={<>The contracts<br />behind the tide</>} aside="Every OMNITIDE contract sits behind a UUPS proxy with its source published on the chain's explorer. These are the addresses the terminal talks to." />
@@ -84,6 +90,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <Faq />
 
         <Surface />
       </main>

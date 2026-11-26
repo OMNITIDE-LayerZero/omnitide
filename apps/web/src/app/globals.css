@@ -12,8 +12,8 @@
   --text: #0e1430;
   --text-2: #475069;
   --text-3: #5f6782;
-  --line: rgb(14 20 48 / 0.09);
-  --line-strong: rgb(14 20 48 / 0.16);
+  --line: rgb(14 20 48 / 0.11);
+  --line-strong: rgb(14 20 48 / 0.18);
   --accent: #5671ff;
   --accent-ink: #1b34d6;
   --on-accent: #ffffff;
@@ -375,6 +375,25 @@ body {
 @keyframes snow {
   to {
     transform: translateY(-240px);
+  }
+}
+
+/* Endless strip of the stack: two copies of the list, slid by one copy's width. */
+.marquee {
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 48s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
   }
 }
 

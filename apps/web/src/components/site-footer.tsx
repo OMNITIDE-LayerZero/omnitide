@@ -4,6 +4,7 @@ import { NetworkStatus } from "./network-status";
 import { IS_MAINNET } from "@/lib/chains";
 import { FEATURES } from "@/lib/contracts";
 import { X_URL } from "./header-extras";
+import { FooterWordmark } from "./footer-wordmark";
 
 export function SiteFooter() {
   return (
@@ -25,12 +26,15 @@ export function SiteFooter() {
           <Link href="/sea-wall" className="hover:text-ink">Sea Wall</Link>
           <Link href="/proof" className="hover:text-ink">Proof</Link>
           <Link href="/#contracts" className="hover:text-ink">Contracts</Link>
+          <Link href="/#token" className="hover:text-ink">Token</Link>
+          <Link href="/#faq" className="hover:text-ink">FAQ</Link>
           <a href={X_URL} target="_blank" rel="noopener noreferrer" className="hover:text-ink">X / Twitter</a>
         </nav>
       </div>
       <div className="border-t border-line">
         <NetworkStatus className="mx-auto max-w-[1440px] px-4 py-4 text-ink-2 sm:px-8" />
       </div>
+      <FooterWordmark />
     </footer>
   );
 }

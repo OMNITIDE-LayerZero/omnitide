@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, ExternalLink, Plus } from "lucide-react";
 import { CONTRACT_ROWS } from "@/lib/contracts";
 import { HUB_KEY, IS_MAINNET, explorerAddress } from "@/lib/chains";
-import { ago, shortHash } from "@/lib/format";
+import { shortHash } from "@/lib/format";
 import { useReceipts, type Receipt } from "@/lib/hooks";
 import { InflowDemo, LensDemo, SealDemo } from "./dive-demos";
 import { FEATURE_LIST, featureId, type Feature } from "./features";
@@ -100,7 +100,7 @@ function ReceiptLink({ r, dark }: { r: Receipt; dark: boolean }) {
   return (
     <a href={r.url} target="_blank" rel="noreferrer" className={`tag mt-2 flex w-fit items-center gap-1.5 hover:underline ${dark ? "text-white/65" : "text-ink-2"}`}>
       <span className="size-1.5 rounded-full bg-[#4cc38a]" aria-hidden />
-      on-chain · {r.chain} · tx {shortHash(r.tx)} · {ago(r.at)}
+      on-chain · {r.chain} · tx {shortHash(r.tx)}
       <ExternalLink size={11} strokeWidth={1.5} />
     </a>
   );
@@ -123,34 +123,43 @@ function LiveStrip({ live, features, receipts, dark }: { live: { href: string; l
   );
 }
 
-/** One feature per row; a row opens to its body and the contract-level note. One open at a time. */
-function Accordion({ items, dark, receipts }: { items: readonly Feature[]; dark: boolean; receipts?: Record<string, Receipt> }) {
+/** Features as a bento of tiles; the open one spans the row with its body, contract note and latest receipt. One open at a time. */
+function Tiles({ items, dark, receipts }: { items: readonly Feature[]; dark: boolean; receipts?: Record<string, Receipt> }) {
   const [open, setOpen] = useState(0);
-  const line = dark ? "border-white/12" : "border-line";
   return (
-    <ol className={`border-t ${line}`}>
+    <ol className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {items.map((f, i) => {
         const [num, name] = f.tag.replace("#", "").split(" · ");
         const on = open === i;
+        const proof = receipts?.[featureId(f)];
         return (
-          <li key={f.tag} className={`border-b ${line}`}>
-            <button type="button" aria-expanded={on} onClick={() => setOpen(on ? -1 : i)} className="group flex w-full items-center gap-4 py-3.5 text-left">
-              <span className={`tag w-6 shrink-0 ${dark ? "text-white/45" : "text-ink-3"}`}>{num}</span>
-              <span className="min-w-0 flex-1">
-                <span className={`block text-[16px] leading-6 font-medium transition-colors ${dark ? (on ? "text-[#c9d3ff]" : "text-white group-hover:text-[#c9d3ff]") : on ? "text-accent-ink" : "text-ink group-hover:text-accent-ink"}`}>{f.title}</span>
-                <span className={`tag block ${dark ? "text-white/45" : "text-ink-3"}`}>{name}</span>
+          <li key={f.tag} className={on ? "sm:col-span-2" : ""}>
+            <button
+              type="button"
+              aria-expanded={on}
+              onClick={() => setOpen(on ? -1 : i)}
+              className={`group flex h-full w-full flex-col rounded-xl border p-4 text-left transition-[background-color,border-color,transform] duration-200 ease-[var(--ease-tide)] hover:-translate-y-0.5 ${
+                dark ? (on ? "border-[#8ea2ff]/50 bg-white/[0.07]" : "border-white/12 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.06]") : on ? "border-accent/40 bg-sky/60" : "border-line bg-card hover:border-line-strong"
+              }`}
+            >
+              <span className="flex items-center justify-between gap-3">
+                <span className={`tag ${dark ? "text-white/45" : "text-ink-3"}`}>
+                  {num} · {name}
+                </span>
+                <span className="flex items-center gap-2">
+                  {proof && <span className="size-1.5 rounded-full bg-[#4cc38a]" aria-label="On-chain receipt" />}
+                  <Plus size={14} strokeWidth={1.5} aria-hidden className={`transition-transform duration-300 ease-[var(--ease-tide)] ${on ? "rotate-45" : "group-hover:rotate-90"} ${dark ? "text-white/60" : "text-ink-3"}`} />
+                </span>
               </span>
-              <Plus size={16} strokeWidth={1.5} aria-hidden className={`shrink-0 transition-transform duration-300 ease-[var(--ease-tide)] ${on ? "rotate-45" : "group-hover:rotate-90"} ${dark ? "text-white/60" : "text-ink-3"}`} />
+              <span className={`mt-2 block text-[15px] leading-[22px] font-medium transition-colors ${dark ? (on ? "text-[#c9d3ff]" : "text-white group-hover:text-[#c9d3ff]") : on ? "text-accent-ink" : "text-ink group-hover:text-accent-ink"}`}>{f.title}</span>
+              {on && (
+                <span className="rise block">
+                  <span className={`mt-2 block max-w-prose text-[14px] leading-[22px] ${dark ? "text-white/70" : "text-ink-2"}`}>{f.body}</span>
+                  <span className={`tag mt-3 inline-block rounded-md border px-2 py-1 ${dark ? "border-[#8ea2ff]/30 text-[#c9d3ff]" : "border-accent/25 text-accent-ink"}`}>{f.note}</span>
+                </span>
+              )}
             </button>
-            <div className={`grid transition-[grid-template-rows] duration-300 ease-[var(--ease-tide)] ${on ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
-              <div className="overflow-hidden">
-                <div className="pb-4 pl-10">
-                  <p className={`max-w-prose text-[14px] leading-[22px] ${dark ? "text-white/70" : "text-ink-2"}`}>{f.body}</p>
-                  <p className={`tag mt-3 inline-block rounded-md border px-2 py-1 ${dark ? "border-[#8ea2ff]/30 text-[#c9d3ff]" : "border-accent/25 text-accent-ink"}`}>{f.note}</p>
-                  {receipts?.[featureId(f)] && <ReceiptLink r={receipts[featureId(f)]!} dark={dark} />}
-                </div>
-              </div>
-            </div>
+            {on && proof && <ReceiptLink r={proof} dark={dark} />}
           </li>
         );
       })}
@@ -262,7 +271,7 @@ export function Dive() {
                   </div>
                 </div>
                 <div className="min-w-0 lg:pt-2">
-                  <Accordion items={t.features} dark={t.dark} receipts={receipts} />
+                  <Tiles items={t.features} dark={t.dark} receipts={receipts} />
                   <UnderTheHood contracts={t.contracts} primitives={t.primitives} dark={t.dark} />
                 </div>
               </div>

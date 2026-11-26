@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useSeaWall } from "@/lib/hooks";
-import { moneyCompact, units6 } from "@/lib/format";
+import { MARKETS } from "@omnitide/contracts/markets";
+import { CONTRACT_ROWS } from "@/lib/contracts";
 import { IS_MAINNET, SPOKE_LIST } from "@/lib/chains";
 import { laneRows } from "@/lib/landing";
 import { useHubBlock } from "../network-status";
@@ -15,8 +16,8 @@ export function Surface() {
   const { data: block } = useHubBlock();
   const lanes = laneRows(wall).length;
   const facts = [
-    { label: "Tide Pool depth", value: wall && units6(wall.reserves.pool) > 0 ? moneyCompact(units6(wall.reserves.pool)) : null },
-    { label: "Margin in the book", value: wall && units6(wall.reserves.collateral) > 0 ? moneyCompact(units6(wall.reserves.collateral)) : null },
+    { label: "Markets on one margin", value: String(MARKETS.length) },
+    { label: "Contracts source-verified", value: String(CONTRACT_ROWS.length) },
     { label: "LayerZero lanes open", value: lanes ? String(lanes) : null },
     { label: "Hub block", value: block ? `#${block.toLocaleString("en-US")}` : null },
   ].filter((f) => f.value);

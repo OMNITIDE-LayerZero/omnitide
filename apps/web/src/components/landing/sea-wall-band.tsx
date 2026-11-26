@@ -9,6 +9,9 @@ import { NETWORK } from "@/lib/chains";
 import { laneRows, windowLabel } from "@/lib/landing";
 import { useSeen } from "./use-seen";
 
+// dollar figures show once the book is deep enough to read as a number; below it the gauge shows coverage alone
+const SHOW_USD = 10_000;
+
 /** One staff on the reserve gauge; the owed column carries a moving crest. */
 function Column({ label, value, share, seen, water }: { label: string; value: number; share: number; seen: boolean; water?: boolean }) {
   return (
@@ -31,7 +34,7 @@ function Column({ label, value, share, seen, water }: { label: string; value: nu
         </div>
       </div>
       <p className="text-center text-[12px] leading-4 text-white/70">{label}</p>
-      <p className="text-[14px] text-white num">{moneyCompact(value)}</p>
+      {value >= SHOW_USD && <p className="text-[14px] text-white num">{moneyCompact(value)}</p>}
     </div>
   );
 }
@@ -89,19 +92,19 @@ export function SeaWallBand() {
               </p>
             </div>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/10 pt-4 text-[13px]">
-              {held !== undefined && (
+              {held !== undefined && held >= SHOW_USD && (
                 <div>
                   <dt className="text-white/55">Held</dt>
                   <dd className="text-white num">{money(held)}</dd>
                 </div>
               )}
-              {traders !== undefined && traders > 0 && (
+              {traders !== undefined && traders >= SHOW_USD && (
                 <div>
                   <dt className="text-white/55">Traders&apos; margin</dt>
                   <dd className="text-white num">{money(traders)}</dd>
                 </div>
               )}
-              {pool !== undefined && pool > 0 && (
+              {pool !== undefined && pool >= SHOW_USD && (
                 <div>
                   <dt className="text-white/55">Tide Pool</dt>
                   <dd className="text-white num">{money(pool)}</dd>
@@ -110,7 +113,15 @@ export function SeaWallBand() {
               {minConf !== undefined && minConf > 0 && (
                 <div>
                   <dt className="text-white/55">Min. confirmations</dt>
-                  <dd className="text-white num">{minConf} blocks</dd>
+                  <dd className="text-white num">
+                    {minConf} {minConf === 1 ? "block" : "blocks"}
+                  </dd>
+                </div>
+              )}
+              {lanes.length > 0 && (
+                <div>
+                  <dt className="text-white/55">Lanes watched</dt>
+                  <dd className="text-white num">{lanes.length} LayerZero</dd>
                 </div>
               )}
             </dl>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Logo } from "./logo";
 import { ThemeToggle, useTheme } from "./theme";
 import { EnvToggle, XLink } from "./header-extras";
@@ -12,6 +12,7 @@ import { FEATURES } from "@/lib/contracts";
 const LINKS = [
   { href: "/terminal/trade", label: "Terminal" },
   { href: "/#markets", label: "Markets" },
+  { href: "/#token", label: "Token" },
   ...(FEATURES.deepWater ? [{ href: "/terminal/deep", label: "Deep Mode" }] : []),
   { href: "/sea-wall", label: "Sea Wall" },
   { href: "/proof", label: "Proof" },
@@ -83,11 +84,10 @@ export function SiteHeader() {
       </div>
       <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-4 sm:px-8">
         <Logo />
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
           {LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className="group btn btn-ghost btn-sm gap-1">
+            <Link key={l.href} href={l.href} className="btn btn-ghost btn-sm">
               {l.label}
-              <ArrowUpRight aria-hidden size={14} strokeWidth={1.75} className="opacity-60 transition-[transform,opacity] duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:opacity-100" />
             </Link>
           ))}
         </nav>
@@ -98,17 +98,16 @@ export function SiteHeader() {
           <Link href="/terminal/trade" className="btn btn-primary btn-sm hidden sm:inline-flex">
             Open terminal
           </Link>
-          <button type="button" className="btn btn-ghost btn-sm w-8 px-0 md:hidden" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+          <button type="button" className="btn btn-ghost btn-sm w-8 px-0 lg:hidden" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
             {open ? <X size={16} strokeWidth={1.5} /> : <Menu size={16} strokeWidth={1.5} />}
           </button>
         </div>
       </div>
       {open && (
-        <nav className="rise mx-4 rounded-xl border border-line bg-card p-2 shadow-md md:hidden" aria-label="Mobile">
+        <nav className="rise mx-4 rounded-xl border border-line bg-card p-2 shadow-md lg:hidden" aria-label="Mobile">
           {[...LINKS, { href: "/terminal/trade", label: "Open terminal" }].map((l) => (
             <Link key={l.label} href={l.href} onClick={() => setOpen(false)} className="flex h-10 items-center justify-between rounded-lg px-3 text-ink-2 hover:bg-raised hover:text-ink">
               {l.label}
-              <ArrowUpRight aria-hidden size={14} strokeWidth={1.75} className="opacity-60" />
             </Link>
           ))}
         </nav>
