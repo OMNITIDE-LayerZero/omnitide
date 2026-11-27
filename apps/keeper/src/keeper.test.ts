@@ -11,6 +11,7 @@ import { oracleDomain, REPORT_TYPES, signReport } from "./reports.js";
 import { needsMark, orderTriggered, traderPnlUnits } from "./executor.js";
 import { aggregate, nasdaqPointToUtc } from "./backfill.js";
 import { liquidationRepay } from "./lending.js";
+import { worthSweeping } from "./inlet.js";
 
 describe("keeper", () => {
   it("parses venue number formats", () => {
@@ -114,5 +115,14 @@ describe("Harbor marks", () => {
     expect(liquidationRepay(8_000_000n, 10_000_000n, 5000n, 10n ** 12n)).toBe(8_000_000n); // dust: all of it
     expect(liquidationRepay(1_400_000_000n, 10_000_000n, 5000n, 250_000_000n)).toBe(250_000_000n); // what it holds
     expect(liquidationRepay(1_400_000_000n, 10_000_000n, 5000n, 0n)).toBe(0n);
+  });
+});
+
+describe("inlet sweep threshold", () => {
+  it("sweeps a cent of dollars or a hundred-thousandth of an ETH, not dust", () => {
+    expect(worthSweeping(10_000n, 0n)).toBe(true);
+    expect(worthSweeping(9_999n, 0n)).toBe(false);
+    expect(worthSweeping(0n, 10n ** 13n)).toBe(true);
+    expect(worthSweeping(1n, 1n)).toBe(false);
   });
 });

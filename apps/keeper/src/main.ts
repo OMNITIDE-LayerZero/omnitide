@@ -14,6 +14,7 @@ import { backfill } from "./backfill.js";
 import { createCurrent } from "./current.js";
 import { createDeepWater } from "./deepwater.js";
 import { createLending } from "./lending.js";
+import { createInlet } from "./inlet.js";
 
 const env = loadEnv();
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
@@ -97,6 +98,7 @@ let executorState: Record<string, unknown> = {};
 const lending = hub.OmnitideLending
   ? createLending({ pub, wallet, lending: hub.OmnitideLending.proxy as Address, fromBlock: BigInt(hub.OmnitideLending.block), reports: reportsFor, log })
   : undefined;
+const inlet = hub.OmnitideInlet ? createInlet({ pub, wallet, inlet: hub.OmnitideInlet.proxy as Address, log }) : undefined;
 
 const arbChain = defineChain({ id: CHAINS[readerKey ?? hubKey].chainId, name: CHAINS[readerKey ?? hubKey].name, nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [env.ARB_RPC_URL] } } });
 const current = createCurrent({
@@ -142,6 +144,7 @@ every(3_000, "crypto", () => pollPrices("crypto"));
 every(10_000, "stocks", () => pollPrices("stock"));
 if (env.EXECUTE === "1") every(5_000, "executor", async () => (executorState = await executor.tick()));
 if (env.EXECUTE === "1" && lending) every(15_000, "lending", async () => Object.assign(currentState, await lending.tick()));
+if (env.EXECUTE === "1" && inlet) every(15_000, "inlet", async () => Object.assign(currentState, await inlet.tick()));
 // the indexer restarts with us on deploy, so give it a couple of minutes before giving up on this round
 every(10 * 60_000, "snapshots", async () => {
   for (let i = 0; ; i++) {
@@ -235,6 +238,17 @@ createServer(async (req, res) => {
       if (e instanceof SyntaxError || (e as Error).name === "ZodError") return json(res, 400, { error: "invalid request" });
       log(`deep water: ${(e as Error).message.split("\n")[0]}`);
       return json(res, 503, { error: "the keeper could not finish that, try again shortly" });
+    }
+  }
+  if (url.pathname === "/inlet/watch" && req.method === "POST") {
+    if (!inlet) return json(res, 503, { error: "the Inlet is not deployed here" });
+    const raw = await body(req);
+    try {
+      const { account, route } = JSON.parse(raw ?? "");
+      if (!/^0x[0-9a-fA-F]{40}$/.test(account) || (route !== 0 && route !== 1)) return json(res, 400, { error: "account and route required" });
+      return inlet.watch(account, route) ? json(res, 200, { watching: true }) : json(res, 503, { error: "the keeper is busy, try again shortly" });
+    } catch {
+      return json(res, 400, { error: "invalid request" });
     }
   }
   if (url.pathname === "/health") {

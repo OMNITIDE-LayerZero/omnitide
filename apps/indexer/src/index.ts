@@ -13,6 +13,7 @@ import {
   flow,
   harborFlow,
   lendingFlow,
+  inletFlow,
   liquidation,
   market,
   order,
@@ -402,4 +403,14 @@ ponder.on("OmnitideLending:Liquidated", async ({ event, context }) => {
 });
 ponder.on("OmnitideLending:BadDebt", async ({ event, context }) => {
   await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.account, kind: "bad_debt", amount: event.args.amount });
+});
+
+ponder.on("OmnitideInlet:Swept", async ({ event, context }) => {
+  const a = event.args;
+  await context.db.insert(inletFlow).values({ ...lend(event), account: a.account, kind: "sweep", route: a.route, box: a.box, dollars: a.stableIn + a.usdIn, repaid: a.repaid, toMargin: a.toMargin, eth: a.ethIn });
+});
+ponder.on("OmnitideInlet:Rescued", async ({ event, context }) => {
+  const a = event.args;
+  const native = a.token === "0x0000000000000000000000000000000000000000";
+  await context.db.insert(inletFlow).values({ ...lend(event), account: a.account, kind: "rescue", route: a.route, dollars: native ? 0n : a.amount, repaid: 0n, toMargin: 0n, eth: native ? a.amount : 0n, token: a.token });
 });

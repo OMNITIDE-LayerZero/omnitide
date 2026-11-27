@@ -22,6 +22,7 @@ export interface ChainDeployment {
   OmnitideTideReader?: ProxyRecord;
   OmnitideDeepPool?: ProxyRecord;
   OmnitideLending?: ProxyRecord;
+  OmnitideInlet?: ProxyRecord;
   OmnitideLighthouse?: ProxyRecord;
   OmnitideBadge?: ProxyRecord;
   OmnitideToken?: ProxyRecord;

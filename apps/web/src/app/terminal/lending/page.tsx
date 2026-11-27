@@ -1,12 +1,13 @@
 "use client";
 
+import { Inlet } from "@/components/terminal/inlet";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAccount, useBalance, usePublicClient } from "wagmi";
 import { formatEther, maxUint256, parseEther, type Address } from "viem";
 import { ExternalLink } from "lucide-react";
 import { HUB, HUB_KEY, explorerTx } from "@/lib/chains";
-import { LENDING, omnitideLendingAbi, omnitideUSDAbi, usdAddress } from "@/lib/contracts";
+import { FEATURES, LENDING, omnitideLendingAbi, omnitideUSDAbi, usdAddress } from "@/lib/contracts";
 import { fetchReports } from "@/lib/account";
 import { useIndexer, usePriceMap } from "@/lib/hooks";
 import { ago, money, moneyCompact, price as fmtPrice, shortHash, units6, who } from "@/lib/format";
@@ -417,6 +418,7 @@ export default function Lending() {
 
       <aside className="flex flex-col gap-3">
         <Actions live={live} ethPrice={ethPrice} />
+        {FEATURES.inlet && <Inlet initial="eth" />}
         {live && ethPrice > 0 && <MyAnchor live={live} ethPrice={ethPrice} />}
         <div className="rounded-2xl border border-line bg-card p-4 text-[13px] leading-5 text-ink-2">
           <p className="font-medium text-ink">How the anchor holds</p>

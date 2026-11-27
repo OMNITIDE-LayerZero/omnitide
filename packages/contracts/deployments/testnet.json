@@ -76,6 +76,12 @@
       "implementation": "0x668dB5aB7a42244373BB83AAb561115e3AB85b0A",
       "deployTx": "0x014681a90345771b824dbb14bea32a72116a7650348b45ed683565b9f3decca6",
       "block": 158425843
+    },
+    "OmnitideInlet": {
+      "proxy": "0xD0Ac035b316407c9249D16774d6E12E75C3154Ad",
+      "implementation": "0x564Ddb87F133e9c3Ae7938b082509f8cDDd8e404",
+      "deployTx": "0xe67f7284b4c02ff2b9aff21a5f274aa8aa62085b79db5355b5c241f4acc6c771",
+      "block": 158438805
     }
   },
   "sepolia": {

@@ -66,6 +66,13 @@ app.get("/lending", async (c) => {
   return c.json(json(rows));
 });
 
+app.get("/inlet", async (c) => {
+  const account = addr(c.req.query("account"));
+  const q = db.select().from(schema.inletFlow);
+  const rows = await (account ? q.where(eq(schema.inletFlow.account, account)) : q).orderBy(desc(schema.inletFlow.timestamp)).limit(limit(c.req.query("limit")));
+  return c.json(json(rows));
+});
+
 app.get("/tide", async (c) => {
   const rows = await db.select().from(schema.tideRead).orderBy(desc(schema.tideRead.readAt)).limit(limit(c.req.query("limit")));
   return c.json(json(rows));

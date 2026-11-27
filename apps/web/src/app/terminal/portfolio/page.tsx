@@ -13,6 +13,8 @@ import { Connect } from "@/components/connect";
 import { InflowRoutes } from "@/components/terminal/routes";
 import { Pulse } from "@/components/landing/pulse";
 import { Lifeline } from "@/components/terminal/lifeline";
+import { FEATURES } from "@/lib/contracts";
+import { Inlet } from "@/components/terminal/inlet";
 
 export default function Portfolio() {
   const { isConnected } = useAccount();
@@ -87,6 +89,7 @@ export default function Portfolio() {
       </section>
       <aside className="flex flex-col gap-3">
         <CollateralPanel />
+        {FEATURES.inlet && <Inlet />}
         <div className="rounded-2xl border border-line bg-card p-4 text-[13px] leading-5 text-ink-2">
           <p className="font-medium text-ink">How collateral moves</p>
           <ol className="mt-2 list-decimal space-y-1 pl-4">

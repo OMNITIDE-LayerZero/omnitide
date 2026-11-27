@@ -38,7 +38,7 @@ const TIERS = [
     title: "See the whole current.",
     blurb: "One lzRead across every chain, a stress test you can throw at your own book, and a ping before the tide reaches your wall. Risk you can see before it moves.",
     features: FEATURE_LIST.slice(6, DEEP_FROM),
-    contracts: ["OmnitideTideReader", "OmnitideHarbor", "OmnitideHarborShareAdapter", "OmnitideLending"],
+    contracts: ["OmnitideTideReader", "OmnitideHarbor", "OmnitideHarborShareAdapter", "OmnitideLending", "OmnitideInlet"],
     primitives: ["lzRead", "OVault (ERC-4626)", "OFT shares", "keeper alerts"],
     Demo: LensDemo,
     live: { href: "/terminal/risk", label: "Shock your own book" },

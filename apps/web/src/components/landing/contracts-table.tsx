@@ -15,6 +15,7 @@ const ROLE: Record<string, string> = {
   OmnitideHarbor: "Harbor OVault (ERC-4626) that owns the Tide Pool; composes cross-chain deposits and redemptions",
   OmnitideHarborShareAdapter: "Locks htdUSD on the hub so Harbor shares travel as an OFT",
   OmnitideHarborShare: "htdUSD on spokes, minted and burned by LayerZero",
+  OmnitideInlet: "Inlet: a CREATE2 deposit address per account for NEAR Intents and plain transfers, swept into margin, loan repayment or ETH collateral, owner-only rescue",
   OmnitideLending: "Lending (ltdUSD, ERC-4626): tdUSD loans against ETH, kinked rate curve, keeper liquidations, interest share to the Tide Pool",
   OmnitideTideReader: "LayerZero lzRead of tdUSD supply across chains for the Tide Chart",
   OmnitideDeepPool: "Deep Mode privacy pool: pooled fills, encrypted book commitments, selective disclosure, signed withdrawals, keeper-free exit",

@@ -325,3 +325,23 @@ export const copyPending = onchainTable(
   }),
   (t) => ({ pk: primaryKey({ columns: [t.vault, t.account] }) }),
 );
+
+// V5 Inlet: deliveries from NEAR Intents (or any plain transfer) swept into margin, a loan or ETH collateral, and raw rescues.
+export const inletFlow = onchainTable(
+  "inlet_flow",
+  (t) => ({
+    id: t.text().primaryKey(),
+    account: t.hex().notNull(),
+    kind: t.text().notNull(), // sweep | rescue
+    route: t.integer().notNull(), // 0 margin, 1 repay
+    box: t.hex(),
+    dollars: t.bigint().notNull(), // stablecoin + tdUSD in, 6 dp
+    repaid: t.bigint().notNull(),
+    toMargin: t.bigint().notNull(),
+    eth: t.bigint().notNull(), // wei locked as Lending collateral
+    token: t.hex(), // rescue: token taken back (zero = native ETH)
+    timestamp: t.integer().notNull(),
+    tx: t.hex().notNull(),
+  }),
+  (t) => ({ byAccount: index().on(t.account, t.timestamp), byTime: index().on(t.timestamp) }),
+);

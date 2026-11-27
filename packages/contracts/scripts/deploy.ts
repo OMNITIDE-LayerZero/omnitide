@@ -21,8 +21,8 @@ console.log(`network ${chain.name} (${chainId}) · deployer ${signer.address} ·
 const all = loadDeployments();
 const dep = (all[key] ??= { chainId: chain.chainId, eid: chain.eid });
 const isTestnet = (process.env.OMNITIDE_ENV ?? "testnet") === "testnet";
-// mainnet ships per version: OMNITIDE_VERSION=1 deploys V1.0 only, 2 adds V2 Current, 3 adds V3 Deep Water, 4 adds Lending
-const VERSION = Number(process.env.OMNITIDE_VERSION ?? 4);
+// mainnet ships per version: OMNITIDE_VERSION=1 deploys V1.0 only, 2 adds V2 Current, 3 adds V3 Deep Water, 4 adds Lending, 5 adds the Inlet
+const VERSION = Number(process.env.OMNITIDE_VERSION ?? 5);
 // mainnet open-interest cap per market (USD), sized to the Tide Pool; testnet keeps markets.ts
 const oiCap = (usd: number) => (process.env.MAX_OI_USD ? Number(process.env.MAX_OI_USD) : usd);
 
@@ -290,6 +290,21 @@ if (VERSION >= 4 && chain.hub && chain.weth) {
     saveDeployments(all);
     console.log("OmnitideLending", dep.OmnitideLending.proxy);
   }
+}
+
+// ───────── V5 Inlet: per-account deposit addresses for NEAR Intents and any plain transfer ─────────
+if (VERSION >= 5 && chain.hub && dep.OmnitideLending && !dep.OmnitideInlet) {
+  const port = dep.OmnitidePort?.proxy ?? ethers.ZeroAddress;
+  const stable = dep.OmnitidePort ? await (await ethers.getContractAt("OmnitidePort", port)).stable() : ethers.ZeroAddress;
+  const inlet = await up.deployProxy(
+    await ethers.getContractFactory("OmnitideInlet"),
+    [DEPLOYER, DEPLOYER, dep.OmnitideClearinghouse!.proxy, port, stable, dep.OmnitideLending.proxy, chain.weth],
+    { kind: "uups" },
+  );
+  await inlet.waitForDeployment();
+  dep.OmnitideInlet = await record(inlet);
+  saveDeployments(all);
+  console.log("OmnitideInlet", dep.OmnitideInlet.proxy);
 }
 
 // true when the proxy's current implementation carries the function selector
