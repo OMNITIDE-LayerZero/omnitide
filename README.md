@@ -86,7 +86,7 @@ flowchart LR
 
 ## Markets
 
-`BTC` `ETH` `SOL` `AVAX` `LINK` `DOGE` · `TSLA` `NVDA` `AAPL` `COIN` `HOOD` `SPY` · `BABA` `PDD` `JD` `BIDU` `NIO` `FXI`
+`BTC` `ETH` `SOL` `AVAX` `LINK` `DOGE` · `TSLA` `NVDA` `AAPL` `COIN` `HOOD` `SPY` `AMZN` `MSFT` `GOOGL` `META` `AMD` · `BABA` `PDD` `JD` `BIDU` `NIO` `FXI`
 
 Equity feeds follow the Nasdaq session clock; the China shelf ships its own Hang Seng gap scenario in Tidal Lens.
 

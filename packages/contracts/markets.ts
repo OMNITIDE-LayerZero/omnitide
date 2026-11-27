@@ -34,6 +34,11 @@ export const MARKETS: MarketConfig[] = [
   { id: 15, feed: "BIDU", symbol: "BIDU", name: "Baidu", kind: "stock", region: "china", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
   { id: 16, feed: "NIO", symbol: "NIO", name: "NIO", kind: "stock", region: "china", initialMarginBps: 3000, maintenanceMarginBps: 1500, maxOpenInterestUsd: 25_000 },
   { id: 17, feed: "FXI", symbol: "FXI", name: "China Large-Cap ETF", kind: "stock", region: "china", initialMarginBps: 2000, maintenanceMarginBps: 1000, maxOpenInterestUsd: 100_000 },
+  { id: 18, feed: "AMZN", symbol: "AMZN", name: "Amazon", kind: "stock", initialMarginBps: 2000, maintenanceMarginBps: 1000, maxOpenInterestUsd: 100_000 },
+  { id: 19, feed: "MSFT", symbol: "MSFT", name: "Microsoft", kind: "stock", initialMarginBps: 2000, maintenanceMarginBps: 1000, maxOpenInterestUsd: 100_000 },
+  { id: 20, feed: "GOOGL", symbol: "GOOGL", name: "Alphabet", kind: "stock", initialMarginBps: 2000, maintenanceMarginBps: 1000, maxOpenInterestUsd: 100_000 },
+  { id: 21, feed: "META", symbol: "META", name: "Meta", kind: "stock", initialMarginBps: 2000, maintenanceMarginBps: 1000, maxOpenInterestUsd: 100_000 },
+  { id: 22, feed: "AMD", symbol: "AMD", name: "AMD", kind: "stock", initialMarginBps: 2500, maintenanceMarginBps: 1250, maxOpenInterestUsd: 50_000 },
 ];
 
 export const groupOf = (m: MarketConfig): MarketGroup => (m.kind === "crypto" ? "crypto" : (m.region ?? "us"));
