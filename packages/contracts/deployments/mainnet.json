@@ -16,7 +16,7 @@
     },
     "OmnitideClearinghouse": {
       "proxy": "0xA1f062B1f862c24866eAeed63f7587ab02e8f776",
-      "implementation": "0x055d7bd71B3380c8E349e9B049d7062f84cbd454",
+      "implementation": "0x9dE7258CB9f831e83a6062b08B0831c19B7F1527",
       "deployTx": "0xbe63fc66d9e41091e1dcfd959d3b6d9da3547a32997ff14c3a32306b13ddf716",
       "block": 119274935
     },
@@ -77,6 +77,12 @@
       "implementation": "0x11B51deeB6Bfa9b3BB7C22F6B9aC3Aff3E6eD811",
       "deployTx": "0xc47596e288f314d6fc2e153abcb6ef7b52cbdc1e9eaeb9e48eb332748ed95f06",
       "block": 122564689
+    },
+    "OmnitideLending": {
+      "proxy": "0x4b7FE176dc2F47c9fF893eBdCB5956f2dac567f5",
+      "implementation": "0x24ffA93e335EeacA4cC24d6383ff5119b3713DAa",
+      "deployTx": "0x0c3fd2a263ad4bf36a50ddae97f064ceae18b9c21dc9e502955fe12f2673d743",
+      "block": 124140757
     }
   },
   "hyperEvm": {
