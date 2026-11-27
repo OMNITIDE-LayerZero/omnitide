@@ -83,6 +83,12 @@
       "implementation": "0x24ffA93e335EeacA4cC24d6383ff5119b3713DAa",
       "deployTx": "0x0c3fd2a263ad4bf36a50ddae97f064ceae18b9c21dc9e502955fe12f2673d743",
       "block": 124140757
+    },
+    "OmnitideInlet": {
+      "proxy": "0x7EEe27A03eeE104644f43861bBc8bbe009Eb7723",
+      "implementation": "0x2CeA8228A2Bf5b98A1D61d3D9Dc65c181515B624",
+      "deployTx": "0x94c2ccb0277d86533bb3b9d118a92a5b8b8dc779ae65236cde89da56afd08376",
+      "block": 124160432
     }
   },
   "hyperEvm": {
