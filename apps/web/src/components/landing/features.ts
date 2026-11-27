@@ -1,4 +1,4 @@
-import { GOV, V3_CHAINS } from "@/lib/contracts";
+import { FEATURES, GOV, V3_CHAINS } from "@/lib/contracts";
 import { HUB_KEY, SHORT } from "@/lib/chains";
 
 /** One landing feature: where it runs in the app and the contract it lives in (null when it runs in the browser or the keeper). */
@@ -11,7 +11,7 @@ export interface Feature {
   contract: string | null;
 }
 
-export const FEATURE_LIST: readonly Feature[] = [
+const ALL: readonly Feature[] = [
   { tag: "#01 · inflow", title: "Deposit from anywhere", body: "One signature from any spoke. LayerZero routes your tdUSD to the hub and lzCompose credits your account the moment it lands.", note: "OFT send → DVN verify → lzReceive → lzCompose → credit", href: "/terminal/portfolio", contract: "OmnitideClearinghouse" },
   { tag: "#02 · ebb", title: "Leave where you like", body: "Withdraw on the hub or straight out to any spoke LayerZero reaches in one hop. Free margin is checked against live signed prices before a single unit moves.", note: "withdraw(amount, dstEid, receiver, reports)", href: "/terminal/portfolio", contract: "OmnitideClearinghouse" },
   { tag: "#03 · cross margin", title: "One balance backs it all", body: "Long NVDA, short ETH, same collateral. Gains in one position hold up the other, and one account health covers the book.", note: "max 8 positions · equity = balance + Σ uPnL", href: "/terminal/trade", contract: "OmnitideClearinghouse" },
@@ -25,6 +25,7 @@ export const FEATURE_LIST: readonly Feature[] = [
   { tag: "#11 · riptide", title: "A ping before the wall", body: "Arm alerts with one free wallet signature. The keeper reads your account every minute and calls the moment the tide drops under your line.", note: "push to this browser · no transaction", href: "/terminal/risk", contract: null },
   { tag: "#12 · lifeline", title: "Top up from any chain", body: "When margin runs thin, the terminal finds tdUSD sitting in your wallet on other chains and pulls it in with one send. lzCompose credits it on arrival.", note: "need = 2 × maintenance − equity", href: "/terminal/portfolio", contract: "OmnitideUSD" },
   { tag: "#13 · harbor", title: "Park idle tdUSD, earn the flow", body: "Harbor is an ERC-4626 OVault behind the Tide Pool. Deposit from Robinhood Chain or Arbitrum, earn fees, penalties and trader give-backs, hold htdUSD on either chain.", note: "tdUSD → lzCompose → mint → htdUSD OFT home", href: "/terminal/harbor", contract: "OmnitideHarbor" },
+  { tag: "#00 · lending", title: "Drop anchor, borrow dollars", body: "Lock ETH and borrow tdUSD against it without selling, to your wallet or straight into trading margin in one transaction. Lenders earn what borrowers pay on a kinked curve, and a tenth of it sails into Harbor.", note: "ETH collateral · borrow to 70% · liquidation past 80% · ERC-4626 ltdUSD", href: "/terminal/lending", contract: "OmnitideLending" },
   { tag: "#14 · reports", title: "Receipts for every tick", body: "An equity curve snapshotted every ten minutes and CSV exports of fills, transfers and equity, every row tied to a transaction hash.", note: "trades · transfers · equity snapshots", href: "/terminal/history", contract: null },
   { tag: "#15 · china shelf", title: "Shanghai hours, Robinhood rails", body: "Alibaba, PDD, JD, Baidu, NIO and the FXI large-cap ETF trade off the same tdUSD as your bitcoin. Hedge a China long with an NVDA short, then gap it in Tidal Lens before Hong Kong opens.", note: "6 markets · US-listed ADRs · up to 5× · Nasdaq-signed", href: "/terminal/markets", contract: "OmnitideOracle" },
   { tag: "#16 · deep mode", title: "Your book goes dark", body: "Privacy for perps on a public chain. Opt in and your positions, entries and PnL vanish from the explorer: every Deep book trades as one pooled account, and the chain keeps only a keccak commitment and a ciphertext that opens with your key alone.", note: "private book · x25519 key wrap · AES-256-GCM · keccak commitment", href: "/terminal/deep", contract: "OmnitideDeepPool" },
@@ -37,6 +38,14 @@ export const FEATURE_LIST: readonly Feature[] = [
   { tag: "#23 · lighthouse", title: "Show the grade, keep the book", body: "Privacy-first reputation. Publish a keeper-signed Book Score with not a single position attached. Any protocol on any chain can call scoreOf(you) and read your grade, never your trades.", note: "score only, no positions · EIP-712 Beam · OApp broadcast · 7-day expiry", href: "/terminal/risk", contract: "OmnitideLighthouse" },
   { tag: "#24 · copy vaults", title: "Back the trader, not the screenshot", body: "Leaders trade a vault, followers hold shares priced at live NAV, and deposits can come straight from Arbitrum in one transaction. Leaders earn only on new highs: a performance fee above the high-water mark, paid in shares.", note: "BeaconProxy vault · lzCompose queue · high-water-mark fee ≤ 20%", href: "/terminal/copy", contract: "OmnitideCopyVaultFactory" },
 ];
+
+/** "#13 · harbor" → "harbor", the key receipts are filed under. */
+const idOf = (f: Feature) => f.tag.split(" · ")[1]!;
+
+// features whose contracts are not live in this env drop out, and the rest are numbered in order
+export const FEATURE_LIST: readonly Feature[] = ALL.filter((f) => f.contract !== "OmnitideLending" || FEATURES.lending).map((f, i) => ({ ...f, tag: `#${String(i + 1).padStart(2, "0")} · ${idOf(f)}` }));
+/** First feature of the Deep Water tier, so tiers slice right whether or not Lending is live. */
+export const DEEP_FROM = FEATURE_LIST.findIndex((f) => idOf(f) === "deep mode");
 
 /** "#13 · harbor" → "harbor", the key receipts are filed under. */
 export const featureId = (f: Feature) => f.tag.split(" · ")[1]!;

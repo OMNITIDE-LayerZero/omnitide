@@ -12,6 +12,7 @@ import {
   deepNote,
   flow,
   harborFlow,
+  lendingFlow,
   liquidation,
   market,
   order,
@@ -373,4 +374,32 @@ ponder.on("OmnitideCopyVault:FeeCharged", async ({ event, context }) => {
 
 ponder.on("OmnitideCopyVault:LeaderTrade", async ({ event, context }) => {
   await touchVault(context.db, event.log.address, { leaderTrades: 1 }, (v) => ({ leaderTrades: v.leaderTrades + 1 }));
+});
+
+// Lending: one row per money movement, keyed by the log
+const lend = (event: { id: string; block: { timestamp: bigint }; transaction: { hash: `0x${string}` } }) => ({ id: event.id, timestamp: Number(event.block.timestamp), tx: event.transaction.hash });
+ponder.on("OmnitideLending:Deposit", async ({ event, context }) => {
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.owner, kind: "supply", amount: event.args.assets, actor: event.args.sender });
+});
+ponder.on("OmnitideLending:Withdraw", async ({ event, context }) => {
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.owner, kind: "withdraw", amount: event.args.assets, actor: event.args.receiver });
+});
+ponder.on("OmnitideLending:CollateralDeposited", async ({ event, context }) => {
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.account, kind: "lock", amount: event.args.amount, actor: event.args.from });
+});
+ponder.on("OmnitideLending:CollateralWithdrawn", async ({ event, context }) => {
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.account, kind: "unlock", amount: event.args.amount, actor: event.args.receiver });
+});
+ponder.on("OmnitideLending:Borrowed", async ({ event, context }) => {
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.account, kind: "borrow", amount: event.args.amount, actor: event.args.receiver, toMargin: event.args.toMargin });
+});
+ponder.on("OmnitideLending:Repaid", async ({ event, context }) => {
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.account, kind: "repay", amount: event.args.amount, actor: event.args.from });
+});
+ponder.on("OmnitideLending:Liquidated", async ({ event, context }) => {
+  const a = event.args;
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: a.account, kind: "liquidation", amount: a.repaid, seized: a.seized, price: a.price, actor: a.liquidator });
+});
+ponder.on("OmnitideLending:BadDebt", async ({ event, context }) => {
+  await context.db.insert(lendingFlow).values({ ...lend(event), account: event.args.account, kind: "bad_debt", amount: event.args.amount });
 });

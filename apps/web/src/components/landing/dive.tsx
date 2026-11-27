@@ -8,7 +8,7 @@ import { HUB_KEY, IS_MAINNET, explorerAddress } from "@/lib/chains";
 import { shortHash } from "@/lib/format";
 import { useReceipts, type Receipt } from "@/lib/hooks";
 import { InflowDemo, LensDemo, SealDemo } from "./dive-demos";
-import { FEATURE_LIST, featureId, type Feature } from "./features";
+import { DEEP_FROM, FEATURE_LIST, featureId, type Feature } from "./features";
 import { CurrentDrift, DeepGlow, ShorelineLight } from "./backdrops";
 
 
@@ -37,8 +37,8 @@ const TIERS = [
     to: 200,
     title: "See the whole current.",
     blurb: "One lzRead across every chain, a stress test you can throw at your own book, and a ping before the tide reaches your wall. Risk you can see before it moves.",
-    features: FEATURE_LIST.slice(6, 15),
-    contracts: ["OmnitideTideReader", "OmnitideHarbor", "OmnitideHarborShareAdapter"],
+    features: FEATURE_LIST.slice(6, DEEP_FROM),
+    contracts: ["OmnitideTideReader", "OmnitideHarbor", "OmnitideHarborShareAdapter", "OmnitideLending"],
     primitives: ["lzRead", "OVault (ERC-4626)", "OFT shares", "keeper alerts"],
     Demo: LensDemo,
     live: { href: "/terminal/risk", label: "Shock your own book" },
@@ -53,7 +53,7 @@ const TIERS = [
     to: 480,
     title: "Trade below the surface.",
     blurb: "The privacy layer. Sealed positions, private stops and private inflows, with selective disclosure when you choose it, plus grades, medals and vaults anyone can verify without seeing a single position.",
-    features: FEATURE_LIST.slice(15),
+    features: FEATURE_LIST.slice(DEEP_FROM),
     contracts: ["OmnitideDeepPool", "OmnitideLighthouse", "OmnitideBadge", "OmnitideCouncil", "OmnitideCopyVaultFactory", "OmnitideToken", "OmnitideTokenAdapter"],
     primitives: ["OApp", "ONFT", "x25519 + AES-256-GCM", "keccak commitments", "selective disclosure", "beacon proxies"],
     Demo: SealDemo,

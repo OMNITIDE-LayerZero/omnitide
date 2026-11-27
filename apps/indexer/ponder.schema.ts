@@ -142,6 +142,24 @@ export const harborFlow = onchainTable(
   (t) => ({ byAccount: index().on(t.account, t.timestamp), byTime: index().on(t.timestamp) }),
 );
 
+// V4 Lending: lender supply/exit, ETH collateral, borrows, repayments and liquidations on the hub.
+export const lendingFlow = onchainTable(
+  "lending_flow",
+  (t) => ({
+    id: t.text().primaryKey(),
+    account: t.hex().notNull(),
+    kind: t.text().notNull(), // supply | withdraw | lock | unlock | borrow | repay | liquidation | bad_debt
+    amount: t.bigint().notNull(), // tdUSD units; ETH wei for lock/unlock
+    seized: t.bigint(), // liquidation: ETH wei taken
+    price: t.bigint(), // liquidation: ETH price, 1e18
+    actor: t.hex(), // who paid or received when it is not the account
+    toMargin: t.boolean(),
+    timestamp: t.integer().notNull(),
+    tx: t.hex().notNull(),
+  }),
+  (t) => ({ byAccount: index().on(t.account, t.timestamp), byTime: index().on(t.timestamp) }),
+);
+
 export const tideRead = onchainTable("tide_read", (t) => ({
   guid: t.hex().primaryKey(),
   requestedBy: t.hex(),

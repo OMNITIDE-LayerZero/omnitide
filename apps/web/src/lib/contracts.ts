@@ -19,6 +19,7 @@ export {
   omnitideCopyVaultAbi,
   omnitideCopyVaultFactoryAbi,
   omnitidePortAbi,
+  omnitideLendingAbi,
 } from "@omnitide/contracts/abi";
 
 /** Clearinghouse ABI plus the oracle's errors, so reverts from price checks decode by name. */
@@ -33,9 +34,10 @@ export const usdAddress = (k: ChainKey) => D[k]!.OmnitideUSD!.proxy as Address;
 export const CLEARINGHOUSE = hub.OmnitideClearinghouse!.proxy as Address;
 export const ORACLE = hub.OmnitideOracle!.proxy as Address;
 /** Features ship version by version on mainnet; pages and panels whose contracts are absent stay hidden. */
-export const FEATURES = { harbor: !!hub.OmnitideHarbor, tide: !!readerChain, deepWater: !!hub.OmnitideDeepPool } as const;
+export const FEATURES = { harbor: !!hub.OmnitideHarbor, tide: !!readerChain, deepWater: !!hub.OmnitideDeepPool, lending: !!hub.OmnitideLending } as const;
 // V2/V3 addresses are only read behind FEATURES
 export const HARBOR = hub.OmnitideHarbor?.proxy as Address;
+export const LENDING = hub.OmnitideLending?.proxy as Address;
 export const HARBOR_ADAPTER = hub.OmnitideHarborShareAdapter?.proxy as Address;
 export const TIDE_READER_CHAIN = readerChain;
 export const TIDE_READER = (readerChain && D[readerChain]!.OmnitideTideReader!.proxy) as Address;

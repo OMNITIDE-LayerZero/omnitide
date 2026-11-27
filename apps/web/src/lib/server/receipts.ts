@@ -18,7 +18,7 @@ const safe = <T,>(path: string, empty: T) => upstream<T>("indexer", path).catch(
 /** Latest mainnet (or testnet) transaction behind each landing feature, keyed by feature id. Holds only hashes and times, never accounts. */
 export async function receipts(): Promise<Record<string, Receipt>> {
   if (cache && Date.now() - cache.at < TTL) return cache.body;
-  const [trades, flows, tide, harbor, deep, council, beams, vaults] = await Promise.all([
+  const [trades, flows, tide, harbor, deep, council, beams, vaults, lending] = await Promise.all([
     safe<(Row & { viaOrder: boolean })[]>("/trades?limit=200", []),
     safe<(Row & { kind: string; guid: string | null })[]>("/flows?limit=200", []),
     safe<{ requestTx: string | null; readAt: number }[]>("/tide?limit=1", []),
@@ -27,6 +27,7 @@ export async function receipts(): Promise<Record<string, Receipt>> {
     safe<{ proposals: { tx: string; start: number }[] }>("/council?limit=1", { proposals: [] }),
     safe<{ chainId: number; tx: string; issuedAt: number }[]>("/lighthouse?limit=1", []),
     safe<{ tx: string; createdAt: number }[]>("/vaults?limit=1", []),
+    safe<(Row & { kind: string })[]>("/lending?limit=50", []),
   ]);
   const fill = trades[0];
   const inflow = flows.find((f) => f.kind === "inflow");
@@ -47,6 +48,10 @@ export async function receipts(): Promise<Record<string, Receipt>> {
       prices: receipt(HUB_KEY, fill?.tx, fill?.timestamp),
       "tide chart": TIDE_READER_CHAIN && receipt(TIDE_READER_CHAIN, tide[0]?.requestTx, tide[0]?.readAt, true),
       harbor: receipt(HUB_KEY, harbor[0]?.tx, harbor[0]?.timestamp),
+      lending: (() => {
+        const b = lending.find((l) => l.kind === "borrow") ?? lending[0];
+        return receipt(HUB_KEY, b?.tx, b?.timestamp);
+      })(),
       "deep mode": receipt(HUB_KEY, seal?.tx, seal?.timestamp),
       council: receipt(HUB_KEY, council.proposals[0]?.tx, council.proposals[0]?.start),
       lighthouse: beamChain ? receipt(beamChain, beam.tx, beam.issuedAt) : undefined,

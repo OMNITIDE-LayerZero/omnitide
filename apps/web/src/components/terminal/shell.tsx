@@ -24,6 +24,7 @@ const ALL_VIEWS = [
   { slug: "risk", label: "Risk", on: true },
   { slug: "deep", label: "Deep", on: FEATURES.deepWater },
   { slug: "harbor", label: "Harbor", on: FEATURES.harbor },
+  { slug: "lending", label: "Lending", on: FEATURES.lending },
   { slug: "copy", label: "Copy", on: FEATURES.deepWater },
   { slug: "currents", label: "Currents", on: true },
   { slug: "council", label: "Council", on: FEATURES.deepWater },

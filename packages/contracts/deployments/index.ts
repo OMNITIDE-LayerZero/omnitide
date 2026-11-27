@@ -21,17 +21,24 @@ export interface ChainDeployment {
   OmnitideHarborShare?: ProxyRecord;
   OmnitideTideReader?: ProxyRecord;
   OmnitideDeepPool?: ProxyRecord;
+  OmnitideLending?: ProxyRecord;
   OmnitideLighthouse?: ProxyRecord;
   OmnitideBadge?: ProxyRecord;
   OmnitideToken?: ProxyRecord;
   OmnitideTokenAdapter?: ProxyRecord & { token: string };
   OmnitideCouncil?: ProxyRecord;
-  OmnitideCopyVaultFactory?: ProxyRecord & { beacon: string; vaultImplementation: string };
+  OmnitideCopyVaultFactory?: ProxyRecord & {
+    beacon: string;
+    vaultImplementation: string;
+  };
   wired?: string;
 }
 
 export type Deployments = Partial<Record<ChainKey, ChainDeployment>>;
 
 // One entry per OMNITIDE_ENV. A configured chain may not be deployed yet; mainnet ships version by version.
-export const DEPLOYMENTS: Record<"testnet" | "mainnet", Deployments> = { testnet, mainnet };
+export const DEPLOYMENTS: Record<"testnet" | "mainnet", Deployments> = {
+  testnet,
+  mainnet,
+};
 export type OmnitideEnv = keyof typeof DEPLOYMENTS;

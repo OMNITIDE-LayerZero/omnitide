@@ -10,6 +10,7 @@ import { bucketStart } from "./candles.js";
 import { oracleDomain, REPORT_TYPES, signReport } from "./reports.js";
 import { needsMark, orderTriggered, traderPnlUnits } from "./executor.js";
 import { aggregate, nasdaqPointToUtc } from "./backfill.js";
+import { liquidationRepay } from "./lending.js";
 
 describe("keeper", () => {
   it("parses venue number formats", () => {
@@ -107,5 +108,11 @@ describe("Harbor marks", () => {
     expect(needsMark(150_000_000n, 0n, 2_000_000_000n)).toBe(true);
     expect(needsMark(150_000_000n, 140_000_000n, 2_000_000_000n)).toBe(false); // within 1% of the pool
     expect(needsMark(5_000n, 0n, 0n)).toBe(false); // under the 0.01 floor
+  });
+  it("sizes a lending liquidation to the contract cap and the keeper's tdUSD", () => {
+    expect(liquidationRepay(1_400_000_000n, 10_000_000n, 5000n, 10n ** 12n)).toBe(700_000_000n); // half
+    expect(liquidationRepay(8_000_000n, 10_000_000n, 5000n, 10n ** 12n)).toBe(8_000_000n); // dust: all of it
+    expect(liquidationRepay(1_400_000_000n, 10_000_000n, 5000n, 250_000_000n)).toBe(250_000_000n); // what it holds
+    expect(liquidationRepay(1_400_000_000n, 10_000_000n, 5000n, 0n)).toBe(0n);
   });
 });

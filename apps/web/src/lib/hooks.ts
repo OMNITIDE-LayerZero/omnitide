@@ -63,7 +63,7 @@ export function useStats() {
   return useQuery({ queryKey: ["stats"], queryFn: () => get<IndexerStats>("/api/indexer/stats"), refetchInterval: 15_000 });
 }
 
-export function useIndexer<T>(path: "trades" | "positions" | "orders" | "flows" | "bridge" | "leaderboard" | "harbor" | "tide" | "book" | "sealed" | "lighthouse" | "vaults" | "deep", account?: string, enabled = true) {
+export function useIndexer<T>(path: "trades" | "positions" | "orders" | "flows" | "bridge" | "leaderboard" | "harbor" | "lending" | "tide" | "book" | "sealed" | "lighthouse" | "vaults" | "deep", account?: string, enabled = true) {
   const qs = account ? `?account=${account}` : "";
   return useQuery({
     queryKey: ["indexer", path, account ?? ""],

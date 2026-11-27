@@ -16,7 +16,7 @@
     },
     "OmnitideClearinghouse": {
       "proxy": "0x31fcb7B2DaC407ECC2AB51c1764204Bd3a882F1e",
-      "implementation": "0x4a010551B0CB4B9ED7fd7DFc079A7d9831E77D09",
+      "implementation": "0x137AbeA0509E40b61eDf09d1b7B46B7583D18718",
       "deployTx": "0x4bdeeb24632469a43c8e10f66e09108cc82571be9baf226f5c1ea30754f31707",
       "block": 154985732
     },
@@ -70,6 +70,12 @@
       "implementation": "0x3ef6F67718E55A30240e3a4ED26508512ad56103",
       "deployTx": "0x5d65de1fc6e0fa8fbca0ba4f652c249e654761d56f498abf661196ea18c61387",
       "block": 155632109
+    },
+    "OmnitideLending": {
+      "proxy": "0x1A292fd782AbCcb7eD7aA2Fe4E97dd88e9efD391",
+      "implementation": "0x668dB5aB7a42244373BB83AAb561115e3AB85b0A",
+      "deployTx": "0x014681a90345771b824dbb14bea32a72116a7650348b45ed683565b9f3decca6",
+      "block": 158425843
     }
   },
   "sepolia": {

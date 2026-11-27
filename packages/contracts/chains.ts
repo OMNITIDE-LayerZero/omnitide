@@ -26,6 +26,8 @@ export interface ChainConfig {
   stable?: { symbol: string; address: `0x${string}` };
   /** Hub only: launched governance token that OmnitideTokenAdapter wraps into an OFT (mainnet $OMNITIDE); else TIDE is deployed. */
   govToken?: `0x${string}`;
+  /** Hub only: canonical WETH that Lending takes as collateral. */
+  weth?: `0x${string}`;
 }
 
 export const TESTNET_CHAINS: Record<TestnetChainKey, ChainConfig> = {
@@ -39,6 +41,7 @@ export const TESTNET_CHAINS: Record<TestnetChainKey, ChainConfig> = {
     blockscout: "https://explorer.testnet.chain.robinhood.com/api",
     nativeSymbol: "ETH",
     hub: true,
+    weth: "0x7943e237c7F95DA44E0301572D358911207852Fa",
     lz: { sendLib: "0x45841dd1ca50265da7614fc43a361e526c0e6160", receiveLib: "0xd682ecf100f6f4284138aa925348633b0611ae21", executor: "0x701f3927871efcea1235db722f9e608ae120d243", dvn: "0xa78a78a13074ed93ad447a26ec57121f29e8fec2" },
   },
   hyperEvmTestnet: {
@@ -93,6 +96,7 @@ export const MAINNET_CHAINS: Record<MainnetChainKey, ChainConfig> = {
     blockscout: "https://robinhoodchain.blockscout.com/api",
     nativeSymbol: "ETH",
     hub: true,
+    weth: "0x0bd7d308f8e1639fab988df18a8011f41eacad73",
     stable: { symbol: "USDG", address: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" },
     govToken: "0x9e3e0595376894875901b5082b135b13e9fc1fa2",
     lz: { sendLib: "0xc39161c743d0307eb9bcc9fef03eeb9dc4802de7", receiveLib: "0xe1844c5d63a9543023008d332bd3d2e6f1fe1043", executor: "0x4208d6e27538189bb48e603d6123a94b8abe0a0b", dvn: "0xd01ae6905d48315f7be10c7330aecf8360ef5b12" },

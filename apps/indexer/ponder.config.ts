@@ -13,6 +13,7 @@ import {
   omnitideCouncilAbi,
   omnitideCopyVaultAbi,
   omnitideCopyVaultFactoryAbi,
+  omnitideLendingAbi,
 } from "@omnitide/contracts/abi";
 
 const d = DEPLOYMENTS[process.env.OMNITIDE_ENV === "mainnet" ? "mainnet" : "testnet"];
@@ -20,7 +21,7 @@ const hubKey = (Object.keys(CHAINS) as ChainKey[]).find((k) => CHAINS[k].hub && 
 if (!hubKey) throw new Error("hub contracts must be deployed");
 const rh = d[hubKey]!;
 // every contract maps chain → deployment; V2/V3 maps stay empty until that version ships (mainnet goes version by version)
-type Name = "OmnitideHarbor" | "OmnitideTideReader" | "OmnitideDeepPool" | "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil" | "OmnitideCopyVaultFactory" | "OmnitideClearinghouse";
+type Name = "OmnitideHarbor" | "OmnitideTideReader" | "OmnitideDeepPool" | "OmnitideLighthouse" | "OmnitideBadge" | "OmnitideCouncil" | "OmnitideCopyVaultFactory" | "OmnitideClearinghouse" | "OmnitideLending";
 const on = (name: Name) =>
   Object.fromEntries((Object.keys(CHAINS) as ChainKey[]).flatMap((k) => {
     const c = d[k]?.[name];
@@ -54,6 +55,20 @@ export default createConfig({
       abi: omnitideHarborAbi,
       chain: on("OmnitideHarbor"),
       filter: [{ event: "Deposit", args: {} }, { event: "Withdraw", args: {} }, { event: "Composed", args: {} }],
+    },
+    OmnitideLending: {
+      abi: omnitideLendingAbi,
+      chain: on("OmnitideLending"),
+      filter: [
+        { event: "Deposit", args: {} },
+        { event: "Withdraw", args: {} },
+        { event: "CollateralDeposited", args: {} },
+        { event: "CollateralWithdrawn", args: {} },
+        { event: "Borrowed", args: {} },
+        { event: "Repaid", args: {} },
+        { event: "Liquidated", args: {} },
+        { event: "BadDebt", args: {} },
+      ],
     },
     OmnitideTideReader: {
       abi: omnitideTideReaderAbi,

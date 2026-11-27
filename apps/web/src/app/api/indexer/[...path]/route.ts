@@ -2,7 +2,7 @@ import { zeroAddress } from "viem";
 import { env } from "@/lib/server/env";
 import { upstream } from "@/lib/server/upstream";
 
-const PATHS = new Set(["stats", "trades", "positions", "orders", "flows", "bridge", "leaderboard", "harbor", "tide", "book", "trader", "deep", "sealed", "lighthouse", "badges", "council", "vaults"]);
+const PATHS = new Set(["stats", "trades", "positions", "orders", "flows", "bridge", "leaderboard", "harbor", "lending", "tide", "book", "trader", "deep", "sealed", "lighthouse", "badges", "council", "vaults"]);
 // one id segment is allowed under these
 const NESTED = new Set(["deep", "council", "vaults"]);
 const PARAMS = new Set(["account", "limit", "owner", "voter", "by"]);

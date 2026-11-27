@@ -13,6 +13,7 @@ import { createExecutor } from "./executor.js";
 import { backfill } from "./backfill.js";
 import { createCurrent } from "./current.js";
 import { createDeepWater } from "./deepwater.js";
+import { createLending } from "./lending.js";
 
 const env = loadEnv();
 const log = (m: string) => console.log(`${new Date().toISOString()} ${m}`);
@@ -93,6 +94,9 @@ const executor = createExecutor({
   log,
 });
 let executorState: Record<string, unknown> = {};
+const lending = hub.OmnitideLending
+  ? createLending({ pub, wallet, lending: hub.OmnitideLending.proxy as Address, fromBlock: BigInt(hub.OmnitideLending.block), reports: reportsFor, log })
+  : undefined;
 
 const arbChain = defineChain({ id: CHAINS[readerKey ?? hubKey].chainId, name: CHAINS[readerKey ?? hubKey].name, nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 }, rpcUrls: { default: { http: [env.ARB_RPC_URL] } } });
 const current = createCurrent({
@@ -137,6 +141,7 @@ void backfill(db, MARKETS, log);
 every(3_000, "crypto", () => pollPrices("crypto"));
 every(10_000, "stocks", () => pollPrices("stock"));
 if (env.EXECUTE === "1") every(5_000, "executor", async () => (executorState = await executor.tick()));
+if (env.EXECUTE === "1" && lending) every(15_000, "lending", async () => Object.assign(currentState, await lending.tick()));
 // the indexer restarts with us on deploy, so give it a couple of minutes before giving up on this round
 every(10 * 60_000, "snapshots", async () => {
   for (let i = 0; ; i++) {

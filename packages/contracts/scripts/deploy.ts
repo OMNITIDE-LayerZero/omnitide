@@ -21,8 +21,8 @@ console.log(`network ${chain.name} (${chainId}) · deployer ${signer.address} ·
 const all = loadDeployments();
 const dep = (all[key] ??= { chainId: chain.chainId, eid: chain.eid });
 const isTestnet = (process.env.OMNITIDE_ENV ?? "testnet") === "testnet";
-// mainnet ships per version: OMNITIDE_VERSION=1 deploys V1.0 only, 2 adds V2 Current, 3 adds V3 Deep Water
-const VERSION = Number(process.env.OMNITIDE_VERSION ?? 3);
+// mainnet ships per version: OMNITIDE_VERSION=1 deploys V1.0 only, 2 adds V2 Current, 3 adds V3 Deep Water, 4 adds Lending
+const VERSION = Number(process.env.OMNITIDE_VERSION ?? 4);
 // mainnet open-interest cap per market (USD), sized to the Tide Pool; testnet keeps markets.ts
 const oiCap = (usd: number) => (process.env.MAX_OI_USD ? Number(process.env.MAX_OI_USD) : usd);
 
@@ -252,6 +252,50 @@ if (VERSION >= 3 && (chain.hub || chain.deepWater)) {
   await deployOnce("OmnitideBadge", async () => up.deployProxy(await F("OmnitideBadge"), [DEPLOYER, DEPLOYER, !!chain.hub, BADGE_URI], lzOpts));
   const hubEid = Object.values(CHAINS).find((c) => c.hub)!.eid;
   await deployOnce("OmnitideCouncil", async () => up.deployProxy(await F("OmnitideCouncil"), [DEPLOYER, chain.govToken ?? dep.OmnitideToken!.proxy, hubEid, VOTING_PERIOD, PROPOSAL_THRESHOLD], lzOpts));
+}
+
+// ───────── V4 Lending (Anchor): borrow tdUSD against ETH on the hub ─────────
+if (VERSION >= 4 && chain.hub && chain.weth) {
+  const chAddr = dep.OmnitideClearinghouse!.proxy;
+  if (!(await implHas(chAddr, "depositFor(address,uint256)"))) {
+    await up.upgradeProxy(chAddr, await ethers.getContractFactory("OmnitideClearinghouse"), { kind: "uups", redeployImplementation: "always" });
+    dep.OmnitideClearinghouse!.implementation = await up.erc1967.getImplementationAddress(chAddr);
+    saveDeployments(all);
+    console.log("OmnitideClearinghouse upgraded (depositFor) →", dep.OmnitideClearinghouse!.implementation);
+  }
+  if (!dep.OmnitideLending) {
+    // mainnet opens small: LENDING_CAP_USD caps both supply and borrow (default $100), raised later with setParams
+    const cap = ethers.parseUnits(process.env.LENDING_CAP_USD ?? (isTestnet ? "250000" : "100"), 6);
+    const params = {
+      ltvBps: 7000,
+      liquidationBps: 8000,
+      bonusBps: 500,
+      reserveBps: 1000,
+      closeFactorBps: 5000,
+      baseRate: 0n,
+      kinkRate: ethers.parseEther("0.04"),
+      maxRate: ethers.parseEther("0.6"),
+      kinkBps: 8000,
+      supplyCap: cap,
+      borrowCap: cap,
+      dustDebt: ethers.parseUnits(isTestnet ? "10" : "1", 6),
+    };
+    const lending = await up.deployProxy(
+      await ethers.getContractFactory("OmnitideLending"),
+      [DEPLOYER, DEPLOYER, chAddr, chain.weth, ethers.encodeBytes32String("ETH-USD"), params],
+      { kind: "uups" },
+    );
+    await lending.waitForDeployment();
+    dep.OmnitideLending = await record(lending);
+    saveDeployments(all);
+    console.log("OmnitideLending", dep.OmnitideLending.proxy);
+  }
+}
+
+// true when the proxy's current implementation carries the function selector
+async function implHas(proxy: string, sig: string) {
+  const code = await ethers.provider.getCode(await up.erc1967.getImplementationAddress(proxy));
+  return code.includes(ethers.id(sig).slice(2, 10));
 }
 
 async function hasFn(addr: string, sig: string, args = "0x") {

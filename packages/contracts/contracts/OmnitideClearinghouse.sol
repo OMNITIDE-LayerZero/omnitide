@@ -343,6 +343,16 @@ contract OmnitideClearinghouse is
         emit Deposited(msg.sender, amount, hubEid, bytes32(0));
     }
 
+    /// @notice Credit `account` with tdUSD paid by the caller (Lending borrows, Inlet sweeps, gifts).
+    function depositFor(address account, uint256 amount) external nonReentrant whenNotPaused {
+        if (amount == 0) revert ZeroAmount();
+        if (account == address(0)) revert ZeroAddress();
+        if (totalCollateral + amount > depositCap) revert DepositCapReached(depositCap);
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        _credit(account, amount);
+        emit Deposited(account, amount, hubEid, bytes32(0));
+    }
+
     /// @notice Inflow: tdUSD arriving from a spoke through LayerZero is credited to the sender's book.
     function lzCompose(address from, bytes32 guid, bytes calldata message, address, bytes calldata) external payable {
         if (msg.sender != endpoint) revert NotEndpoint();
